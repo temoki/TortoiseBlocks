@@ -244,18 +244,20 @@ for _ in 1...8 {
 - VoiceOver でブロック列を読み上げ可能に（「まえへ 100 すすむ、2 ばんめ」）
 - 色だけに頼らない（カテゴリはアイコン + 色）
 
-## 12. TortoiseGraphics2 側への機能要望（upstream 候補）
+## 12. TortoiseGraphics2 側への機能要望（対応済み）
 
-アプリ開発と並行して、ライブラリ側に入れると app 側が単純化するもの
-（具体的な API 案・受け入れ条件は [TORTOISEGRAPHICS2_REQUESTS.md](TORTOISEGRAPHICS2_REQUESTS.md) にまとめた）：
+依頼した 3 件はすべてライブラリ本体にマージ済み（2026-07-17）:
 
-1. **再生制御の公開 API**: pause / resume / step / seek、再生中の速度変更、
-   「現在再生中のコマンド index」の観測（→ 実行モードでもブロックハイライトが可能になり、
-   §5 の「速度変更 = 再実行」制約が消える）。`CanvasModel` の public 化 or `TortoisePlayer` の新設
-2. **`TortoiseCommand` / `Color` / `Point` の Codable 準拠**（必須ではないがテストやデバッグ用途で便利）
-3. `Tortoise` のリセット or コマンド列差し替え API（`.id()` 再生成 workaround の解消）
+1. **再生制御の公開 API** — `TortoisePlayer`（pause / step / seek / speedOverride、
+   `currentCommandIndex` の観測）: [#23](https://github.com/temoki/TortoiseGraphics2/issues/23)
+2. **`Tortoise.reset()` + 変更検知の堅牢化**（`TortoiseChangeKey` によるインスタンス差し替え検知込み）:
+   [#24](https://github.com/temoki/TortoiseGraphics2/issues/24)
+3. **`TortoiseCommand` / `Color` / `Point` / `Size` の Codable 準拠**
+   （CodingKeys 明示・長期保存フォーマットとして安定保証）: [#25](https://github.com/temoki/TortoiseGraphics2/issues/25)
 
-※ いずれも無くても本プランは成立する（workaround 済み）。M3 完了時点で優先度を再評価する。
+これにより §2 の制約 1〜3 と、それに対応する §5 の workaround（`.id()` 再生成・
+速度変更 = 再実行・ハイライトはステップ実行のみ）は不要になった。
+次のベータリリースを exact pin で取り込み、§5 の実行モード設計は `TortoisePlayer` ベースに簡素化する。
 
 ## 13. マイルストーン
 
