@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  kit-test:
+    name: Kit Tests
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Select Xcode
+        uses: ./.github/actions/select-xcode
+
+      - name: Cache SwiftPM build directory
+        uses: actions/cache@v4
+        with:
+          path: TortoiseBlocksKit/.build
+          key: spm-kit-${{ runner.os }}-${{ hashFiles('TortoiseBlocksKit/Package.resolved') }}
+          restore-keys: spm-kit-${{ runner.os }}-
+
+      - name: Test
+        working-directory: TortoiseBlocksKit
+        run: swift test
+
+  app-build:
+    name: App Build (${{ matrix.name }})
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: iOS
+            destination: generic/platform=iOS Simulator
+          - name: macOS
+            destination: platform=macOS
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Select Xcode
+        uses: ./.github/actions/select-xcode
+
+      - name: Build
+        run: |
+          xcodebuild -project TortoiseBlocks.xcodeproj -scheme TortoiseBlocks \
+            -destination '${{ matrix.destination }}' \
+            CODE_SIGNING_ALLOWED=NO -quiet build
