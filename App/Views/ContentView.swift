@@ -34,6 +34,9 @@ struct PlaybackControls: View {
                 Button("しかくをかく", systemImage: "play.fill") {
                     run(SampleProgram.filledSquare())
                 }
+                Button("ランダムスター", systemImage: "die.face.5") {
+                    runBlocks(SampleBlocks.randomStar())
+                }
                 Button("けす", systemImage: "trash") {
                     tortoise.reset()
                 }
@@ -57,6 +60,14 @@ struct PlaybackControls: View {
     private func run(_ commands: [TortoiseCommand]) {
         tortoise.reset()
         tortoise.apply(commands)
+    }
+
+    /// Block tree → expand (randomness evaluated here) → replay.
+    /// Runs differ every time — that's the random block at work.
+    private func runBlocks(_ blocks: [Block]) {
+        guard let expanded = try? BlockExpander.expand(blocks) else { return }
+        tortoise.reset()
+        tortoise.apply(expanded.map(\.command))
     }
 }
 
