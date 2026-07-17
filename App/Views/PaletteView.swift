@@ -2,78 +2,78 @@ import SwiftUI
 import TortoiseBlocksKit
 
 /// One tappable palette entry: a display name, an icon, and the block kind
-/// it stamps out (each tap creates a fresh `Block` with a new ID).
+/// it stamps out (each tap or drag creates a fresh `Block` with a new ID).
 struct PaletteEntry: Identifiable {
-    let title: String
+    let title: LocalizedStringResource
     let systemImage: String
     let kind: BlockKind
 
-    var id: String { title }
+    var id: String { title.key }
 }
 
 struct PaletteSection: Identifiable {
-    let title: String
+    let title: LocalizedStringResource
     let category: BlockCategory
     let entries: [PaletteEntry]
 
-    var id: String { title }
+    var id: String { title.key }
 }
 
 enum Palette {
     static let sections: [PaletteSection] = [
         PaletteSection(
-            title: "うごき", category: .movement,
+            title: "Motion", category: .movement,
             entries: [
                 PaletteEntry(
-                    title: "まえへ", systemImage: "arrow.up",
+                    title: "Forward", systemImage: "arrow.up",
                     kind: .forward(.literal(100))),
                 PaletteEntry(
-                    title: "うしろへ", systemImage: "arrow.down",
+                    title: "Backward", systemImage: "arrow.down",
                     kind: .backward(.literal(100))),
                 PaletteEntry(
-                    title: "みぎへまわる", systemImage: "arrow.clockwise",
+                    title: "Turn Right", systemImage: "arrow.clockwise",
                     kind: .turnRight(.literal(90))),
                 PaletteEntry(
-                    title: "ひだりへまわる", systemImage: "arrow.counterclockwise",
+                    title: "Turn Left", systemImage: "arrow.counterclockwise",
                     kind: .turnLeft(.literal(90))),
                 PaletteEntry(
-                    title: "ホームへもどる", systemImage: "house",
+                    title: "Go Home", systemImage: "house",
                     kind: .home),
             ]),
         PaletteSection(
-            title: "ペン", category: .pen,
+            title: "Pen", category: .pen,
             entries: [
                 PaletteEntry(
-                    title: "ペンをおろす", systemImage: "pencil",
+                    title: "Pen Down", systemImage: "pencil",
                     kind: .penDown),
                 PaletteEntry(
-                    title: "ペンをあげる", systemImage: "pencil.slash",
+                    title: "Pen Up", systemImage: "pencil.slash",
                     kind: .penUp),
                 PaletteEntry(
-                    title: "ペンのいろ", systemImage: "paintpalette",
+                    title: "Pen Color", systemImage: "paintpalette",
                     kind: .penColor(.blue)),
                 PaletteEntry(
-                    title: "ペンのふとさ", systemImage: "lineweight",
+                    title: "Pen Width", systemImage: "lineweight",
                     kind: .penWidth(.literal(2))),
             ]),
         PaletteSection(
-            title: "ぬり", category: .fill,
+            title: "Fill", category: .fill,
             entries: [
                 PaletteEntry(
-                    title: "ぬりのいろ", systemImage: "drop.fill",
+                    title: "Fill Color", systemImage: "drop.fill",
                     kind: .fillColor(.yellow)),
                 PaletteEntry(
-                    title: "ぬりはじめ", systemImage: "paintbrush.fill",
+                    title: "Start Fill", systemImage: "paintbrush.fill",
                     kind: .beginFill),
                 PaletteEntry(
-                    title: "ぬりおわり", systemImage: "paintbrush",
+                    title: "End Fill", systemImage: "paintbrush",
                     kind: .endFill),
             ]),
         PaletteSection(
-            title: "せいぎょ", category: .control,
+            title: "Control", category: .control,
             entries: [
                 PaletteEntry(
-                    title: "くりかえす", systemImage: "repeat",
+                    title: "Repeat", systemImage: "repeat",
                     kind: .repeatBlock(count: .literal(4), body: [])),
             ]),
     ]
@@ -93,7 +93,7 @@ extension BlockCategory {
 
 /// The tap-to-add palette (vertical, for regular width layouts).
 struct PaletteView: View {
-    let workspace: WorkspaceModel
+    let workspace: WorkspaceEditor
 
     var body: some View {
         ScrollView {
@@ -109,7 +109,7 @@ struct PaletteView: View {
 
 struct PaletteSectionView: View {
     let section: PaletteSection
-    let workspace: WorkspaceModel
+    let workspace: WorkspaceEditor
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -126,26 +126,30 @@ struct PaletteSectionView: View {
 struct PaletteEntryButton: View {
     let entry: PaletteEntry
     let category: BlockCategory
-    let workspace: WorkspaceModel
+    let workspace: WorkspaceEditor
 
     var body: some View {
         Button {
             workspace.add(entry.kind)
         } label: {
-            Label(entry.title, systemImage: entry.systemImage)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            Label {
+                Text(entry.title)
+            } icon: {
+                Image(systemName: entry.systemImage)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(.borderedProminent)
         .tint(category.color)
         // Evaluated per drag, so every drag stamps a fresh Block (new ID).
         .draggable(Block(kind: entry.kind))
-        .accessibilityHint("タップでプログラムのさいごについか。ドラッグですきなばしょへ")
+        .accessibilityHint("Tap to add to the end of the program. Drag to place anywhere.")
     }
 }
 
 /// Horizontal palette strip for compact (iPhone) layouts.
 struct PaletteStrip: View {
-    let workspace: WorkspaceModel
+    let workspace: WorkspaceEditor
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {

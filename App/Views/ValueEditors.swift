@@ -23,8 +23,8 @@ struct NumberValueButton: View {
                 .padding()
                 .presentationCompactAdaptation(.popover)
         }
-        .accessibilityLabel("すうじ \(displayText)")
-        .accessibilityHint("タップしてすうじをかえます")
+        .accessibilityLabel(Text("Number \(displayText)"))
+        .accessibilityHint("Tap to change the number")
     }
 
     private var displayText: String {
@@ -32,7 +32,7 @@ struct NumberValueButton: View {
         case .literal(let value):
             format(value)
         case .random(let min, let max):
-            "🎲 \(format(min))〜\(format(max))"
+            "🎲 \(format(min))–\(format(max))"
         }
     }
 }
@@ -43,36 +43,36 @@ struct NumberValueEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Picker("しゅるい", selection: isRandom) {
-                Text("すうじ").tag(false)
-                Text("サイコロ").tag(true)
+            Picker("Type", selection: isRandom) {
+                Text("Number").tag(false)
+                Text("Dice").tag(true)
             }
             .pickerStyle(.segmented)
             .labelsHidden()
 
             switch value {
             case .literal(let number):
-                LabeledContent("すうじ") {
+                LabeledContent("Number") {
                     HStack {
-                        TextField("すうじ", value: literalBinding(number), format: .number)
+                        TextField("Number", value: literalBinding(number), format: .number)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 80)
-                        Stepper("すうじ", value: literalBinding(number), step: 10)
+                        Stepper("Number", value: literalBinding(number), step: 10)
                             .labelsHidden()
                     }
                 }
             case .random(let min, let max):
-                LabeledContent("さいしょう") {
+                LabeledContent("Minimum") {
                     TextField(
-                        "さいしょう", value: randomBinding(min: min, max: max, edits: .min),
+                        "Minimum", value: randomBinding(min: min, max: max, edits: .min),
                         format: .number
                     )
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 80)
                 }
-                LabeledContent("さいだい") {
+                LabeledContent("Maximum") {
                     TextField(
-                        "さいだい", value: randomBinding(min: min, max: max, edits: .max),
+                        "Maximum", value: randomBinding(min: min, max: max, edits: .max),
                         format: .number
                     )
                     .textFieldStyle(.roundedBorder)
@@ -146,8 +146,8 @@ struct ColorValueButton: View {
             .padding()
             .presentationCompactAdaptation(.popover)
         }
-        .accessibilityLabel("いろ \(color.rawValue)")
-        .accessibilityHint("タップしていろをえらびます")
+        .accessibilityLabel(Text("Color \(colorName(color))"))
+        .accessibilityHint("Tap to choose a color")
     }
 }
 
@@ -172,10 +172,15 @@ struct ColorSwatchGrid: View {
                         .frame(width: 28, height: 28)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(color.rawValue)
+                .accessibilityLabel(Text(colorName(color)))
             }
         }
     }
+}
+
+/// Localized display name for a palette color (keys are the raw values).
+func colorName(_ color: BlockColor) -> String {
+    String(localized: String.LocalizationValue(color.rawValue))
 }
 
 /// Formats a number for display: integral values without the trailing `.0`.

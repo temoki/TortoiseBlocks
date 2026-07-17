@@ -3,12 +3,16 @@ import TortoiseBlocksKit
 import TortoiseUI
 
 /// Root: palette | workspace | canvas (regular width),
-/// or a つくる / うごかす tab pair (compact width).
+/// or a Build / Run tab pair (compact width).
 struct ContentView: View {
-    @State private var workspace = WorkspaceModel()
+    @Binding var document: BlocksDocument
+    @State private var uiState = WorkspaceUIState()
     @State private var runner = RunnerModel()
+    @Environment(\.undoManager) private var undoManager
 
     var body: some View {
+        let workspace = WorkspaceEditor(
+            document: $document, undoManager: undoManager, uiState: uiState)
         #if os(iOS)
             AdaptiveRootView(workspace: workspace, runner: runner)
         #else
@@ -19,7 +23,7 @@ struct ContentView: View {
 
 #if os(iOS)
     struct AdaptiveRootView: View {
-        let workspace: WorkspaceModel
+        let workspace: WorkspaceEditor
         let runner: RunnerModel
         @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -33,12 +37,12 @@ struct ContentView: View {
     }
 
     struct CompactRootView: View {
-        let workspace: WorkspaceModel
+        let workspace: WorkspaceEditor
         let runner: RunnerModel
 
         var body: some View {
             TabView {
-                Tab("つくる", systemImage: "square.stack.3d.up") {
+                Tab("Build", systemImage: "square.stack.3d.up") {
                     VStack(spacing: 0) {
                         WorkspaceView(workspace: workspace, runner: runner)
                         Divider()
@@ -46,7 +50,7 @@ struct ContentView: View {
                             .padding(.vertical, 8)
                     }
                 }
-                Tab("うごかす", systemImage: "tortoise") {
+                Tab("Run", systemImage: "tortoise") {
                     CanvasPane(workspace: workspace, runner: runner)
                 }
             }
@@ -55,7 +59,7 @@ struct ContentView: View {
 #endif
 
 struct RegularRootView: View {
-    let workspace: WorkspaceModel
+    let workspace: WorkspaceEditor
     let runner: RunnerModel
 
     var body: some View {
@@ -74,7 +78,7 @@ struct RegularRootView: View {
 
 /// The drawing side: canvas + playback controls, wired to the workspace.
 struct CanvasPane: View {
-    let workspace: WorkspaceModel
+    let workspace: WorkspaceEditor
     @Bindable var runner: RunnerModel
 
     var body: some View {
@@ -85,40 +89,40 @@ struct CanvasPane: View {
             PlaybackControls(workspace: workspace, runner: runner)
                 .padding()
         }
-        .alert("ブロックがおおすぎるよ", isPresented: $runner.showsExpansionError) {
-            Button("わかった", role: .cancel) {}
+        .alert("Too Many Blocks!", isPresented: $runner.showsExpansionError) {
+            Button("OK", role: .cancel) {}
         } message: {
-            Text("くりかえしのかずをちいさくしてみてね")
+            Text("Try a smaller repeat count.")
         }
     }
 }
 
 /// Run / clear / pause / step / speed, driving the runner and player.
 struct PlaybackControls: View {
-    let workspace: WorkspaceModel
+    let workspace: WorkspaceEditor
     @Bindable var runner: RunnerModel
 
     var body: some View {
         @Bindable var player = runner.player
         VStack(spacing: 12) {
             HStack(spacing: 16) {
-                Button("うごかす", systemImage: "play.fill") {
+                Button("Run", systemImage: "play.fill") {
                     runner.run(workspace.blocks)
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(workspace.blocks.isEmpty)
-                Button("けす", systemImage: "trash") {
+                Button("Clear", systemImage: "trash") {
                     runner.clear()
                 }
                 Spacer()
-                Text("コマンド: \(runner.player.currentCommandIndex + 1)")
+                Text("Command: \(runner.player.currentCommandIndex + 1)")
                     .font(.body.monospacedDigit())
                     .foregroundStyle(.secondary)
             }
             HStack(spacing: 16) {
-                Toggle("いちじていし", systemImage: "pause.fill", isOn: $player.isPaused)
+                Toggle("Pause", systemImage: "pause.fill", isOn: $player.isPaused)
                     .toggleStyle(.button)
-                Button("いっぽすすむ", systemImage: "forward.frame.fill") {
+                Button("Step", systemImage: "forward.frame.fill") {
                     runner.player.step()
                 }
                 .disabled(!runner.player.isPaused)
@@ -137,11 +141,11 @@ struct PlaybackScrubber: View {
     var body: some View {
         HStack {
             Slider(value: position, in: -1...Double(max(runner.commandCount - 1, 0)), step: 1) {
-                Text("さいせいいち")
+                Text("Position")
             }
             .labelsHidden()
             .disabled(runner.commandCount == 0)
-            Text("\(runner.player.currentCommandIndex + 1) / \(runner.commandCount)")
+            Text(verbatim: "\(runner.player.currentCommandIndex + 1) / \(runner.commandCount)")
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
                 .frame(minWidth: 70, alignment: .trailing)
@@ -162,13 +166,13 @@ struct SpeedSlider: View {
 
     var body: some View {
         HStack {
-            Label("はやさ", systemImage: "tortoise")
+            Label("Speed", systemImage: "tortoise")
                 .labelStyle(.iconOnly)
             Slider(value: speed, in: 1...10, step: 1) {
-                Text("はやさ")
+                Text("Speed")
             }
             .frame(maxWidth: 240)
-            Label("はやさ", systemImage: "hare")
+            Label("Speed", systemImage: "hare")
                 .labelStyle(.iconOnly)
         }
         .foregroundStyle(.secondary)
@@ -185,5 +189,5 @@ struct SpeedSlider: View {
 }
 
 #Preview {
-    ContentView()
+    ContentView(document: .constant(BlocksDocument()))
 }

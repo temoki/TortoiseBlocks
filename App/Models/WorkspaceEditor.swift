@@ -1,25 +1,40 @@
 import Foundation
 import Observation
+import SwiftUI
 import TortoiseBlocksKit
 
-/// The editor's shared state: the block tree, the insertion target, and
-/// undo/redo. All mutations go through `BlockTree`'s pure functions —
-/// undo is just swapping back the previous tree snapshot.
+/// Editor UI state that is not part of the document (never persisted).
 @Observable
 @MainActor
-final class WorkspaceModel {
-    private(set) var blocks: [Block] = []
-
+final class WorkspaceUIState {
     /// The repeat block new palette blocks are appended into
     /// (nil = top level). Toggled from the repeat row's target button.
     var insertionTargetID: UUID?
+}
 
-    private(set) var canUndo = false
-    private(set) var canRedo = false
+/// Value-type editing facade over the document.
+///
+/// Every mutation goes through `BlockTree`'s pure functions, writes through
+/// the document binding, and registers its inverse with the *document's*
+/// UndoManager — so dirty state, autosave, and the standard Undo/Redo
+/// commands all behave like any document app.
+@MainActor
+struct WorkspaceEditor {
+    let document: Binding<BlocksDocument>
+    let undoManager: UndoManager?
+    let uiState: WorkspaceUIState
 
-    // The model owns its manager for now; the DocumentGroup document (M5)
-    // will supply the document-scoped one instead.
-    @ObservationIgnored private let undoManager = UndoManager()
+    var blocks: [Block] { document.wrappedValue.project.blocks }
+
+    var insertionTargetID: UUID? {
+        get { uiState.insertionTargetID }
+        nonmutating set { uiState.insertionTargetID = newValue }
+    }
+
+    // Reading these in body stays fresh without observation: every edit,
+    // undo, and redo mutates the document, which re-renders the view tree.
+    var canUndo: Bool { undoManager?.canUndo ?? false }
+    var canRedo: Bool { undoManager?.canRedo ?? false }
 
     // MARK: - Editing
 
@@ -28,7 +43,7 @@ final class WorkspaceModel {
         // Fall back to top level if the target has been deleted meanwhile.
         let target = validatedInsertionTarget()
         guard let new = BlockTree.appending(block, toBodyOf: target, in: blocks) else { return }
-        commit(new)
+        setBlocks(new)
         // Adding a repeat makes it the natural next target.
         if case .repeatBlock = kind {
             insertionTargetID = block.id
@@ -37,7 +52,7 @@ final class WorkspaceModel {
 
     func delete(_ id: UUID) {
         guard let new = BlockTree.removing(blockWithID: id, from: blocks) else { return }
-        commit(new)
+        setBlocks(new)
         if validatedInsertionTarget() == nil {
             insertionTargetID = nil
         }
@@ -45,19 +60,18 @@ final class WorkspaceModel {
 
     func move(_ id: UUID, by offset: Int) {
         guard let new = BlockTree.moving(blockWithID: id, by: offset, in: blocks) else { return }
-        commit(new)
+        setBlocks(new)
     }
 
     func updateKind(of id: UUID, to kind: BlockKind) {
         guard let new = BlockTree.updatingKind(of: id, to: kind, in: blocks) else { return }
-        commit(new)
+        setBlocks(new)
     }
 
     /// Handles a block drop at (containerID, index). A payload whose ID
     /// already exists in the tree is *moved* (workspace drag); an unknown ID
-    /// is *inserted* (palette drag). Returns whether the drop was applied —
-    /// identity moves and invalid targets (own subtree, vanished container)
-    /// are rejected without touching the undo stack.
+    /// is *inserted* (palette drag). Identity moves and invalid targets are
+    /// rejected without touching the undo stack.
     @discardableResult
     func handleDrop(_ dropped: Block, at index: Int, inBodyOf containerID: UUID?) -> Bool {
         let new: [Block]?
@@ -67,48 +81,49 @@ final class WorkspaceModel {
         } else {
             new = BlockTree.inserting(dropped, at: index, inBodyOf: containerID, in: blocks)
         }
-        guard let new, new != blocks else { return false }
-        commit(new)
-        return true
+        guard let new else { return false }
+        return setBlocks(new)
     }
 
     // MARK: - Undo / Redo
 
     func undo() {
-        undoManager.undo()
-        refreshUndoState()
+        undoManager?.undo()
     }
 
     func redo() {
-        undoManager.redo()
-        refreshUndoState()
+        undoManager?.redo()
     }
 
     // MARK: - Private
 
     private func validatedInsertionTarget() -> UUID? {
-        guard let id = insertionTargetID,
+        guard let id = uiState.insertionTargetID,
             let block = BlockTree.block(withID: id, in: blocks),
             case .repeatBlock = block.kind
         else { return nil }
         return id
     }
 
-    /// Replaces the tree, registering the inverse as undo. Re-entering from
-    /// an undo registers the redo automatically (UndoManager semantics).
-    private func commit(_ new: [Block]) {
-        let old = blocks
-        undoManager.registerUndo(withTarget: self) { model in
-            MainActor.assumeIsolated {
-                model.commit(old)
-            }
-        }
-        blocks = new
-        refreshUndoState()
+    @discardableResult
+    private func setBlocks(_ new: [Block]) -> Bool {
+        guard new != blocks else { return false }
+        Self.apply(new, to: document, undoManager: undoManager)
+        return true
     }
 
-    private func refreshUndoState() {
-        canUndo = undoManager.canUndo
-        canRedo = undoManager.canRedo
+    /// Writes the tree through the binding and registers the inverse;
+    /// undoing re-enters here, which registers the redo automatically.
+    private static func apply(
+        _ value: [Block], to document: Binding<BlocksDocument>, undoManager: UndoManager?
+    ) {
+        let old = document.wrappedValue.project.blocks
+        document.wrappedValue.project.blocks = value
+        guard let undoManager else { return }
+        undoManager.registerUndo(withTarget: undoManager) { manager in
+            MainActor.assumeIsolated {
+                apply(old, to: document, undoManager: manager)
+            }
+        }
     }
 }

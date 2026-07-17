@@ -4,34 +4,32 @@ import TortoiseBlocksKit
 /// The program pane: title bar with undo/redo, then the block tree.
 /// During playback the executing block is highlighted and kept in view.
 struct WorkspaceView: View {
-    let workspace: WorkspaceModel
+    let workspace: WorkspaceEditor
     let runner: RunnerModel
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("プログラム")
+                Text("Program")
                     .font(.headline)
                 Spacer()
-                Button("もどす", systemImage: "arrow.uturn.backward") {
+                Button("Undo", systemImage: "arrow.uturn.backward") {
                     workspace.undo()
                 }
                 .disabled(!workspace.canUndo)
-                .keyboardShortcut("z", modifiers: .command)
-                Button("やりなおす", systemImage: "arrow.uturn.forward") {
+                Button("Redo", systemImage: "arrow.uturn.forward") {
                     workspace.redo()
                 }
                 .disabled(!workspace.canRedo)
-                .keyboardShortcut("z", modifiers: [.command, .shift])
             }
             .labelStyle(.iconOnly)
             .padding()
             Divider()
             if workspace.blocks.isEmpty {
                 ContentUnavailableView(
-                    "ブロックをならべよう",
+                    "Build with Blocks",
                     systemImage: "square.stack.3d.up",
-                    description: Text("パレットのブロックをタップするか\nここへドラッグしてね")
+                    description: Text("Tap a palette block, or drag one here")
                 )
                 .frame(maxHeight: .infinity)
                 .dropDestination(for: Block.self) { items, _ in
@@ -68,7 +66,7 @@ struct BlockListView: View {
     let blocks: [Block]
     /// The repeat whose body this list renders; nil at the top level.
     let containerID: UUID?
-    let workspace: WorkspaceModel
+    let workspace: WorkspaceEditor
     var highlightedID: UUID?
 
     var body: some View {
@@ -96,7 +94,7 @@ struct BlockListView: View {
 struct DropGap: View {
     let containerID: UUID?
     let index: Int
-    let workspace: WorkspaceModel
+    let workspace: WorkspaceEditor
     var isEmphasized = false
 
     @State private var isTargeted = false
@@ -111,7 +109,7 @@ struct DropGap: View {
                     )
                     .frame(height: 32)
                     .overlay {
-                        Text("ここへドロップ")
+                        Text("Drop Here")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -140,7 +138,7 @@ struct DropGap: View {
 /// `isHighlighted` marks the executing block during playback.
 struct BlockRowView: View {
     let block: Block
-    let workspace: WorkspaceModel
+    let workspace: WorkspaceEditor
     var isHighlighted = false
     var highlightedID: UUID?
 
@@ -150,11 +148,11 @@ struct BlockRowView: View {
         if case .repeatBlock(let count, let body) = block.kind {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
-                    Label("くりかえす", systemImage: "repeat")
+                    Label("Repeat", systemImage: "repeat")
                     NumberValueButton(value: count) { new in
                         workspace.updateKind(of: block.id, to: .repeatBlock(count: new, body: body))
                     }
-                    Text("かい")
+                    Text("times")
                     InsertionTargetButton(blockID: block.id, workspace: workspace)
                     Spacer(minLength: 0)
                     RowControls(blockID: block.id, workspace: workspace)
@@ -204,7 +202,7 @@ struct BlockRowView: View {
             }
             .animation(.easeOut(duration: 0.15), value: isHighlighted)
             .draggable(block)
-            .accessibilityValue(isHighlighted ? "じっこうちゅう" : "")
+            .accessibilityValue(isHighlighted ? "Running" : "")
         }
     }
 }
@@ -218,36 +216,36 @@ struct SimpleBlockLabel: View {
         HStack(spacing: 8) {
             switch kind {
             case .forward(let value):
-                Label("まえへ", systemImage: "arrow.up")
+                Label("Forward", systemImage: "arrow.up")
                 NumberValueButton(value: value) { onChange(.forward($0)) }
             case .backward(let value):
-                Label("うしろへ", systemImage: "arrow.down")
+                Label("Backward", systemImage: "arrow.down")
                 NumberValueButton(value: value) { onChange(.backward($0)) }
             case .turnRight(let value):
-                Label("みぎへまわる", systemImage: "arrow.clockwise")
+                Label("Turn Right", systemImage: "arrow.clockwise")
                 NumberValueButton(value: value) { onChange(.turnRight($0)) }
             case .turnLeft(let value):
-                Label("ひだりへまわる", systemImage: "arrow.counterclockwise")
+                Label("Turn Left", systemImage: "arrow.counterclockwise")
                 NumberValueButton(value: value) { onChange(.turnLeft($0)) }
             case .home:
-                Label("ホームへもどる", systemImage: "house")
+                Label("Go Home", systemImage: "house")
             case .penUp:
-                Label("ペンをあげる", systemImage: "pencil.slash")
+                Label("Pen Up", systemImage: "pencil.slash")
             case .penDown:
-                Label("ペンをおろす", systemImage: "pencil")
+                Label("Pen Down", systemImage: "pencil")
             case .penColor(let color):
-                Label("ペンのいろ", systemImage: "paintpalette")
+                Label("Pen Color", systemImage: "paintpalette")
                 ColorValueButton(color: color) { onChange(.penColor($0)) }
             case .penWidth(let value):
-                Label("ペンのふとさ", systemImage: "lineweight")
+                Label("Pen Width", systemImage: "lineweight")
                 NumberValueButton(value: value) { onChange(.penWidth($0)) }
             case .fillColor(let color):
-                Label("ぬりのいろ", systemImage: "drop.fill")
+                Label("Fill Color", systemImage: "drop.fill")
                 ColorValueButton(color: color) { onChange(.fillColor($0)) }
             case .beginFill:
-                Label("ぬりはじめ", systemImage: "paintbrush.fill")
+                Label("Start Fill", systemImage: "paintbrush.fill")
             case .endFill:
-                Label("ぬりおわり", systemImage: "paintbrush")
+                Label("End Fill", systemImage: "paintbrush")
             case .repeatBlock:
                 // Containers are rendered by BlockRowView, never here.
                 EmptyView()
@@ -259,13 +257,14 @@ struct SimpleBlockLabel: View {
 /// Marks a repeat as the palette's insertion target.
 struct InsertionTargetButton: View {
     let blockID: UUID
-    let workspace: WorkspaceModel
+    let workspace: WorkspaceEditor
 
     private var isTarget: Bool { workspace.insertionTargetID == blockID }
 
     var body: some View {
         Toggle(
-            "ここへついか", systemImage: isTarget ? "arrow.down.to.line.circle.fill" : "arrow.down.to.line.circle",
+            "Add Here",
+            systemImage: isTarget ? "arrow.down.to.line.circle.fill" : "arrow.down.to.line.circle",
             isOn: Binding(
                 get: { isTarget },
                 set: { workspace.insertionTargetID = $0 ? blockID : nil }
@@ -274,24 +273,24 @@ struct InsertionTargetButton: View {
         .toggleStyle(.button)
         .labelStyle(.iconOnly)
         .tint(BlockCategory.control.color)
-        .accessibilityHint("オンにするとパレットのブロックがこのなかにはいります")
+        .accessibilityHint("When on, new palette blocks go inside this repeat")
     }
 }
 
 /// Move-up / move-down / delete for one row.
 struct RowControls: View {
     let blockID: UUID
-    let workspace: WorkspaceModel
+    let workspace: WorkspaceEditor
 
     var body: some View {
         HStack(spacing: 2) {
-            Button("うえへ", systemImage: "chevron.up") {
+            Button("Move Up", systemImage: "chevron.up") {
                 workspace.move(blockID, by: -1)
             }
-            Button("したへ", systemImage: "chevron.down") {
+            Button("Move Down", systemImage: "chevron.down") {
                 workspace.move(blockID, by: 1)
             }
-            Button("けす", systemImage: "xmark.circle", role: .destructive) {
+            Button("Delete", systemImage: "xmark.circle", role: .destructive) {
                 workspace.delete(blockID)
             }
         }

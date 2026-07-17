@@ -4,8 +4,41 @@
 <dict>
 	<!-- Merged with the generated Info.plist (GENERATE_INFOPLIST_FILE=YES).
 	     Holds only keys that have no INFOPLIST_KEY_ build setting. -->
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>TortoiseBlocks Project</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>space.hiraku.tortoiseblocks.project</string>
+			</array>
+		</dict>
+	</array>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>space.hiraku.tortoiseblocks.project</string>
+			<key>UTTypeDescription</key>
+			<string>TortoiseBlocks Project</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>tortoiseblocks</string>
+				</array>
+			</dict>
+		</dict>
 		<dict>
 			<key>UTTypeIdentifier</key>
 			<string>space.hiraku.tortoiseblocks.block</string>
