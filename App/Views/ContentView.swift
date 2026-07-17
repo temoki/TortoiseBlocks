@@ -2,46 +2,116 @@ import SwiftUI
 import TortoiseBlocksKit
 import TortoiseUI
 
-/// M0 walking skeleton: a hardcoded command stream drawn by
-/// `TortoiseCanvas(_:player:)` with full playback controls.
-/// The workspace/palette editor replaces the sample picker from M2 on.
+/// Root: palette | workspace | canvas (regular width),
+/// or a つくる / うごかす tab pair (compact width).
 struct ContentView: View {
-    @State private var tortoise = Tortoise()
-    @State private var player = TortoisePlayer()
+    @State private var workspace = WorkspaceModel()
+    @State private var runner = RunnerModel()
 
     var body: some View {
-        VStack(spacing: 0) {
-            TortoiseCanvas(tortoise, player: player)
-                .padding()
+        #if os(iOS)
+            AdaptiveRootView(workspace: workspace, runner: runner)
+        #else
+            RegularRootView(workspace: workspace, runner: runner)
+        #endif
+    }
+}
+
+#if os(iOS)
+    struct AdaptiveRootView: View {
+        let workspace: WorkspaceModel
+        let runner: RunnerModel
+        @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+        var body: some View {
+            if horizontalSizeClass == .compact {
+                CompactRootView(workspace: workspace, runner: runner)
+            } else {
+                RegularRootView(workspace: workspace, runner: runner)
+            }
+        }
+    }
+
+    struct CompactRootView: View {
+        let workspace: WorkspaceModel
+        let runner: RunnerModel
+
+        var body: some View {
+            TabView {
+                Tab("つくる", systemImage: "square.stack.3d.up") {
+                    VStack(spacing: 0) {
+                        WorkspaceView(workspace: workspace)
+                        Divider()
+                        PaletteStrip(workspace: workspace)
+                            .padding(.vertical, 8)
+                    }
+                }
+                Tab("うごかす", systemImage: "tortoise") {
+                    CanvasPane(workspace: workspace, runner: runner)
+                }
+            }
+        }
+    }
+#endif
+
+struct RegularRootView: View {
+    let workspace: WorkspaceModel
+    let runner: RunnerModel
+
+    var body: some View {
+        HStack(spacing: 0) {
+            PaletteView(workspace: workspace)
+                .frame(width: 220)
             Divider()
-            PlaybackControls(tortoise: tortoise, player: player)
-                .padding()
+            WorkspaceView(workspace: workspace)
+                .frame(minWidth: 300, idealWidth: 360, maxWidth: 440)
+            Divider()
+            CanvasPane(workspace: workspace, runner: runner)
+                .frame(maxWidth: .infinity)
         }
     }
 }
 
-/// Run / pause / step / speed controls driving a `TortoisePlayer`.
-struct PlaybackControls: View {
-    let tortoise: Tortoise
-    @Bindable var player: TortoisePlayer
+/// The drawing side: canvas + playback controls, wired to the workspace.
+struct CanvasPane: View {
+    let workspace: WorkspaceModel
+    @Bindable var runner: RunnerModel
 
     var body: some View {
+        VStack(spacing: 0) {
+            TortoiseCanvas(runner.tortoise, player: runner.player)
+                .padding()
+            Divider()
+            PlaybackControls(workspace: workspace, runner: runner)
+                .padding()
+        }
+        .alert("ブロックがおおすぎるよ", isPresented: $runner.showsExpansionError) {
+            Button("わかった", role: .cancel) {}
+        } message: {
+            Text("くりかえしのかずをちいさくしてみてね")
+        }
+    }
+}
+
+/// Run / clear / pause / step / speed, driving the runner and player.
+struct PlaybackControls: View {
+    let workspace: WorkspaceModel
+    @Bindable var runner: RunnerModel
+
+    var body: some View {
+        @Bindable var player = runner.player
         VStack(spacing: 12) {
             HStack(spacing: 16) {
-                Button("ほしをかく", systemImage: "play.fill") {
-                    run(SampleProgram.star())
+                Button("うごかす", systemImage: "play.fill") {
+                    runner.run(workspace.blocks)
                 }
-                Button("しかくをかく", systemImage: "play.fill") {
-                    run(SampleProgram.filledSquare())
-                }
-                Button("ランダムスター", systemImage: "die.face.5") {
-                    runBlocks(SampleBlocks.randomStar())
-                }
+                .buttonStyle(.borderedProminent)
+                .disabled(workspace.blocks.isEmpty)
                 Button("けす", systemImage: "trash") {
-                    tortoise.reset()
+                    runner.clear()
                 }
                 Spacer()
-                Text("コマンド: \(player.currentCommandIndex + 1)")
+                Text("コマンド: \(runner.player.currentCommandIndex + 1)")
                     .font(.body.monospacedDigit())
                     .foregroundStyle(.secondary)
             }
@@ -49,25 +119,12 @@ struct PlaybackControls: View {
                 Toggle("いちじていし", systemImage: "pause.fill", isOn: $player.isPaused)
                     .toggleStyle(.button)
                 Button("いっぽすすむ", systemImage: "forward.frame.fill") {
-                    player.step()
+                    runner.player.step()
                 }
-                .disabled(!player.isPaused)
-                SpeedSlider(player: player)
+                .disabled(!runner.player.isPaused)
+                SpeedSlider(player: runner.player)
             }
         }
-    }
-
-    private func run(_ commands: [TortoiseCommand]) {
-        tortoise.reset()
-        tortoise.apply(commands)
-    }
-
-    /// Block tree → expand (randomness evaluated here) → replay.
-    /// Runs differ every time — that's the random block at work.
-    private func runBlocks(_ blocks: [Block]) {
-        guard let expanded = try? BlockExpander.expand(blocks) else { return }
-        tortoise.reset()
-        tortoise.apply(expanded.map(\.command))
     }
 }
 
