@@ -137,7 +137,9 @@ struct PaletteEntryButton: View {
         }
         .buttonStyle(.borderedProminent)
         .tint(category.color)
-        .accessibilityHint("プログラムにブロックをついかします")
+        // Evaluated per drag, so every drag stamps a fresh Block (new ID).
+        .draggable(Block(kind: entry.kind))
+        .accessibilityHint("タップでプログラムのさいごについか。ドラッグですきなばしょへ")
     }
 }
 

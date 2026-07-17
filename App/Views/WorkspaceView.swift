@@ -31,14 +31,18 @@ struct WorkspaceView: View {
                 ContentUnavailableView(
                     "ブロックをならべよう",
                     systemImage: "square.stack.3d.up",
-                    description: Text("パレットのブロックをタップすると\nここにならびます")
+                    description: Text("パレットのブロックをタップするか\nここへドラッグしてね")
                 )
                 .frame(maxHeight: .infinity)
+                .dropDestination(for: Block.self) { items, _ in
+                    guard let block = items.first else { return false }
+                    return workspace.handleDrop(block, at: 0, inBodyOf: nil)
+                }
             } else {
                 ScrollViewReader { proxy in
                     ScrollView {
                         BlockListView(
-                            blocks: workspace.blocks, workspace: workspace,
+                            blocks: workspace.blocks, containerID: nil, workspace: workspace,
                             highlightedID: runner.currentBlockID
                         )
                         .padding()
@@ -56,17 +60,21 @@ struct WorkspaceView: View {
     }
 }
 
-/// Renders a sibling sequence of blocks (recursively via BlockRowView).
+/// Renders a sibling sequence of blocks (recursively via BlockRowView),
+/// with a drop gap before every row and after the last one.
 /// `highlightedID` is passed as plain data (not the runner model) so each
 /// row depends on exactly the value it renders.
 struct BlockListView: View {
     let blocks: [Block]
+    /// The repeat whose body this list renders; nil at the top level.
+    let containerID: UUID?
     let workspace: WorkspaceModel
     var highlightedID: UUID?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ForEach(blocks) { block in
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(blocks.enumerated()), id: \.element.id) { index, block in
+                DropGap(containerID: containerID, index: index, workspace: workspace)
                 BlockRowView(
                     block: block, workspace: workspace,
                     isHighlighted: block.id == highlightedID,
@@ -74,7 +82,56 @@ struct BlockListView: View {
                 )
                 .id(block.id)
             }
+            DropGap(
+                containerID: containerID, index: blocks.count, workspace: workspace,
+                isEmphasized: blocks.isEmpty && containerID != nil
+            )
         }
+    }
+}
+
+/// Insertion point between rows. Invisible until a drag hovers over it,
+/// then shows the accent insertion line. The trailing gap of an empty
+/// repeat body renders as an explicit "drop here" zone instead.
+struct DropGap: View {
+    let containerID: UUID?
+    let index: Int
+    let workspace: WorkspaceModel
+    var isEmphasized = false
+
+    @State private var isTargeted = false
+
+    var body: some View {
+        Group {
+            if isEmphasized {
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(
+                        isTargeted ? Color.accentColor : Color.secondary.opacity(0.4),
+                        style: StrokeStyle(lineWidth: 2, dash: [5])
+                    )
+                    .frame(height: 32)
+                    .overlay {
+                        Text("ここへドロップ")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 2)
+            } else {
+                Capsule()
+                    .fill(isTargeted ? Color.accentColor : Color.clear)
+                    .frame(height: isTargeted ? 4 : 2)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 3)
+            }
+        }
+        .contentShape(.rect)
+        .dropDestination(for: Block.self) { items, _ in
+            guard let block = items.first else { return false }
+            return workspace.handleDrop(block, at: index, inBodyOf: containerID)
+        } isTargeted: {
+            isTargeted = $0
+        }
+        .animation(.easeOut(duration: 0.12), value: isTargeted)
     }
 }
 
@@ -86,6 +143,8 @@ struct BlockRowView: View {
     let workspace: WorkspaceModel
     var isHighlighted = false
     var highlightedID: UUID?
+
+    @State private var isDropTargeted = false
 
     var body: some View {
         if case .repeatBlock(let count, let body) = block.kind {
@@ -101,16 +160,30 @@ struct BlockRowView: View {
                     RowControls(blockID: block.id, workspace: workspace)
                 }
                 .padding(8)
-                .background(BlockCategory.control.color.opacity(0.15), in: .rect(cornerRadius: 8))
+                .background(
+                    BlockCategory.control.color.opacity(isDropTargeted ? 0.35 : 0.15),
+                    in: .rect(cornerRadius: 8)
+                )
+                .draggable(block)
+                // Dropping onto the header appends into this repeat's body.
+                .dropDestination(for: Block.self) { items, _ in
+                    guard let dropped = items.first else { return false }
+                    return workspace.handleDrop(dropped, at: body.count, inBodyOf: block.id)
+                } isTargeted: {
+                    isDropTargeted = $0
+                }
 
-                BlockListView(blocks: body, workspace: workspace, highlightedID: highlightedID)
-                    .padding(.leading, 16)
-                    .overlay(alignment: .leading) {
-                        Rectangle()
-                            .fill(BlockCategory.control.color.opacity(0.5))
-                            .frame(width: 3)
-                            .padding(.leading, 4)
-                    }
+                BlockListView(
+                    blocks: body, containerID: block.id, workspace: workspace,
+                    highlightedID: highlightedID
+                )
+                .padding(.leading, 16)
+                .overlay(alignment: .leading) {
+                    Rectangle()
+                        .fill(BlockCategory.control.color.opacity(0.5))
+                        .frame(width: 3)
+                        .padding(.leading, 4)
+                }
             }
         } else {
             HStack(spacing: 8) {
@@ -130,6 +203,7 @@ struct BlockRowView: View {
                     .stroke(Color.accentColor, lineWidth: isHighlighted ? 3 : 0)
             }
             .animation(.easeOut(duration: 0.15), value: isHighlighted)
+            .draggable(block)
             .accessibilityValue(isHighlighted ? "じっこうちゅう" : "")
         }
     }

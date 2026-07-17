@@ -53,6 +53,25 @@ final class WorkspaceModel {
         commit(new)
     }
 
+    /// Handles a block drop at (containerID, index). A payload whose ID
+    /// already exists in the tree is *moved* (workspace drag); an unknown ID
+    /// is *inserted* (palette drag). Returns whether the drop was applied —
+    /// identity moves and invalid targets (own subtree, vanished container)
+    /// are rejected without touching the undo stack.
+    @discardableResult
+    func handleDrop(_ dropped: Block, at index: Int, inBodyOf containerID: UUID?) -> Bool {
+        let new: [Block]?
+        if BlockTree.block(withID: dropped.id, in: blocks) != nil {
+            new = BlockTree.moving(
+                blockWithID: dropped.id, toIndex: index, inBodyOf: containerID, in: blocks)
+        } else {
+            new = BlockTree.inserting(dropped, at: index, inBodyOf: containerID, in: blocks)
+        }
+        guard let new, new != blocks else { return false }
+        commit(new)
+        return true
+    }
+
     // MARK: - Undo / Redo
 
     func undo() {

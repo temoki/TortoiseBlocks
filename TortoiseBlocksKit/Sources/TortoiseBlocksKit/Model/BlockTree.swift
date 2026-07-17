@@ -89,6 +89,80 @@ public enum BlockTree {
         return nil
     }
 
+    /// Inserts `block` at `index` in the top level (`containerID == nil`) or
+    /// in the body of the repeat with `containerID`; the index is clamped to
+    /// the valid range. Returns `nil` if the container does not exist or is
+    /// not a repeat.
+    public static func inserting(
+        _ block: Block, at index: Int, inBodyOf containerID: UUID?, in blocks: [Block]
+    ) -> [Block]? {
+        guard let containerID else {
+            var copy = blocks
+            copy.insert(block, at: min(max(0, index), blocks.count))
+            return copy
+        }
+        for (i, candidate) in blocks.enumerated() {
+            if candidate.id == containerID {
+                guard case .repeatBlock(let count, let body) = candidate.kind else { return nil }
+                var newBody = body
+                newBody.insert(block, at: min(max(0, index), body.count))
+                var copy = blocks
+                copy[i].kind = .repeatBlock(count: count, body: newBody)
+                return copy
+            }
+            if case .repeatBlock(let count, let body) = candidate.kind,
+                let newBody = inserting(block, at: index, inBodyOf: containerID, in: body)
+            {
+                var copy = blocks
+                copy[i].kind = .repeatBlock(count: count, body: newBody)
+                return copy
+            }
+        }
+        return nil
+    }
+
+    /// Moves an existing block to `index` in the given container (drag &
+    /// drop). The index refers to the tree *before* removal — same-list
+    /// forward moves are adjusted automatically. Dropping a block inside its
+    /// own subtree returns `nil` (the destination vanishes with the
+    /// extraction), as does an unknown block or container.
+    public static func moving(
+        blockWithID id: UUID, toIndex: Int, inBodyOf containerID: UUID?, in blocks: [Block]
+    ) -> [Block]? {
+        guard
+            let (block, sourceContainer, sourceIndex, removedTree) =
+                extracting(blockWithID: id, from: blocks, container: nil)
+        else { return nil }
+        var index = toIndex
+        if sourceContainer == containerID, sourceIndex < toIndex {
+            index -= 1
+        }
+        return inserting(block, at: index, inBodyOf: containerID, in: removedTree)
+    }
+
+    /// Removes the block, reporting where it was: (block, its container's
+    /// ID or nil for top level, its index there, the remaining tree).
+    private static func extracting(
+        blockWithID id: UUID, from blocks: [Block], container: UUID?
+    ) -> (block: Block, containerID: UUID?, index: Int, tree: [Block])? {
+        if let index = blocks.firstIndex(where: { $0.id == id }) {
+            var copy = blocks
+            let block = copy.remove(at: index)
+            return (block, container, index, copy)
+        }
+        for (i, candidate) in blocks.enumerated() {
+            if case .repeatBlock(let count, let body) = candidate.kind,
+                let (block, containerID, index, newBody) =
+                    extracting(blockWithID: id, from: body, container: candidate.id)
+            {
+                var copy = blocks
+                copy[i].kind = .repeatBlock(count: count, body: newBody)
+                return (block, containerID, index, copy)
+            }
+        }
+        return nil
+    }
+
     /// Replaces the block's kind (argument edits build the new kind from the
     /// old one, preserving a repeat's body). Returns `nil` if not found.
     public static func updatingKind(

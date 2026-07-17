@@ -89,6 +89,79 @@ struct BlockTreeTests {
         #expect(outerBody.map(\.id) == [innerRepeat.id, turn.id])
     }
 
+    @Test("insert at an index, top level and nested, with clamping")
+    func insertAtIndex() throws {
+        let new = Block(kind: .penUp)
+        let top = try #require(BlockTree.inserting(new, at: 1, inBodyOf: nil, in: tree))
+        #expect(top.map(\.id) == [forward.id, new.id, outerRepeat.id])
+
+        let clamped = try #require(BlockTree.inserting(new, at: 99, inBodyOf: nil, in: tree))
+        #expect(clamped.last?.id == new.id)
+
+        let nested = try #require(BlockTree.inserting(new, at: 0, inBodyOf: outerRepeat.id, in: tree))
+        guard case .repeatBlock(_, let body) = nested[1].kind else {
+            Issue.record("outer repeat missing")
+            return
+        }
+        #expect(body.map(\.id) == [new.id, turn.id, innerRepeat.id])
+
+        #expect(BlockTree.inserting(new, at: 0, inBodyOf: forward.id, in: tree) == nil)
+    }
+
+    @Test("move to an index within the same list adjusts for the removal")
+    func moveToIndexSameList() throws {
+        // Gap index 2 (after outerRepeat) for the block at index 0.
+        let result = try #require(
+            BlockTree.moving(blockWithID: forward.id, toIndex: 2, inBodyOf: nil, in: tree))
+        #expect(result.map(\.id) == [outerRepeat.id, forward.id])
+
+        // Moving onto its own position is an identity operation.
+        let identity = try #require(
+            BlockTree.moving(blockWithID: forward.id, toIndex: 0, inBodyOf: nil, in: tree))
+        #expect(identity == tree)
+    }
+
+    @Test("move across containers, in and out of a repeat body")
+    func moveAcrossContainers() throws {
+        // Top-level forward into the inner repeat's body.
+        let inward = try #require(
+            BlockTree.moving(
+                blockWithID: forward.id, toIndex: 0, inBodyOf: innerRepeat.id, in: tree))
+        #expect(inward.count == 1)
+        guard
+            case .repeatBlock(_, let outerBody) = inward[0].kind,
+            case .repeatBlock(_, let innerBody) = outerBody[1].kind
+        else {
+            Issue.record("tree shape changed unexpectedly")
+            return
+        }
+        #expect(innerBody.map(\.id) == [forward.id, home.id])
+
+        // Nested home out to the top level.
+        let outward = try #require(
+            BlockTree.moving(blockWithID: home.id, toIndex: 0, inBodyOf: nil, in: tree))
+        #expect(outward.first?.id == home.id)
+        guard case .repeatBlock(_, let newOuter) = outward[2].kind,
+            case .repeatBlock(_, let newInner) = newOuter[1].kind
+        else {
+            Issue.record("tree shape changed unexpectedly")
+            return
+        }
+        #expect(newInner.isEmpty)
+    }
+
+    @Test("moving a repeat into its own subtree is rejected")
+    func moveIntoOwnSubtree() {
+        #expect(
+            BlockTree.moving(
+                blockWithID: outerRepeat.id, toIndex: 0, inBodyOf: innerRepeat.id, in: tree)
+                == nil)
+        #expect(
+            BlockTree.moving(
+                blockWithID: outerRepeat.id, toIndex: 0, inBodyOf: outerRepeat.id, in: tree)
+                == nil)
+    }
+
     @Test("update a nested block's kind in place")
     func updateNestedKind() throws {
         let result = try #require(
