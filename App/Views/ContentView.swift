@@ -1,6 +1,7 @@
 import SwiftUI
 import TortoiseBlocksKit
 import TortoiseUI
+import UniformTypeIdentifiers
 
 /// Root: palette | workspace | canvas (regular width),
 /// or a Build / Run tab pair (compact width).
@@ -83,8 +84,10 @@ struct CanvasPane: View {
     @Bindable var runner: RunnerModel
 
     @State private var showsCode = false
-    @State private var svgExport: ExportFile?
-    @State private var pngExport: ExportFile?
+    // One presentation state for both formats: attaching two fileExporter
+    // modifiers to the same view lets the later one swallow the earlier.
+    @State private var exportFile: ExportFile?
+    @State private var exportType: UTType = .png
 
     var body: some View {
         VStack(spacing: 0) {
@@ -99,10 +102,10 @@ struct CanvasPane: View {
                 Spacer()
                 Menu("Export", systemImage: "square.and.arrow.up") {
                     Button("SVG") {
-                        svgExport = runner.svgData().map(ExportFile.init)
+                        export(runner.svgData(), as: .svg)
                     }
                     Button("PNG") {
-                        pngExport = runner.pngData().map(ExportFile.init)
+                        export(runner.pngData(), as: .png)
                     }
                 }
                 .disabled(!runner.canExport)
@@ -132,18 +135,18 @@ struct CanvasPane: View {
         }
         .fileExporter(
             isPresented: Binding(
-                get: { svgExport != nil }, set: { if !$0 { svgExport = nil } }),
-            document: svgExport, contentType: .svg, defaultFilename: String(localized: "Drawing")
+                get: { exportFile != nil }, set: { if !$0 { exportFile = nil } }),
+            document: exportFile, contentType: exportType,
+            defaultFilename: String(localized: "Drawing")
         ) { _ in
-            svgExport = nil
+            exportFile = nil
         }
-        .fileExporter(
-            isPresented: Binding(
-                get: { pngExport != nil }, set: { if !$0 { pngExport = nil } }),
-            document: pngExport, contentType: .png, defaultFilename: String(localized: "Drawing")
-        ) { _ in
-            pngExport = nil
-        }
+    }
+
+    private func export(_ data: Data?, as type: UTType) {
+        guard let data else { return }
+        exportType = type
+        exportFile = ExportFile(data: data)
     }
 }
 
