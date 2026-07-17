@@ -2,8 +2,10 @@ import SwiftUI
 import TortoiseBlocksKit
 
 /// The program pane: title bar with undo/redo, then the block tree.
+/// During playback the executing block is highlighted and kept in view.
 struct WorkspaceView: View {
     let workspace: WorkspaceModel
+    let runner: RunnerModel
 
     var body: some View {
         VStack(spacing: 0) {
@@ -33,10 +35,21 @@ struct WorkspaceView: View {
                 )
                 .frame(maxHeight: .infinity)
             } else {
-                ScrollView {
-                    BlockListView(blocks: workspace.blocks, workspace: workspace)
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        BlockListView(
+                            blocks: workspace.blocks, workspace: workspace,
+                            highlightedID: runner.currentBlockID
+                        )
                         .padding()
                         .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .onChange(of: runner.currentBlockID) { _, id in
+                        guard let id else { return }
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            proxy.scrollTo(id, anchor: .center)
+                        }
+                    }
                 }
             }
         }
@@ -44,14 +57,22 @@ struct WorkspaceView: View {
 }
 
 /// Renders a sibling sequence of blocks (recursively via BlockRowView).
+/// `highlightedID` is passed as plain data (not the runner model) so each
+/// row depends on exactly the value it renders.
 struct BlockListView: View {
     let blocks: [Block]
     let workspace: WorkspaceModel
+    var highlightedID: UUID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             ForEach(blocks) { block in
-                BlockRowView(block: block, workspace: workspace)
+                BlockRowView(
+                    block: block, workspace: workspace,
+                    isHighlighted: block.id == highlightedID,
+                    highlightedID: highlightedID
+                )
+                .id(block.id)
             }
         }
     }
@@ -59,9 +80,12 @@ struct BlockListView: View {
 
 /// One block in the workspace. A repeat renders as a container with its
 /// body indented beneath it; every row carries move/delete controls.
+/// `isHighlighted` marks the executing block during playback.
 struct BlockRowView: View {
     let block: Block
     let workspace: WorkspaceModel
+    var isHighlighted = false
+    var highlightedID: UUID?
 
     var body: some View {
         if case .repeatBlock(let count, let body) = block.kind {
@@ -79,7 +103,7 @@ struct BlockRowView: View {
                 .padding(8)
                 .background(BlockCategory.control.color.opacity(0.15), in: .rect(cornerRadius: 8))
 
-                BlockListView(blocks: body, workspace: workspace)
+                BlockListView(blocks: body, workspace: workspace, highlightedID: highlightedID)
                     .padding(.leading, 16)
                     .overlay(alignment: .leading) {
                         Rectangle()
@@ -97,7 +121,16 @@ struct BlockRowView: View {
                 RowControls(blockID: block.id, workspace: workspace)
             }
             .padding(8)
-            .background(block.kind.category.color.opacity(0.15), in: .rect(cornerRadius: 8))
+            .background(
+                block.kind.category.color.opacity(isHighlighted ? 0.4 : 0.15),
+                in: .rect(cornerRadius: 8)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.accentColor, lineWidth: isHighlighted ? 3 : 0)
+            }
+            .animation(.easeOut(duration: 0.15), value: isHighlighted)
+            .accessibilityValue(isHighlighted ? "じっこうちゅう" : "")
         }
     }
 }

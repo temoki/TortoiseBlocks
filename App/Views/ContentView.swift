@@ -40,7 +40,7 @@ struct ContentView: View {
             TabView {
                 Tab("つくる", systemImage: "square.stack.3d.up") {
                     VStack(spacing: 0) {
-                        WorkspaceView(workspace: workspace)
+                        WorkspaceView(workspace: workspace, runner: runner)
                         Divider()
                         PaletteStrip(workspace: workspace)
                             .padding(.vertical, 8)
@@ -63,7 +63,7 @@ struct RegularRootView: View {
             PaletteView(workspace: workspace)
                 .frame(width: 220)
             Divider()
-            WorkspaceView(workspace: workspace)
+            WorkspaceView(workspace: workspace, runner: runner)
                 .frame(minWidth: 300, idealWidth: 360, maxWidth: 440)
             Divider()
             CanvasPane(workspace: workspace, runner: runner)
@@ -124,7 +124,35 @@ struct PlaybackControls: View {
                 .disabled(!runner.player.isPaused)
                 SpeedSlider(player: runner.player)
             }
+            PlaybackScrubber(runner: runner)
         }
+    }
+}
+
+/// Timeline scrubber: shows the playback position and seeks on drag —
+/// forward and backward, even mid-run.
+struct PlaybackScrubber: View {
+    let runner: RunnerModel
+
+    var body: some View {
+        HStack {
+            Slider(value: position, in: -1...Double(max(runner.commandCount - 1, 0)), step: 1) {
+                Text("さいせいいち")
+            }
+            .labelsHidden()
+            .disabled(runner.commandCount == 0)
+            Text("\(runner.player.currentCommandIndex + 1) / \(runner.commandCount)")
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .frame(minWidth: 70, alignment: .trailing)
+        }
+    }
+
+    private var position: Binding<Double> {
+        Binding(
+            get: { Double(runner.player.currentCommandIndex) },
+            set: { runner.player.seek(to: Int($0.rounded())) }
+        )
     }
 }
 

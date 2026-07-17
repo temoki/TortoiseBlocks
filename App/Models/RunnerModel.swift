@@ -16,6 +16,18 @@ final class RunnerModel {
     /// `expandedBlockIDs[player.currentCommandIndex]` is the executing block.
     private(set) var expandedBlockIDs: [UUID] = []
 
+    /// The block the canvas is currently executing (nil when idle/finished
+    /// past the end). Observable through `player.currentCommandIndex`, so
+    /// the workspace highlight tracks playback live.
+    var currentBlockID: UUID? {
+        let index = player.currentCommandIndex
+        guard expandedBlockIDs.indices.contains(index) else { return nil }
+        return expandedBlockIDs[index]
+    }
+
+    /// Total command count of the last run (the scrubber's range).
+    var commandCount: Int { expandedBlockIDs.count }
+
     /// Set when expansion fails (command limit); drives a kid-friendly alert.
     var showsExpansionError = false
 
