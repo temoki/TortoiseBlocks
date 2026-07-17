@@ -76,15 +76,51 @@ struct RegularRootView: View {
     }
 }
 
-/// The drawing side: canvas + playback controls, wired to the workspace.
+/// The drawing side: canvas (or the generated-code pane) + playback
+/// controls, wired to the workspace.
 struct CanvasPane: View {
     let workspace: WorkspaceEditor
     @Bindable var runner: RunnerModel
 
+    @State private var showsCode = false
+    @State private var svgExport: ExportFile?
+    @State private var pngExport: ExportFile?
+
     var body: some View {
         VStack(spacing: 0) {
-            TortoiseCanvas(runner.tortoise, player: runner.player)
-                .padding()
+            HStack {
+                Picker("View", selection: $showsCode) {
+                    Text("Canvas").tag(false)
+                    Text("Code").tag(true)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(maxWidth: 220)
+                Spacer()
+                Menu("Export", systemImage: "square.and.arrow.up") {
+                    Button("SVG") {
+                        svgExport = runner.svgData().map(ExportFile.init)
+                    }
+                    Button("PNG") {
+                        pngExport = runner.pngData().map(ExportFile.init)
+                    }
+                }
+                .disabled(!runner.canExport)
+                .fixedSize()
+            }
+            .padding([.horizontal, .top])
+            // The canvas stays in the hierarchy while the code pane covers
+            // it (opacity, not if/else) so playback identity is preserved.
+            ZStack {
+                TortoiseCanvas(runner.tortoise, player: runner.player)
+                    .padding()
+                    .opacity(showsCode ? 0 : 1)
+                    .accessibilityHidden(showsCode)
+                if showsCode {
+                    CodePane(code: SwiftCodeGenerator.code(for: workspace.blocks))
+                        .padding()
+                }
+            }
             Divider()
             PlaybackControls(workspace: workspace, runner: runner)
                 .padding()
@@ -93,6 +129,20 @@ struct CanvasPane: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("Try a smaller repeat count.")
+        }
+        .fileExporter(
+            isPresented: Binding(
+                get: { svgExport != nil }, set: { if !$0 { svgExport = nil } }),
+            document: svgExport, contentType: .svg, defaultFilename: String(localized: "Drawing")
+        ) { _ in
+            svgExport = nil
+        }
+        .fileExporter(
+            isPresented: Binding(
+                get: { pngExport != nil }, set: { if !$0 { pngExport = nil } }),
+            document: pngExport, contentType: .png, defaultFilename: String(localized: "Drawing")
+        ) { _ in
+            pngExport = nil
         }
     }
 }

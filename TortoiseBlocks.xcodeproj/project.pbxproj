@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		1A0000000000000000000040 /* TortoiseBlocksKit in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000000000000000000050 /* TortoiseBlocksKit */; };
 		1A0000000000000000000041 /* TortoiseUI in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000000000000000000051 /* TortoiseUI */; };
+		1A0000000000000000000042 /* TortoiseSVG in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000000000000000000052 /* TortoiseSVG */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +31,7 @@
 			files = (
 				1A0000000000000000000040 /* TortoiseBlocksKit in Frameworks */,
 				1A0000000000000000000041 /* TortoiseUI in Frameworks */,
+				1A0000000000000000000042 /* TortoiseSVG in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -74,6 +76,7 @@
 			packageProductDependencies = (
 				1A0000000000000000000050 /* TortoiseBlocksKit */,
 				1A0000000000000000000051 /* TortoiseUI */,
+				1A0000000000000000000052 /* TortoiseSVG */,
 			);
 			productName = TortoiseBlocks;
 			productReference = 1A0000000000000000000010 /* TortoiseBlocks.app */;
@@ -296,6 +299,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 1A0000000000000000000061 /* XCRemoteSwiftPackageReference "TortoiseGraphics2" */;
 			productName = TortoiseUI;
+		};
+		1A0000000000000000000052 /* TortoiseSVG */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1A0000000000000000000061 /* XCRemoteSwiftPackageReference "TortoiseGraphics2" */;
+			productName = TortoiseSVG;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

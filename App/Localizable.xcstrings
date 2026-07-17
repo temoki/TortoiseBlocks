@@ -1,316 +1,686 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-    "Add Here" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ここへついか" } }
+  "sourceLanguage": "en",
+  "strings": {
+    "Add Here": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ここへついか"
+          }
+        }
       }
     },
-    "Backward" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "うしろへ" } }
+    "Backward": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "うしろへ"
+          }
+        }
       }
     },
-    "black" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "くろ" } }
+    "Build": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "つくる"
+          }
+        }
       }
     },
-    "blue" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "あお" } }
+    "Build with Blocks": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ブロックをならべよう"
+          }
+        }
       }
     },
-    "Build" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "つくる" } }
+    "Canvas": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キャンバス"
+          }
+        }
       }
     },
-    "Build with Blocks" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ブロックをならべよう" } }
+    "Clear": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "けす"
+          }
+        }
       }
     },
-    "Clear" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "けす" } }
+    "Code": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コード"
+          }
+        }
       }
     },
-    "Color %@" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "いろ %@" } }
+    "Color %@": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "いろ %@"
+          }
+        }
       }
     },
-    "Command: %lld" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "コマンド: %lld" } }
+    "Command: %lld": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コマンド: %lld"
+          }
+        }
       }
     },
-    "Control" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "せいぎょ" } }
+    "Control": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "せいぎょ"
+          }
+        }
       }
     },
-    "cyan" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "みずいろ" } }
+    "Copy Code": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コードをコピー"
+          }
+        }
       }
     },
-    "Delete" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "けす" } }
+    "Delete": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "けす"
+          }
+        }
       }
     },
-    "Dice" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "サイコロ" } }
+    "Dice": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サイコロ"
+          }
+        }
       }
     },
-    "Drop Here" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ここへドロップ" } }
+    "Drawing": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "さくひん"
+          }
+        }
       }
     },
-    "End Fill" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ぬりおわり" } }
+    "Drop Here": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ここへドロップ"
+          }
+        }
       }
     },
-    "Fill" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ぬり" } }
+    "End Fill": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ぬりおわり"
+          }
+        }
       }
     },
-    "Fill Color" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ぬりのいろ" } }
+    "Export": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "かきだす"
+          }
+        }
       }
     },
-    "Forward" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "まえへ" } }
+    "Fill": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ぬり"
+          }
+        }
       }
     },
-    "Go Home" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ホームへもどる" } }
+    "Fill Color": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ぬりのいろ"
+          }
+        }
       }
     },
-    "green" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "みどり" } }
+    "Forward": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "まえへ"
+          }
+        }
       }
     },
-    "magenta" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "マゼンタ" } }
+    "Go Home": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ホームへもどる"
+          }
+        }
       }
     },
-    "Maximum" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "さいだい" } }
+    "Maximum": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "さいだい"
+          }
+        }
       }
     },
-    "Minimum" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "さいしょう" } }
+    "Minimum": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "さいしょう"
+          }
+        }
       }
     },
-    "Motion" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "うごき" } }
+    "Motion": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "うごき"
+          }
+        }
       }
     },
-    "Move Down" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "したへ" } }
+    "Move Down": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "したへ"
+          }
+        }
       }
     },
-    "Move Up" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "うえへ" } }
+    "Move Up": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "うえへ"
+          }
+        }
       }
     },
-    "Number" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "すうじ" } }
+    "Number": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すうじ"
+          }
+        }
       }
     },
-    "Number %@" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "すうじ %@" } }
+    "Number %@": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すうじ %@"
+          }
+        }
       }
     },
-    "OK" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "わかった" } }
+    "OK": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "わかった"
+          }
+        }
       }
     },
-    "orange" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "オレンジ" } }
+    "Pause": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "いちじていし"
+          }
+        }
       }
     },
-    "Pause" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "いちじていし" } }
+    "Pen": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ペン"
+          }
+        }
       }
     },
-    "Pen" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ペン" } }
+    "Pen Color": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ペンのいろ"
+          }
+        }
       }
     },
-    "Pen Color" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ペンのいろ" } }
+    "Pen Down": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ペンをおろす"
+          }
+        }
       }
     },
-    "Pen Down" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ペンをおろす" } }
+    "Pen Up": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ペンをあげる"
+          }
+        }
       }
     },
-    "Pen Up" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ペンをあげる" } }
+    "Pen Width": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ペンのふとさ"
+          }
+        }
       }
     },
-    "Pen Width" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ペンのふとさ" } }
+    "Position": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "さいせいいち"
+          }
+        }
       }
     },
-    "Position" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "さいせいいち" } }
+    "Program": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プログラム"
+          }
+        }
       }
     },
-    "Program" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プログラム" } }
+    "Redo": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "やりなおす"
+          }
+        }
       }
     },
-    "purple" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "むらさき" } }
+    "Repeat": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "くりかえす"
+          }
+        }
       }
     },
-    "red" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "あか" } }
+    "Run": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "うごかす"
+          }
+        }
       }
     },
-    "Redo" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "やりなおす" } }
+    "Running": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "じっこうちゅう"
+          }
+        }
       }
     },
-    "Repeat" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "くりかえす" } }
+    "Speed": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "はやさ"
+          }
+        }
       }
     },
-    "Run" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "うごかす" } }
+    "Start Fill": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ぬりはじめ"
+          }
+        }
       }
     },
-    "Running" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "じっこうちゅう" } }
+    "Step": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "いっぽすすむ"
+          }
+        }
       }
     },
-    "Speed" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "はやさ" } }
+    "Tap a palette block, or drag one here": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パレットのブロックをタップするか\nここへドラッグしてね"
+          }
+        }
       }
     },
-    "Start Fill" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ぬりはじめ" } }
+    "Tap to add to the end of the program. Drag to place anywhere.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タップでプログラムのさいごについか。ドラッグですきなばしょへ"
+          }
+        }
       }
     },
-    "Step" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "いっぽすすむ" } }
+    "Tap to change the number": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タップしてすうじをかえます"
+          }
+        }
       }
     },
-    "Tap a palette block, or drag one here" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "パレットのブロックをタップするか\nここへドラッグしてね" } }
+    "Tap to choose a color": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タップしていろをえらびます"
+          }
+        }
       }
     },
-    "Tap to add to the end of the program. Drag to place anywhere." : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "タップでプログラムのさいごについか。ドラッグですきなばしょへ" } }
+    "This file was made with a newer version of TortoiseBlocks.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あたらしいバージョンの TortoiseBlocks でつくられたファイルです。"
+          }
+        }
       }
     },
-    "Tap to change the number" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "タップしてすうじをかえます" } }
+    "Too Many Blocks!": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ブロックがおおすぎるよ"
+          }
+        }
       }
     },
-    "Tap to choose a color" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "タップしていろをえらびます" } }
+    "Try a smaller repeat count.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "くりかえしのかずをちいさくしてみてね"
+          }
+        }
       }
     },
-    "This file was made with a newer version of TortoiseBlocks." : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "あたらしいバージョンの TortoiseBlocks でつくられたファイルです。" } }
+    "Turn Left": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ひだりへまわる"
+          }
+        }
       }
     },
-    "times" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "かい" } }
+    "Turn Right": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "みぎへまわる"
+          }
+        }
       }
     },
-    "Too Many Blocks!" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ブロックがおおすぎるよ" } }
+    "Type": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "しゅるい"
+          }
+        }
       }
     },
-    "Try a smaller repeat count." : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "くりかえしのかずをちいさくしてみてね" } }
+    "Undo": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "もどす"
+          }
+        }
       }
     },
-    "Turn Left" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ひだりへまわる" } }
+    "View": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ひょうじ"
+          }
+        }
       }
     },
-    "Turn Right" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "みぎへまわる" } }
+    "When on, new palette blocks go inside this repeat": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オンにするとパレットのブロックがこのなかにはいります"
+          }
+        }
       }
     },
-    "Type" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "しゅるい" } }
+    "black": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "くろ"
+          }
+        }
       }
     },
-    "Undo" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "もどす" } }
+    "blue": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あお"
+          }
+        }
       }
     },
-    "When on, new palette blocks go inside this repeat" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "オンにするとパレットのブロックがこのなかにはいります" } }
+    "cyan": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "みずいろ"
+          }
+        }
       }
     },
-    "white" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "しろ" } }
+    "green": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "みどり"
+          }
+        }
       }
     },
-    "yellow" : {
-      "localizations" : {
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "きいろ" } }
+    "magenta": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "マゼンタ"
+          }
+        }
+      }
+    },
+    "orange": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オレンジ"
+          }
+        }
+      }
+    },
+    "purple": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "むらさき"
+          }
+        }
+      }
+    },
+    "red": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あか"
+          }
+        }
+      }
+    },
+    "times": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "かい"
+          }
+        }
+      }
+    },
+    "white": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "しろ"
+          }
+        }
+      }
+    },
+    "yellow": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "きいろ"
+          }
+        }
       }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }
