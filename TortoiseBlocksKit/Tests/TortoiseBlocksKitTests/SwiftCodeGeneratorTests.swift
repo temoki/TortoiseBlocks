@@ -67,6 +67,42 @@ struct SwiftCodeGeneratorTests {
         #expect(code.hasSuffix("🐢.forward(100)"))
     }
 
+    @Test("variables declare up front, then assign, add, and read as Swift")
+    func variableCode() {
+        let blocks = [
+            Block(kind: .setVariable(name: "🌟", value: .literal(5))),
+            Block(
+                kind: .repeatBlock(
+                    count: .literal(20),
+                    body: [
+                        Block(kind: .forward(.variable("🌟"))),
+                        Block(kind: .turnRight(.literal(92))),
+                        Block(kind: .addVariable(name: "🌟", value: .literal(5))),
+                    ]
+                )),
+        ]
+        let expected = """
+            let 🐢 = Tortoise()
+            var 🌟 = 0.0
+            🌟 = 5
+            for _ in 1...20 {
+                🐢.forward(🌟)
+                🐢.right(92)
+                🌟 += 5
+            }
+            """
+        #expect(SwiftCodeGenerator.code(for: blocks) == expected)
+    }
+
+    @Test("a variable repeat count renders as Int(name)")
+    func variableCountCode() {
+        let code = SwiftCodeGenerator.code(for: [
+            Block(kind: .repeatBlock(count: .variable("💖"), body: [Block(kind: .home)]))
+        ])
+        #expect(code.contains("var 💖 = 0.0"))
+        #expect(code.contains("for _ in 1...Int(💖) {"))
+    }
+
     @Test("a random color renders as a pick from every non-white preset")
     func randomColorCode() {
         let code = SwiftCodeGenerator.code(for: [Block(kind: .penColor(.random))])

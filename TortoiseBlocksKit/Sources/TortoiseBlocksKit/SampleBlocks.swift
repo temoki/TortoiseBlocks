@@ -34,6 +34,25 @@ public enum SampleBlocks {
         ]
     }
 
+    /// A rotating square spiral — the step lives in a box (variable) that
+    /// grows every lap, showcasing set/add + a variable in a value slot.
+    public static func spiral() -> [Block] {
+        [
+            Block(kind: .penColor(.literal(.blue))),
+            Block(kind: .penWidth(.literal(2))),
+            Block(kind: .setVariable(name: "🌟", value: .literal(5))),
+            Block(
+                kind: .repeatBlock(
+                    count: .literal(40),
+                    body: [
+                        Block(kind: .forward(.variable("🌟"))),
+                        Block(kind: .turnRight(.literal(92))),
+                        Block(kind: .addVariable(name: "🌟", value: .literal(5))),
+                    ]
+                )),
+        ]
+    }
+
     /// A filled square — fill color, four repeated sides, then close the fill.
     public static func filledSquare() -> [Block] {
         [

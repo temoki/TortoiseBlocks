@@ -11,12 +11,42 @@
         }
       }
     },
+    "Add to Box": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "はこにたす"
+          }
+        }
+      }
+    },
     "Backward": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
             "value": "うしろへ"
+          }
+        }
+      }
+    },
+    "Box": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "はこ"
+          }
+        }
+      }
+    },
+    "Box %@": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "はこ %@"
           }
         }
       }
@@ -291,6 +321,16 @@
         }
       }
     },
+    "New Name": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あたらしいなまえ"
+          }
+        }
+      }
+    },
     "Number": {
       "localizations": {
         "ja": {
@@ -401,6 +441,16 @@
         }
       }
     },
+    "Put in Box": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "はこにいれる"
+          }
+        }
+      }
+    },
     "Redo": {
       "localizations": {
         "ja": {
@@ -457,6 +507,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "サンプル: しかくをぬる"
+          }
+        }
+      }
+    },
+    "Sample: Spiral": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サンプル: うずまきをかく"
           }
         }
       }
@@ -551,6 +611,16 @@
         }
       }
     },
+    "Tap to choose a box": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タップしてはこをえらびます"
+          }
+        }
+      }
+    },
     "Tap to choose a color": {
       "localizations": {
         "ja": {
@@ -627,6 +697,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "もどす"
+          }
+        }
+      }
+    },
+    "Use": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "つかう"
+          }
+        }
+      }
+    },
+    "Variables": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "へんすう"
           }
         }
       }

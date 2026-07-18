@@ -162,6 +162,41 @@ struct BlockTreeTests {
                 == nil)
     }
 
+    @Test("usedVariableNames lists first appearances, slots and targets alike")
+    func usedVariableNames() {
+        #expect(BlockTree.usedVariableNames(in: tree).isEmpty)
+        let blocks = [
+            Block(kind: .setVariable(name: "🌟", value: .literal(5))),
+            Block(
+                kind: .repeatBlock(
+                    count: .variable("はやさ"),
+                    body: [
+                        Block(kind: .forward(.variable("🌟"))),
+                        Block(kind: .addVariable(name: "💖", value: .variable("はやさ"))),
+                    ]
+                )),
+        ]
+        #expect(BlockTree.usedVariableNames(in: blocks) == ["🌟", "はやさ", "💖"])
+    }
+
+    @Test("renamingVariable rewrites every occurrence; unused names are no-ops")
+    func renameVariable() throws {
+        let blocks = [
+            Block(kind: .setVariable(name: "🌟", value: .variable("🌟"))),
+            Block(
+                kind: .repeatBlock(
+                    count: .variable("🌟"),
+                    body: [Block(kind: .forward(.variable("🌟")))]
+                )),
+        ]
+        let renamed = try #require(BlockTree.renamingVariable("🌟", to: "ほし", in: blocks))
+        #expect(BlockTree.usedVariableNames(in: renamed) == ["ほし"])
+        // Rename is an argument edit — block identity survives.
+        #expect(renamed.map(\.id) == blocks.map(\.id))
+        #expect(BlockTree.renamingVariable("💖", to: "ほし", in: blocks) == nil)
+        #expect(BlockTree.renamingVariable("🌟", to: "🌟", in: blocks) == nil)
+    }
+
     @Test("update a nested block's kind in place")
     func updateNestedKind() throws {
         let result = try #require(

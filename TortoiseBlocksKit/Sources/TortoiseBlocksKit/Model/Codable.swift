@@ -38,10 +38,13 @@ private func singleKnownKey<Keys: CodingKey>(
 // MARK: - NumberValue
 
 extension NumberValue: Codable {
-    /// Wire format: `{"literal":100}` / `{"random":{"min":50,"max":150}}`.
+    /// Wire format: `{"literal":100}` / `{"random":{"min":50,"max":150}}` /
+    /// `{"variable":"🌟"}`. The variable shape is what bumps a document to
+    /// schema version 2 (`BlocksProject.requiredSchemaVersion`).
     private enum CodingKeys: String, CodingKey {
         case literal
         case random
+        case variable
     }
 
     private enum RandomKeys: String, CodingKey {
@@ -61,6 +64,8 @@ extension NumberValue: Codable {
                 min: try payload.decode(Double.self, forKey: .min),
                 max: try payload.decode(Double.self, forKey: .max)
             )
+        case .variable:
+            self = .variable(try container.decode(String.self, forKey: .variable))
         }
     }
 
@@ -73,6 +78,8 @@ extension NumberValue: Codable {
             var payload = container.nestedContainer(keyedBy: RandomKeys.self, forKey: .random)
             try payload.encode(min, forKey: .min)
             try payload.encode(max, forKey: .max)
+        case .variable(let name):
+            try container.encode(name, forKey: .variable)
         }
     }
 }
@@ -135,11 +142,18 @@ extension BlockKind: Codable {
         case beginFill
         case endFill
         case repeatBlock = "repeat"
+        case setVariable
+        case addVariable
     }
 
     private enum RepeatKeys: String, CodingKey {
         case count
         case body
+    }
+
+    private enum VariableKeys: String, CodingKey {
+        case name
+        case value
     }
 
     public init(from decoder: any Decoder) throws {
@@ -172,6 +186,20 @@ extension BlockKind: Codable {
             self = .repeatBlock(
                 count: try payload.decode(NumberValue.self, forKey: .count),
                 body: try payload.decode([Block].self, forKey: .body)
+            )
+        case .setVariable:
+            let payload = try container.nestedContainer(
+                keyedBy: VariableKeys.self, forKey: .setVariable)
+            self = .setVariable(
+                name: try payload.decode(String.self, forKey: .name),
+                value: try payload.decode(NumberValue.self, forKey: .value)
+            )
+        case .addVariable:
+            let payload = try container.nestedContainer(
+                keyedBy: VariableKeys.self, forKey: .addVariable)
+            self = .addVariable(
+                name: try payload.decode(String.self, forKey: .name),
+                value: try payload.decode(NumberValue.self, forKey: .value)
             )
         }
     }
@@ -212,6 +240,16 @@ extension BlockKind: Codable {
             var payload = container.nestedContainer(keyedBy: RepeatKeys.self, forKey: .repeatBlock)
             try payload.encode(count, forKey: .count)
             try payload.encode(body, forKey: .body)
+        case .setVariable(let name, let value):
+            var payload = container.nestedContainer(
+                keyedBy: VariableKeys.self, forKey: .setVariable)
+            try payload.encode(name, forKey: .name)
+            try payload.encode(value, forKey: .value)
+        case .addVariable(let name, let value):
+            var payload = container.nestedContainer(
+                keyedBy: VariableKeys.self, forKey: .addVariable)
+            try payload.encode(name, forKey: .name)
+            try payload.encode(value, forKey: .value)
         }
     }
 }

@@ -55,4 +55,10 @@ public enum BlockKind: Hashable, Sendable {
     // MARK: Control
     /// ◯かい くりかえす — the only tree-forming block in the initial set.
     case repeatBlock(count: NumberValue, body: [Block])
+
+    // MARK: Variables
+    /// はこに いれる — set the named variable ("box") to the value.
+    case setVariable(name: String, value: NumberValue)
+    /// はこに たす — add the value to the named variable.
+    case addVariable(name: String, value: NumberValue)
 }

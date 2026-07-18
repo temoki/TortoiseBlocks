@@ -3,10 +3,15 @@
 ///
 /// The output is language-independent (API names as-is) and mirrors what
 /// `BlockExpander` executes: a repeat becomes a `for` loop, a random value
-/// becomes `Double.random(in:)` (`Int.random(in:)` for repeat counts).
+/// becomes `Double.random(in:)` (`Int.random(in:)` for repeat counts), and
+/// every used variable becomes a `var name = 0.0` declaration up front
+/// (matching the expander's "unset reads 0" rule).
 public enum SwiftCodeGenerator {
     public static func code(for blocks: [Block]) -> String {
         var lines = ["let 🐢 = Tortoise()"]
+        for name in BlockTree.usedVariableNames(in: blocks) {
+            lines.append("var \(name) = 0.0")
+        }
         append(blocks, to: &lines, indent: 0)
         return lines.joined(separator: "\n")
     }
@@ -43,6 +48,10 @@ public enum SwiftCodeGenerator {
                 lines.append("\(pad)for _ in 1...\(countExpression(count)) {")
                 append(body, to: &lines, indent: indent + 1)
                 lines.append("\(pad)}")
+            case .setVariable(let name, let value):
+                lines.append("\(pad)\(name) = \(doubleExpression(value))")
+            case .addVariable(let name, let value):
+                lines.append("\(pad)\(name) += \(doubleExpression(value))")
             }
         }
     }
@@ -55,6 +64,8 @@ public enum SwiftCodeGenerator {
             return format(value)
         case .random(let min, let max):
             return "Double.random(in: \(format(min))...\(format(max)))"
+        case .variable(let name):
+            return name
         }
     }
 
@@ -64,6 +75,8 @@ public enum SwiftCodeGenerator {
             return format(value)
         case .random(let min, let max):
             return "Int.random(in: \(format(min))...\(format(max)))"
+        case .variable(let name):
+            return "Int(\(name))"
         }
     }
 

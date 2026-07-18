@@ -21,12 +21,13 @@ public struct CodeToken: Equatable, Sendable {
 
 /// Lightweight highlighter for `SwiftCodeGenerator`'s output only — not a
 /// general Swift lexer. Recognizes exactly what the generator emits: the
-/// `let`/`for`/`in` keywords, numeric literals, and member references
+/// `let`/`var`/`for`/`in` keywords, numeric literals, and member references
 /// (`🐢.forward`, `.orange`) written with the turtle receiver or Swift's
-/// leading-dot enum shorthand.
+/// leading-dot enum shorthand. Variable names stay plain, like locals in
+/// any editor.
 public enum CodeTokenizer {
     public static func tokenize(_ code: String) -> [CodeToken] {
-        let keywordPattern = /\b(let|for|in)\b/
+        let keywordPattern = /\b(let|var|for|in)\b/
         let numberPattern = /-?[0-9]+(\.[0-9]+)?/
         // A dot followed by an identifier, where the character right before
         // the dot is neither an identifier character nor another dot —

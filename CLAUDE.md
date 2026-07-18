@@ -70,9 +70,22 @@ standard document behavior. UI state that must not be persisted
 (insertion target) lives in `WorkspaceUIState`.
 
 **Randomness rules**: a repeat *count* is evaluated once at expansion; values
-in the *body* re-roll every iteration. Expansion is capped (10,000 commands)
+in the *body* re-roll every iteration. Expansion is capped (10,000 steps)
 and the overflow surfaces as a kid-friendly alert. Tests inject `SeededRNG`
 for determinism.
+
+**Variables are names, not registrations.** A variable ("box") exists
+exactly while some block mentions it (`BlockTree.usedVariableNames`); unset
+reads are 0, scope is a single global environment, and the same
+once-per-count / every-iteration rules apply. The set/add blocks emit *no*
+command — highlight alignment is untouched — but they still count against
+the step cap, so assignment-only loops can't run away. Documents are written
+with `requiredSchemaVersion` (2 only when variables appear; otherwise 1,
+byte-identical to the old format), and `BlocksDocument` probes
+`schemaVersion` *before* the full decode so newer files fail with the
+friendly "newer version" message instead of a generic decode error. The
+preset names (🌟💖🍀) are SMP-plane emoji on purpose: like 🐢 they are valid
+Swift identifiers in the generated code; BMP lookalikes (⭐ ❤️) are not.
 
 **Exports render `lastRunCommands`** (the evaluated stream of the last run),
 so what's on screen is exactly what exports — including rolled dice. PNG is

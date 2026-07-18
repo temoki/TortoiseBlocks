@@ -21,22 +21,34 @@ struct BlocksDocument: FileDocument {
         guard let data = configuration.file.regularFileContents else {
             throw CocoaError(.fileReadCorruptFile)
         }
-        let project = try JSONDecoder().decode(BlocksProject.self, from: data)
-        // The model layer preserves an unknown (newer) schemaVersion; the
-        // document layer is where "made with a newer version" is surfaced.
-        guard project.schemaVersion <= BlocksProject.currentSchemaVersion else {
+        // Probe just the version before the full decode: a newer file's
+        // unknown block shapes would fail the full decode with a generic
+        // "corrupt" error before the version gate could explain it.
+        let probe = try JSONDecoder().decode(SchemaVersionProbe.self, from: data)
+        guard probe.schemaVersion <= BlocksProject.currentSchemaVersion else {
             throw DocumentError.newerSchema
         }
-        self.project = project
+        self.project = try JSONDecoder().decode(BlocksProject.self, from: data)
     }
 
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        // Write the *minimum* version able to read the document, so files
+        // that don't use newer features stay openable (and byte-identical)
+        // in older apps.
+        var project = self.project
+        project.schemaVersion = project.requiredSchemaVersion
         let encoder = JSONEncoder()
         // Deterministic, diff-friendly files (also what the JSON snapshot
         // tests assume about the format).
         encoder.outputFormatting = [.sortedKeys, .prettyPrinted]
         return FileWrapper(regularFileWithContents: try encoder.encode(project))
     }
+}
+
+/// The version-gate half of the two-phase decode — tolerant of everything
+/// except the field it exists to check.
+private struct SchemaVersionProbe: Decodable {
+    let schemaVersion: Int
 }
 
 enum DocumentError: LocalizedError {

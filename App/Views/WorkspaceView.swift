@@ -48,6 +48,9 @@ struct WorkspaceView: View {
                         Button("Sample: Star") {
                             workspace.insertSample(SampleBlocks.star())
                         }
+                        Button("Sample: Spiral") {
+                            workspace.insertSample(SampleBlocks.spiral())
+                        }
                     }
                 }
                 .frame(maxHeight: .infinity)
@@ -60,7 +63,10 @@ struct WorkspaceView: View {
                     ScrollView {
                         BlockListView(
                             blocks: workspace.blocks, containerID: nil, workspace: workspace,
-                            highlightedID: runner.currentBlockID
+                            highlightedID: runner.currentBlockID,
+                            // Computed once per render and passed as plain
+                            // data — rows only need the list, not the tree.
+                            usedVariableNames: BlockTree.usedVariableNames(in: workspace.blocks)
                         )
                         .padding()
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -93,6 +99,9 @@ struct BlockListView: View {
     let containerID: UUID?
     let workspace: WorkspaceEditor
     var highlightedID: UUID?
+    /// Variable names in use anywhere in the program — quick choices for
+    /// the name/number editors.
+    var usedVariableNames: [String] = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -101,7 +110,8 @@ struct BlockListView: View {
                 BlockRowView(
                     block: block, workspace: workspace,
                     isHighlighted: block.id == highlightedID,
-                    highlightedID: highlightedID
+                    highlightedID: highlightedID,
+                    usedVariableNames: usedVariableNames
                 )
                 .id(block.id)
             }
@@ -166,6 +176,7 @@ struct BlockRowView: View {
     let workspace: WorkspaceEditor
     var isHighlighted = false
     var highlightedID: UUID?
+    var usedVariableNames: [String] = []
 
     @State private var isDropTargeted = false
 
@@ -174,7 +185,7 @@ struct BlockRowView: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
                     Label("Repeat", systemImage: "repeat")
-                    NumberValueButton(value: count) { new in
+                    NumberValueButton(value: count, usedNames: usedVariableNames) { new in
                         workspace.updateKind(of: block.id, to: .repeatBlock(count: new, body: body))
                     }
                     Text("times")
@@ -198,7 +209,8 @@ struct BlockRowView: View {
 
                 BlockListView(
                     blocks: body, containerID: block.id, workspace: workspace,
-                    highlightedID: highlightedID
+                    highlightedID: highlightedID,
+                    usedVariableNames: usedVariableNames
                 )
                 .padding(.leading, 16)
                 .overlay(alignment: .leading) {
@@ -210,7 +222,7 @@ struct BlockRowView: View {
             }
         } else {
             HStack(spacing: 8) {
-                SimpleBlockLabel(kind: block.kind) { new in
+                SimpleBlockLabel(kind: block.kind, usedVariableNames: usedVariableNames) { new in
                     workspace.updateKind(of: block.id, to: new)
                 }
                 Spacer(minLength: 0)
@@ -235,6 +247,7 @@ struct BlockRowView: View {
 /// Label + argument slots for every non-container kind.
 struct SimpleBlockLabel: View {
     let kind: BlockKind
+    var usedVariableNames: [String] = []
     let onChange: (BlockKind) -> Void
 
     var body: some View {
@@ -242,16 +255,16 @@ struct SimpleBlockLabel: View {
             switch kind {
             case .forward(let value):
                 Label("Forward", systemImage: "arrow.up")
-                NumberValueButton(value: value) { onChange(.forward($0)) }
+                numberButton(value) { onChange(.forward($0)) }
             case .backward(let value):
                 Label("Backward", systemImage: "arrow.down")
-                NumberValueButton(value: value) { onChange(.backward($0)) }
+                numberButton(value) { onChange(.backward($0)) }
             case .turnRight(let value):
                 Label("Turn Right", systemImage: "arrow.clockwise")
-                NumberValueButton(value: value) { onChange(.turnRight($0)) }
+                numberButton(value) { onChange(.turnRight($0)) }
             case .turnLeft(let value):
                 Label("Turn Left", systemImage: "arrow.counterclockwise")
-                NumberValueButton(value: value) { onChange(.turnLeft($0)) }
+                numberButton(value) { onChange(.turnLeft($0)) }
             case .home:
                 Label("Go Home", systemImage: "house")
             case .penUp:
@@ -263,7 +276,7 @@ struct SimpleBlockLabel: View {
                 ColorValueButton(value: color) { onChange(.penColor($0)) }
             case .penWidth(let value):
                 Label("Pen Width", systemImage: "lineweight")
-                NumberValueButton(value: value) { onChange(.penWidth($0)) }
+                numberButton(value) { onChange(.penWidth($0)) }
             case .fillColor(let color):
                 Label("Fill Color", systemImage: "drop.fill")
                 ColorValueButton(value: color) { onChange(.fillColor($0)) }
@@ -271,11 +284,29 @@ struct SimpleBlockLabel: View {
                 Label("Start Fill", systemImage: "paintbrush.fill")
             case .endFill:
                 Label("End Fill", systemImage: "paintbrush")
+            case .setVariable(let name, let value):
+                Label("Put in Box", systemImage: "tray.and.arrow.down")
+                VariableNameButton(name: name, usedNames: usedVariableNames) {
+                    onChange(.setVariable(name: $0, value: value))
+                }
+                numberButton(value) { onChange(.setVariable(name: name, value: $0)) }
+            case .addVariable(let name, let value):
+                Label("Add to Box", systemImage: "plus.square")
+                VariableNameButton(name: name, usedNames: usedVariableNames) {
+                    onChange(.addVariable(name: $0, value: value))
+                }
+                numberButton(value) { onChange(.addVariable(name: name, value: $0)) }
             case .repeatBlock:
                 // Containers are rendered by BlockRowView, never here.
                 EmptyView()
             }
         }
+    }
+
+    private func numberButton(
+        _ value: NumberValue, onChange: @escaping (NumberValue) -> Void
+    ) -> NumberValueButton {
+        NumberValueButton(value: value, usedNames: usedVariableNames, onChange: onChange)
     }
 }
 

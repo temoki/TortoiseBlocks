@@ -76,17 +76,30 @@ enum Palette {
                     title: "Repeat", systemImage: "repeat",
                     kind: .repeatBlock(count: .literal(4), body: [])),
             ]),
+        PaletteSection(
+            title: "Variables", category: .variables,
+            entries: [
+                PaletteEntry(
+                    title: "Put in Box", systemImage: "tray.and.arrow.down",
+                    kind: .setVariable(name: variableNamePresets[0], value: .literal(10))),
+                PaletteEntry(
+                    title: "Add to Box", systemImage: "plus.square",
+                    kind: .addVariable(name: variableNamePresets[0], value: .literal(10))),
+            ]),
     ]
 }
 
 extension BlockCategory {
-    /// Category tint (§7): movement=blue, pen=purple, fill=green, control=orange.
+    /// Category tint (§7): movement=blue, pen=purple, fill=green,
+    /// control=orange, variables=pink (the one hue kids won't confuse with
+    /// any of the other four).
     var color: Color {
         switch self {
         case .movement: .blue
         case .pen: .purple
         case .fill: .green
         case .control: .orange
+        case .variables: .pink
         }
     }
 }

@@ -15,8 +15,8 @@ public struct ExpandedCommand: Equatable, Sendable {
 }
 
 public enum BlockExpansionError: Error, Hashable, Sendable {
-    /// The program expands to more commands than `limit` — in practice,
-    /// runaway nested repeats. Surface as a kid-friendly message.
+    /// The program executes more steps than `limit` — in practice, runaway
+    /// nested repeats. Surface as a kid-friendly message.
     case commandLimitExceeded(limit: Int)
 }
 
@@ -25,6 +25,12 @@ public enum BlockExpansionError: Error, Hashable, Sendable {
 /// Pure function over an injected random source, so tests are deterministic.
 /// Randomness rules: a repeat *count* is evaluated once when the repeat
 /// starts; values in the *body* are re-evaluated on every iteration.
+///
+/// Variables are a single global scope, all reading 0 until set. The set/add
+/// blocks emit *no* command — the 1:1 alignment between commands and
+/// `blockID`s that highlighting relies on stays intact — but they still
+/// count as steps against `limit`, so an assignment-only runaway loop can't
+/// slip past the cap.
 public enum BlockExpander {
     public static let defaultLimit = 10_000
 
@@ -45,60 +51,93 @@ public enum BlockExpander {
         limit: Int = BlockExpander.defaultLimit
     ) throws -> [ExpandedCommand] {
         var result: [ExpandedCommand] = []
-        try expand(blocks, into: &result, using: &rng, limit: limit)
+        var variables: [String: Double] = [:]
+        var steps = 0
+        try expand(
+            blocks, into: &result, variables: &variables, steps: &steps,
+            using: &rng, limit: limit)
         return result
     }
 
     private static func expand(
         _ blocks: [Block],
         into result: inout [ExpandedCommand],
+        variables: inout [String: Double],
+        steps: inout Int,
         using rng: inout some RandomNumberGenerator,
         limit: Int
     ) throws {
+        func evaluate(_ value: NumberValue) -> Double {
+            value.evaluated(variables: variables, using: &rng)
+        }
         for block in blocks {
             switch block.kind {
             case .forward(let value):
-                try emit(.forward(value.evaluated(using: &rng)), block, &result, limit)
+                try emit(.forward(evaluate(value)), block, &result, &steps, limit)
             case .backward(let value):
-                try emit(.forward(-value.evaluated(using: &rng)), block, &result, limit)
+                try emit(.forward(-evaluate(value)), block, &result, &steps, limit)
             case .turnRight(let value):
-                try emit(.rotate(value.evaluated(using: &rng)), block, &result, limit)
+                try emit(.rotate(evaluate(value)), block, &result, &steps, limit)
             case .turnLeft(let value):
-                try emit(.rotate(-value.evaluated(using: &rng)), block, &result, limit)
+                try emit(.rotate(-evaluate(value)), block, &result, &steps, limit)
             case .home:
-                try emit(.home, block, &result, limit)
+                try emit(.home, block, &result, &steps, limit)
             case .penUp:
-                try emit(.penUp, block, &result, limit)
+                try emit(.penUp, block, &result, &steps, limit)
             case .penDown:
-                try emit(.penDown, block, &result, limit)
+                try emit(.penDown, block, &result, &steps, limit)
             case .penColor(let color):
-                try emit(.penColor(color.evaluated(using: &rng).tortoiseColor), block, &result, limit)
+                try emit(
+                    .penColor(color.evaluated(using: &rng).tortoiseColor), block, &result, &steps,
+                    limit)
             case .penWidth(let value):
-                try emit(.penWidth(value.evaluated(using: &rng)), block, &result, limit)
+                try emit(.penWidth(evaluate(value)), block, &result, &steps, limit)
             case .fillColor(let color):
-                try emit(.fillColor(color.evaluated(using: &rng).tortoiseColor), block, &result, limit)
+                try emit(
+                    .fillColor(color.evaluated(using: &rng).tortoiseColor), block, &result, &steps,
+                    limit)
             case .beginFill:
-                try emit(.beginFill, block, &result, limit)
+                try emit(.beginFill, block, &result, &steps, limit)
             case .endFill:
-                try emit(.endFill, block, &result, limit)
+                try emit(.endFill, block, &result, &steps, limit)
             case .repeatBlock(let count, let body):
-                let iterations = max(0, Int(count.evaluated(using: &rng).rounded()))
+                let iterations = max(0, Int(evaluate(count).rounded()))
                 for _ in 0..<iterations {
-                    try expand(body, into: &result, using: &rng, limit: limit)
+                    try expand(
+                        body, into: &result, variables: &variables, steps: &steps,
+                        using: &rng, limit: limit)
                 }
+            case .setVariable(let name, let value):
+                try charge(&steps, limit)
+                // Evaluate before touching storage — `evaluate` reads
+                // `variables`, and overlapping that with the write would
+                // violate exclusivity (the value may reference the variable
+                // being assigned, e.g. 🌟 に 🌟 を たす).
+                let newValue = evaluate(value)
+                variables[name] = newValue
+            case .addVariable(let name, let value):
+                try charge(&steps, limit)
+                let delta = evaluate(value)
+                variables[name, default: 0] += delta
             }
         }
+    }
+
+    private static func charge(_ steps: inout Int, _ limit: Int) throws {
+        guard steps < limit else {
+            throw BlockExpansionError.commandLimitExceeded(limit: limit)
+        }
+        steps += 1
     }
 
     private static func emit(
         _ command: TortoiseCommand,
         _ block: Block,
         _ result: inout [ExpandedCommand],
+        _ steps: inout Int,
         _ limit: Int
     ) throws {
-        guard result.count < limit else {
-            throw BlockExpansionError.commandLimitExceeded(limit: limit)
-        }
+        try charge(&steps, limit)
         result.append(ExpandedCommand(command: command, blockID: block.id))
     }
 }

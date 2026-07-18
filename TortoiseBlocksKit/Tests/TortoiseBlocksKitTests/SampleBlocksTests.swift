@@ -30,6 +30,24 @@ struct SampleBlocksTests {
         #expect(body.map(\.kind) == [.forward(.literal(100)), .turnRight(.literal(90))])
     }
 
+    @Test("spiral expands to steps growing out of the box every lap")
+    func spiralExpansion() throws {
+        let expanded = try BlockExpander.expand(SampleBlocks.spiral())
+        let commands = expanded.map(\.command)
+        // Pen color + pen width + 40 × (forward + rotate); the set/add
+        // blocks emit nothing.
+        #expect(commands.count == 2 + 40 * 2)
+        let distances = commands.compactMap { command -> Double? in
+            guard case .forward(let distance) = command else { return nil }
+            return distance
+        }
+        #expect(distances.first == 5)
+        // 5 + 39 × 5 — spelled as a Double so the macro-split inference
+        // can't demote the literal to Int (Double? == Int compares false).
+        #expect(distances.last == 200.0)
+        #expect(distances == distances.sorted())
+    }
+
     @Test("filledSquare expands to a fill-wrapped square")
     func filledSquareExpansion() throws {
         let expanded = try BlockExpander.expand(SampleBlocks.filledSquare())

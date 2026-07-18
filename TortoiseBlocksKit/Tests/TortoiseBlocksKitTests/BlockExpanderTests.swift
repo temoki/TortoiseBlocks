@@ -126,6 +126,104 @@ struct BlockExpanderTests {
         #expect(Set(colors).count > 1)
     }
 
+    @Test("an unset variable reads 0; a set one reads its stored value")
+    func variableSetAndRead() throws {
+        let blocks = [
+            Block(kind: .forward(.variable("🌟"))),
+            Block(kind: .setVariable(name: "🌟", value: .literal(60))),
+            Block(kind: .forward(.variable("🌟"))),
+        ]
+        #expect(try expand(blocks).map(\.command) == [.forward(0), .forward(60)])
+    }
+
+    @Test("set/add emit no command — the highlight stream skips them")
+    func assignmentsEmitNothing() throws {
+        let forward = Block(kind: .forward(.literal(10)))
+        let blocks = [
+            Block(kind: .setVariable(name: "🌟", value: .literal(1))),
+            forward,
+            Block(kind: .addVariable(name: "🌟", value: .literal(1))),
+        ]
+        #expect(try expand(blocks).map(\.blockID) == [forward.id])
+    }
+
+    @Test("add accumulates across iterations — the spiral grows")
+    func addInsideRepeatAccumulates() throws {
+        let blocks = [
+            Block(kind: .setVariable(name: "🌟", value: .literal(5))),
+            Block(
+                kind: .repeatBlock(
+                    count: .literal(3),
+                    body: [
+                        Block(kind: .forward(.variable("🌟"))),
+                        Block(kind: .addVariable(name: "🌟", value: .literal(10))),
+                    ]
+                )),
+        ]
+        let distances = try expand(blocks).compactMap { expanded -> Double? in
+            guard case .forward(let distance) = expanded.command else { return nil }
+            return distance
+        }
+        #expect(distances == [5, 15, 25])
+    }
+
+    @Test("a variable repeat count is evaluated once at entry")
+    func variableCountEvaluatedOnce() throws {
+        let blocks = [
+            Block(kind: .setVariable(name: "🌟", value: .literal(3))),
+            Block(
+                kind: .repeatBlock(
+                    count: .variable("🌟"),
+                    body: [
+                        Block(kind: .home),
+                        Block(kind: .setVariable(name: "🌟", value: .literal(100))),
+                    ]
+                )),
+        ]
+        #expect(try expand(blocks).count == 3)
+    }
+
+    @Test("a dice stored in a box is rolled once and reused")
+    func randomStoredInVariableRollsOnce() throws {
+        let blocks = [
+            Block(kind: .setVariable(name: "🌟", value: .random(min: 0, max: 1000))),
+            Block(
+                kind: .repeatBlock(
+                    count: .literal(3),
+                    body: [Block(kind: .forward(.variable("🌟")))]
+                )),
+        ]
+        let distances = try expand(blocks).compactMap { expanded -> Double? in
+            guard case .forward(let distance) = expanded.command else { return nil }
+            return distance
+        }
+        #expect(distances.count == 3)
+        #expect(Set(distances).count == 1)
+        #expect((0...1000).contains(distances[0]))
+    }
+
+    @Test("an assignment-only runaway loop still hits the step limit")
+    func assignmentOnlyRunaway() {
+        let runaway = [
+            Block(
+                kind: .repeatBlock(
+                    count: .literal(200),
+                    body: [
+                        Block(
+                            kind: .repeatBlock(
+                                count: .literal(200),
+                                body: [
+                                    Block(kind: .addVariable(name: "🌟", value: .literal(1)))
+                                ]
+                            ))
+                    ]
+                ))
+        ]
+        #expect(throws: BlockExpansionError.commandLimitExceeded(limit: 10_000)) {
+            try expand(runaway)
+        }
+    }
+
     @Test("an inverted random range is normalized instead of trapping")
     func invertedRandomRange() throws {
         let blocks = [Block(kind: .forward(.random(min: 200, max: 100)))]

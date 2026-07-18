@@ -37,6 +37,17 @@ struct BlockCodableTests {
             ),
             #"{"repeat":{"body":[{"id":"00000000-0000-0000-0000-000000000001","kind":{"forward":{"literal":10}}}],"count":{"literal":4}}}"#
         ),
+        // Schema version 2 (variables): a bare name string for a reference,
+        // name + value payloads for the set/add blocks.
+        (.forward(.variable("🌟")), #"{"forward":{"variable":"🌟"}}"#),
+        (
+            .setVariable(name: "🌟", value: .literal(10)),
+            #"{"setVariable":{"name":"🌟","value":{"literal":10}}}"#
+        ),
+        (
+            .addVariable(name: "💖", value: .random(min: 1, max: 6)),
+            #"{"addVariable":{"name":"💖","value":{"random":{"max":6,"min":1}}}}"#
+        ),
     ]
 
     private static func sortedKeysJSON(_ value: some Encodable) throws -> String {
@@ -110,6 +121,15 @@ struct BlockCodableTests {
         let json = #"{"repeat":{"count":{"literal":2},"body":[],"comment":"future"}}"#
         let decoded = try JSONDecoder().decode(BlockKind.self, from: Data(json.utf8))
         #expect(decoded == .repeatBlock(count: .literal(2), body: []))
+    }
+
+    @Test("requiredSchemaVersion is 2 exactly when variables appear")
+    func requiredSchemaVersion() {
+        #expect(BlocksProject(title: "", blocks: SampleBlocks.star()).requiredSchemaVersion == 1)
+        #expect(BlocksProject(title: "", blocks: SampleBlocks.spiral()).requiredSchemaVersion == 2)
+        // A bare reference in a slot counts, not just the set/add blocks.
+        let referenceOnly = [Block(kind: .forward(.variable("🌟")))]
+        #expect(BlocksProject(title: "", blocks: referenceOnly).requiredSchemaVersion == 2)
     }
 
     @Test("a newer schemaVersion still decodes, preserving the value")

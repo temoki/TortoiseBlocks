@@ -39,6 +39,18 @@ struct CodeTokenizerTests {
             ])
     }
 
+    @Test("var is a keyword; variable lines stay fully covered")
+    func variableTokens() {
+        let code = SwiftCodeGenerator.code(for: [
+            Block(kind: .setVariable(name: "🌟", value: .literal(5))),
+            Block(kind: .addVariable(name: "🌟", value: .literal(5))),
+        ])
+        let tokens = CodeTokenizer.tokenize(code)
+        let keywords = tokens.filter { $0.kind == .keyword }
+        #expect(keywords.map { describe($0, in: code) } == ["keyword:let", "keyword:var"])
+        #expect(tokens.map { String(code[$0.range]) }.joined() == code)
+    }
+
     @Test("tokens fully cover the input with no gaps or overlaps")
     func fullCoverage() {
         let code = SwiftCodeGenerator.code(for: SampleBlocks.randomStar())

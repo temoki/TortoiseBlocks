@@ -163,6 +163,83 @@ public enum BlockTree {
         return nil
     }
 
+    /// Variable names referenced anywhere in the tree — set/add targets and
+    /// `NumberValue.variable` slots alike — in first-appearance order,
+    /// without duplicates. This *is* the set of existing variables: there is
+    /// no registry, a name exists exactly as long as something mentions it.
+    public static func usedVariableNames(in blocks: [Block]) -> [String] {
+        var names: [String] = []
+        var seen: Set<String> = []
+        func record(_ name: String) {
+            if seen.insert(name).inserted { names.append(name) }
+        }
+        func visit(_ value: NumberValue) {
+            if case .variable(let name) = value { record(name) }
+        }
+        func walk(_ blocks: [Block]) {
+            for block in blocks {
+                switch block.kind {
+                case .forward(let value), .backward(let value), .turnRight(let value),
+                    .turnLeft(let value), .penWidth(let value):
+                    visit(value)
+                case .home, .penUp, .penDown, .penColor, .fillColor, .beginFill, .endFill:
+                    break
+                case .setVariable(let name, let value), .addVariable(let name, let value):
+                    record(name)
+                    visit(value)
+                case .repeatBlock(let count, let body):
+                    visit(count)
+                    walk(body)
+                }
+            }
+        }
+        walk(blocks)
+        return names
+    }
+
+    /// Renames a variable across the whole tree (set/add targets and value
+    /// slots). Returns `nil` when nothing referenced `oldName` or the names
+    /// are equal — a no-op for the caller, like every other edit here.
+    public static func renamingVariable(
+        _ oldName: String, to newName: String, in blocks: [Block]
+    ) -> [Block]? {
+        guard oldName != newName else { return nil }
+        var changed = false
+        func renamed(_ value: NumberValue) -> NumberValue {
+            guard case .variable(oldName) = value else { return value }
+            changed = true
+            return .variable(newName)
+        }
+        func renamed(_ name: String) -> String {
+            guard name == oldName else { return name }
+            changed = true
+            return newName
+        }
+        func walk(_ blocks: [Block]) -> [Block] {
+            blocks.map { block in
+                var block = block
+                switch block.kind {
+                case .forward(let value): block.kind = .forward(renamed(value))
+                case .backward(let value): block.kind = .backward(renamed(value))
+                case .turnRight(let value): block.kind = .turnRight(renamed(value))
+                case .turnLeft(let value): block.kind = .turnLeft(renamed(value))
+                case .penWidth(let value): block.kind = .penWidth(renamed(value))
+                case .home, .penUp, .penDown, .penColor, .fillColor, .beginFill, .endFill:
+                    break
+                case .setVariable(let name, let value):
+                    block.kind = .setVariable(name: renamed(name), value: renamed(value))
+                case .addVariable(let name, let value):
+                    block.kind = .addVariable(name: renamed(name), value: renamed(value))
+                case .repeatBlock(let count, let body):
+                    block.kind = .repeatBlock(count: renamed(count), body: walk(body))
+                }
+                return block
+            }
+        }
+        let new = walk(blocks)
+        return changed ? new : nil
+    }
+
     /// Replaces the block's kind (argument edits build the new kind from the
     /// old one, preserving a repeat's body). Returns `nil` if not found.
     public static func updatingKind(
