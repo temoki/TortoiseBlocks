@@ -24,6 +24,13 @@ final class RunnerModel {
     /// Set when expansion fails (command limit); drives a kid-friendly alert.
     var showsExpansionError = false
 
+    // Export renders are cached per run: `ShareLink(item:)` evaluates its
+    // item eagerly whenever the Export menu is drawn, so without this an
+    // ImageRenderer pass would fire on every menu open. Cleared in `run()`
+    // and `clear()`, the only places `lastRunCommands` changes.
+    private var svgDataCache: Data?
+    private var pngDataCache: [CGFloat: Data] = [:]
+
     /// The block the canvas is currently executing (nil when idle/finished
     /// past the end). Observable through `player.currentCommandIndex`, so
     /// the workspace highlight tracks playback live.
@@ -46,6 +53,8 @@ final class RunnerModel {
             player.isPaused = false
             tortoise.reset()
             tortoise.apply(lastRunCommands)
+            svgDataCache = nil
+            pngDataCache = [:]
         } catch {
             showsExpansionError = true
         }
@@ -55,16 +64,21 @@ final class RunnerModel {
         expandedBlockIDs = []
         lastRunCommands = []
         tortoise.reset()
+        svgDataCache = nil
+        pngDataCache = [:]
     }
 
     // MARK: - Export
 
     /// SVG of the last run, straight from the library's exporter.
     func svgData() -> Data? {
+        if let svgDataCache { return svgDataCache }
         guard canExport else { return nil }
         let export = Tortoise()
         export.apply(lastRunCommands)
-        return Data(export.svg().utf8)
+        let data = Data(export.svg().utf8)
+        svgDataCache = data
+        return data
     }
 
     /// PNG of the last run: an instant-mode tortoise rendered statically —
@@ -72,6 +86,7 @@ final class RunnerModel {
     /// `ImageRenderer` sees the finished drawing without a running timeline.
     /// `scale` is the pixel density (1x = 512px, 2x = 1024px, 3x = 1536px).
     func pngData(scale: CGFloat = 2) -> Data? {
+        if let cached = pngDataCache[scale] { return cached }
         guard canExport else { return nil }
         let export = Tortoise()
         export.speed = 0
@@ -83,11 +98,14 @@ final class RunnerModel {
         )
         renderer.scale = scale
         guard let cgImage = renderer.cgImage else { return nil }
+        let data: Data?
         #if os(macOS)
             let rep = NSBitmapImageRep(cgImage: cgImage)
-            return rep.representation(using: .png, properties: [:])
+            data = rep.representation(using: .png, properties: [:])
         #else
-            return UIImage(cgImage: cgImage).pngData()
+            data = UIImage(cgImage: cgImage).pngData()
         #endif
+        pngDataCache[scale] = data
+        return data
     }
 }

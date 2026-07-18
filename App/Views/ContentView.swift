@@ -115,6 +115,24 @@ struct CanvasPane: View {
                             export(runner.pngData(scale: 3), as: .png)
                         }
                     }
+                    Divider()
+                    // svgData()/pngData() are cached per run, so evaluating
+                    // them here (ShareLink's items are eager) doesn't
+                    // re-render on every menu open.
+                    if let svgData = runner.svgData() {
+                        ShareLink(items: [SVGDrawing(data: svgData)]) { _ in
+                            SharePreview("Drawing")
+                        } label: {
+                            Label("Share SVG", systemImage: "square.and.arrow.up")
+                        }
+                    }
+                    if let pngData = runner.pngData() {
+                        ShareLink(items: [PNGDrawing(data: pngData)]) { _ in
+                            SharePreview("Drawing")
+                        } label: {
+                            Label("Share PNG", systemImage: "square.and.arrow.up")
+                        }
+                    }
                 }
                 .disabled(!runner.canExport)
                 .fixedSize()

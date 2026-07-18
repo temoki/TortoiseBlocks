@@ -421,6 +421,26 @@
         }
       }
     },
+    "Share PNG": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PNG をきょうゆう"
+          }
+        }
+      }
+    },
+    "Share SVG": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SVG をきょうゆう"
+          }
+        }
+      }
+    },
     "Speed": {
       "localizations": {
         "ja": {
