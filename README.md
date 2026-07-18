@@ -9,6 +9,10 @@ watch the tortoise draw. Powered by
 [TortoiseGraphics2](https://github.com/temoki/TortoiseGraphics2), a turtle
 graphics engine written in Swift.
 
+<p align="center">
+  <img src="docs/demo.gif" width="640" alt="TortoiseBlocks on iPad — running a block program that draws and fills a square" />
+</p>
+
 ## Features
 
 - **Block editor** — tap or drag & drop blocks (motion / pen / fill /
