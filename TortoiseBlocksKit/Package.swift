@@ -12,7 +12,7 @@ let package = Package(
         .library(name: "TortoiseBlocksKit", targets: ["TortoiseBlocksKit"])
     ],
     dependencies: [
-        .package(url: "https://github.com/temoki/TortoiseGraphics2", exact: "2.0.0-beta8")
+        .package(url: "https://github.com/temoki/TortoiseGraphics2", exact: "2.0.0-beta9")
     ],
     targets: [
         .target(
