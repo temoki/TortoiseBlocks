@@ -104,8 +104,16 @@ struct CanvasPane: View {
                     Button("SVG") {
                         export(runner.svgData(), as: .svg)
                     }
-                    Button("PNG") {
-                        export(runner.pngData(), as: .png)
+                    Menu("PNG") {
+                        Button("1x (512px)") {
+                            export(runner.pngData(scale: 1), as: .png)
+                        }
+                        Button("2x (1024px)") {
+                            export(runner.pngData(scale: 2), as: .png)
+                        }
+                        Button("3x (1536px)") {
+                            export(runner.pngData(scale: 3), as: .png)
+                        }
                     }
                 }
                 .disabled(!runner.canExport)

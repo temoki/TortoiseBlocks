@@ -70,17 +70,18 @@ final class RunnerModel {
     /// PNG of the last run: an instant-mode tortoise rendered statically —
     /// `speed(0)` makes `CanvasModel` flush every frame at init, so
     /// `ImageRenderer` sees the finished drawing without a running timeline.
-    func pngData() -> Data? {
+    /// `scale` is the pixel density (1x = 512px, 2x = 1024px, 3x = 1536px).
+    func pngData(scale: CGFloat = 2) -> Data? {
         guard canExport else { return nil }
         let export = Tortoise()
         export.speed = 0
         export.apply(lastRunCommands)
         let renderer = ImageRenderer(
             content: TortoiseCanvas(export)
-                .frame(width: 512, height: 512)
                 .padding(16)
+                .frame(width: 512, height: 512)
         )
-        renderer.scale = 2
+        renderer.scale = scale
         guard let cgImage = renderer.cgImage else { return nil }
         #if os(macOS)
             let rep = NSBitmapImageRep(cgImage: cgImage)
