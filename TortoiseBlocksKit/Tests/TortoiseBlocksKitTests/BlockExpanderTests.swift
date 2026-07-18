@@ -224,6 +224,107 @@ struct BlockExpanderTests {
         }
     }
 
+    @Test(
+        "every comparison operator matches its truth table",
+        arguments: [
+            (Comparison.less, true, false, false),
+            (.lessOrEqual, true, true, false),
+            (.equal, false, true, false),
+            (.greaterOrEqual, false, true, true),
+            (.greater, false, false, true),
+        ])
+    func comparisonTruthTable(op: Comparison, below: Bool, equal: Bool, above: Bool) {
+        #expect(op.holds(1, 2) == below)
+        #expect(op.holds(2, 2) == equal)
+        #expect(op.holds(3, 2) == above)
+    }
+
+    @Test("an if runs its body exactly when the condition holds")
+    func ifBranches() throws {
+        func ifBlock(_ comparison: Comparison) -> Block {
+            Block(
+                kind: .ifBlock(
+                    condition: Condition(lhs: .literal(1), comparison: comparison, rhs: .literal(2)),
+                    body: [Block(kind: .home)]
+                ))
+        }
+        #expect(try expand([ifBlock(.less)]).map(\.command) == [.home])
+        #expect(try expand([ifBlock(.greater)]).isEmpty)
+    }
+
+    @Test("a counter-gated if fires from the matching iteration on")
+    func counterGatedIf() throws {
+        // くりかえし×5 { 🌟 に 1 をたす / もし 🌟 ≥ 3 なら { home } }
+        let blocks = [
+            Block(
+                kind: .repeatBlock(
+                    count: .literal(5),
+                    body: [
+                        Block(kind: .addVariable(name: "🌟", value: .literal(1))),
+                        Block(
+                            kind: .ifBlock(
+                                condition: Condition(
+                                    lhs: .variable("🌟"), comparison: .greaterOrEqual,
+                                    rhs: .literal(3)),
+                                body: [Block(kind: .home)]
+                            )),
+                    ]
+                ))
+        ]
+        // Fires on iterations 3, 4, 5.
+        #expect(try expand(blocks).map(\.command) == [.home, .home, .home])
+    }
+
+    @Test("dice in a condition re-roll on every encounter")
+    func diceConditionRerolls() throws {
+        let blocks = [
+            Block(
+                kind: .repeatBlock(
+                    count: .literal(50),
+                    body: [
+                        Block(
+                            kind: .ifBlock(
+                                condition: Condition(
+                                    lhs: .random(min: 0, max: 1), comparison: .greaterOrEqual,
+                                    rhs: .literal(0.5)),
+                                body: [Block(kind: .home)]
+                            ))
+                    ]
+                ))
+        ]
+        let count = try expand(blocks).count
+        // A single evaluation would give 0 or 50; re-rolling lands between.
+        #expect(count > 0 && count < 50)
+    }
+
+    @Test("a false-branch-only runaway loop still hits the step limit")
+    func falseBranchRunaway() {
+        let runaway = [
+            Block(
+                kind: .repeatBlock(
+                    count: .literal(200),
+                    body: [
+                        Block(
+                            kind: .repeatBlock(
+                                count: .literal(200),
+                                body: [
+                                    Block(
+                                        kind: .ifBlock(
+                                            condition: Condition(
+                                                lhs: .literal(1), comparison: .greater,
+                                                rhs: .literal(2)),
+                                            body: [Block(kind: .home)]
+                                        ))
+                                ]
+                            ))
+                    ]
+                ))
+        ]
+        #expect(throws: BlockExpansionError.commandLimitExceeded(limit: 10_000)) {
+            try expand(runaway)
+        }
+    }
+
     @Test("an inverted random range is normalized instead of trapping")
     func invertedRandomRange() throws {
         let blocks = [Block(kind: .forward(.random(min: 200, max: 100)))]

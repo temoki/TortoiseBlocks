@@ -7,8 +7,8 @@ import TortoiseBlocksKit
 @Observable
 @MainActor
 final class WorkspaceUIState {
-    /// The repeat block new palette blocks are appended into
-    /// (nil = top level). Toggled from the repeat row's target button.
+    /// The container block (repeat/if) new palette blocks are appended into
+    /// (nil = top level). Toggled from the container row's target button.
     var insertionTargetID: UUID?
 }
 
@@ -44,8 +44,8 @@ struct WorkspaceEditor {
         let target = validatedInsertionTarget()
         guard let new = BlockTree.appending(block, toBodyOf: target, in: blocks) else { return }
         setBlocks(new)
-        // Adding a repeat makes it the natural next target.
-        if case .repeatBlock = kind {
+        // Adding a container makes it the natural next target.
+        if kind.containerBody != nil {
             insertionTargetID = block.id
         }
     }
@@ -106,7 +106,7 @@ struct WorkspaceEditor {
     private func validatedInsertionTarget() -> UUID? {
         guard let id = uiState.insertionTargetID,
             let block = BlockTree.block(withID: id, in: blocks),
-            case .repeatBlock = block.kind
+            block.kind.containerBody != nil
         else { return nil }
         return id
     }

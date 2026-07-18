@@ -197,6 +197,51 @@ struct BlockTreeTests {
         #expect(BlockTree.renamingVariable("🌟", to: "🌟", in: blocks) == nil)
     }
 
+    @Test("container edits work inside an if body")
+    func ifContainerEdits() throws {
+        let home = Block(kind: .home)
+        let ifBlock = Block(
+            kind: .ifBlock(
+                condition: Condition(lhs: .literal(1), comparison: .less, rhs: .literal(2)),
+                body: [home]
+            ))
+
+        let appended = try #require(
+            BlockTree.appending(Block(kind: .penUp), toBodyOf: ifBlock.id, in: [ifBlock]))
+        #expect(appended[0].kind.containerBody?.count == 2)
+
+        let inserted = try #require(
+            BlockTree.inserting(Block(kind: .penDown), at: 0, inBodyOf: ifBlock.id, in: [ifBlock]))
+        #expect(inserted[0].kind.containerBody?.first?.kind == .penDown)
+
+        let removed = try #require(BlockTree.removing(blockWithID: home.id, from: [ifBlock]))
+        #expect(removed[0].kind.containerBody?.isEmpty == true)
+
+        // Drag & drop from the top level into the if body.
+        let outside = Block(kind: .forward(.literal(10)))
+        let moved = try #require(
+            BlockTree.moving(
+                blockWithID: outside.id, toIndex: 0, inBodyOf: ifBlock.id,
+                in: [outside, ifBlock]))
+        #expect(moved.count == 1)
+        #expect(moved[0].kind.containerBody?.map(\.id) == [outside.id, home.id])
+    }
+
+    @Test("usedVariableNames and rename reach into if conditions and bodies")
+    func variableNamesInConditions() throws {
+        let blocks = [
+            Block(
+                kind: .ifBlock(
+                    condition: Condition(
+                        lhs: .variable("🌟"), comparison: .less, rhs: .variable("💖")),
+                    body: [Block(kind: .forward(.variable("🍀")))]
+                ))
+        ]
+        #expect(BlockTree.usedVariableNames(in: blocks) == ["🌟", "💖", "🍀"])
+        let renamed = try #require(BlockTree.renamingVariable("💖", to: "はーと", in: blocks))
+        #expect(BlockTree.usedVariableNames(in: renamed) == ["🌟", "はーと", "🍀"])
+    }
+
     @Test("update a nested block's kind in place")
     func updateNestedKind() throws {
         let result = try #require(

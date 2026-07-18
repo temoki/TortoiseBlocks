@@ -16,7 +16,7 @@ extension BlockKind {
             .pen
         case .fillColor, .beginFill, .endFill:
             .fill
-        case .repeatBlock:
+        case .repeatBlock, .ifBlock:
             .control
         case .setVariable, .addVariable:
             .variables

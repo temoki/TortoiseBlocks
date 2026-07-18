@@ -152,6 +152,82 @@ struct NumberValueEditor: View {
     }
 }
 
+/// The if header's argument cells: lhs, comparison, rhs — three siblings
+/// laid out by the surrounding header HStack.
+struct ConditionEditor: View {
+    let condition: Condition
+    let usedNames: [String]
+    let onChange: (Condition) -> Void
+
+    var body: some View {
+        NumberValueButton(value: condition.lhs, usedNames: usedNames) { new in
+            var condition = condition
+            condition.lhs = new
+            onChange(condition)
+        }
+        ComparisonButton(comparison: condition.comparison) { new in
+            var condition = condition
+            condition.comparison = new
+            onChange(condition)
+        }
+        NumberValueButton(value: condition.rhs, usedNames: usedNames) { new in
+            var condition = condition
+            condition.rhs = new
+            onChange(condition)
+        }
+    }
+}
+
+/// Argument slot for a comparison: shows the language-neutral symbol, picks
+/// from a menu of spelled-out choices.
+struct ComparisonButton: View {
+    let comparison: Comparison
+    let onChange: (Comparison) -> Void
+
+    var body: some View {
+        Menu {
+            Picker(
+                "Comparison",
+                selection: Binding(get: { comparison }, set: { onChange($0) })
+            ) {
+                ForEach(Comparison.allCases, id: \.self) { comparison in
+                    Text(comparisonName(comparison)).tag(comparison)
+                }
+            }
+        } label: {
+            Text(comparisonSymbol(comparison))
+        }
+        .menuStyle(.button)
+        .buttonStyle(.bordered)
+        .fixedSize()
+        .accessibilityLabel(Text(comparisonName(comparison)))
+        .accessibilityHint("Tap to choose a comparison")
+    }
+}
+
+/// Display symbol for a comparison — language-neutral, so the block row
+/// reads naturally in both English and Japanese word order.
+func comparisonSymbol(_ comparison: Comparison) -> String {
+    switch comparison {
+    case .less: "<"
+    case .lessOrEqual: "≤"
+    case .equal: "="
+    case .greaterOrEqual: "≥"
+    case .greater: ">"
+    }
+}
+
+/// Localized spelled-out name for a comparison (menu / accessibility).
+func comparisonName(_ comparison: Comparison) -> String {
+    switch comparison {
+    case .less: String(localized: "less than")
+    case .lessOrEqual: String(localized: "or less")
+    case .equal: String(localized: "equal to")
+    case .greaterOrEqual: String(localized: "or more")
+    case .greater: String(localized: "greater than")
+    }
+}
+
 /// Argument slot for a variable name: shows the current name and edits in a
 /// popover.
 struct VariableNameButton: View {

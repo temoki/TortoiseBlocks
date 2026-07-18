@@ -11,7 +11,7 @@ public enum BlockTree {
     public static func block(withID id: UUID, in blocks: [Block]) -> Block? {
         for block in blocks {
             if block.id == id { return block }
-            if case .repeatBlock(_, let body) = block.kind,
+            if let body = block.kind.containerBody,
                 let found = Self.block(withID: id, in: body)
             {
                 return found
@@ -21,24 +21,24 @@ public enum BlockTree {
     }
 
     /// Appends `block` to the top level (`containerID == nil`) or to the
-    /// body of the repeat block with `containerID`.
-    /// Returns `nil` if the container does not exist or is not a repeat.
+    /// body of the container block (repeat/if) with `containerID`.
+    /// Returns `nil` if the container does not exist or is not a container.
     public static func appending(
         _ block: Block, toBodyOf containerID: UUID?, in blocks: [Block]
     ) -> [Block]? {
         guard let containerID else { return blocks + [block] }
         for (index, candidate) in blocks.enumerated() {
             if candidate.id == containerID {
-                guard case .repeatBlock(let count, let body) = candidate.kind else { return nil }
+                guard let body = candidate.kind.containerBody else { return nil }
                 var copy = blocks
-                copy[index].kind = .repeatBlock(count: count, body: body + [block])
+                copy[index].kind = candidate.kind.replacingBody(with: body + [block])
                 return copy
             }
-            if case .repeatBlock(let count, let body) = candidate.kind,
+            if let body = candidate.kind.containerBody,
                 let newBody = appending(block, toBodyOf: containerID, in: body)
             {
                 var copy = blocks
-                copy[index].kind = .repeatBlock(count: count, body: newBody)
+                copy[index].kind = candidate.kind.replacingBody(with: newBody)
                 return copy
             }
         }
@@ -53,11 +53,11 @@ public enum BlockTree {
             return copy
         }
         for (index, block) in blocks.enumerated() {
-            if case .repeatBlock(let count, let body) = block.kind,
+            if let body = block.kind.containerBody,
                 let newBody = removing(blockWithID: id, from: body)
             {
                 var copy = blocks
-                copy[index].kind = .repeatBlock(count: count, body: newBody)
+                copy[index].kind = block.kind.replacingBody(with: newBody)
                 return copy
             }
         }
@@ -78,11 +78,11 @@ public enum BlockTree {
             return copy
         }
         for (index, block) in blocks.enumerated() {
-            if case .repeatBlock(let count, let body) = block.kind,
+            if let body = block.kind.containerBody,
                 let newBody = moving(blockWithID: id, by: offset, in: body)
             {
                 var copy = blocks
-                copy[index].kind = .repeatBlock(count: count, body: newBody)
+                copy[index].kind = block.kind.replacingBody(with: newBody)
                 return copy
             }
         }
@@ -90,9 +90,9 @@ public enum BlockTree {
     }
 
     /// Inserts `block` at `index` in the top level (`containerID == nil`) or
-    /// in the body of the repeat with `containerID`; the index is clamped to
-    /// the valid range. Returns `nil` if the container does not exist or is
-    /// not a repeat.
+    /// in the body of the container with `containerID`; the index is clamped
+    /// to the valid range. Returns `nil` if the container does not exist or
+    /// is not a container kind.
     public static func inserting(
         _ block: Block, at index: Int, inBodyOf containerID: UUID?, in blocks: [Block]
     ) -> [Block]? {
@@ -103,18 +103,18 @@ public enum BlockTree {
         }
         for (i, candidate) in blocks.enumerated() {
             if candidate.id == containerID {
-                guard case .repeatBlock(let count, let body) = candidate.kind else { return nil }
+                guard let body = candidate.kind.containerBody else { return nil }
                 var newBody = body
                 newBody.insert(block, at: min(max(0, index), body.count))
                 var copy = blocks
-                copy[i].kind = .repeatBlock(count: count, body: newBody)
+                copy[i].kind = candidate.kind.replacingBody(with: newBody)
                 return copy
             }
-            if case .repeatBlock(let count, let body) = candidate.kind,
+            if let body = candidate.kind.containerBody,
                 let newBody = inserting(block, at: index, inBodyOf: containerID, in: body)
             {
                 var copy = blocks
-                copy[i].kind = .repeatBlock(count: count, body: newBody)
+                copy[i].kind = candidate.kind.replacingBody(with: newBody)
                 return copy
             }
         }
@@ -151,16 +151,28 @@ public enum BlockTree {
             return (block, container, index, copy)
         }
         for (i, candidate) in blocks.enumerated() {
-            if case .repeatBlock(let count, let body) = candidate.kind,
+            if let body = candidate.kind.containerBody,
                 let (block, containerID, index, newBody) =
                     extracting(blockWithID: id, from: body, container: candidate.id)
             {
                 var copy = blocks
-                copy[i].kind = .repeatBlock(count: count, body: newBody)
+                copy[i].kind = candidate.kind.replacingBody(with: newBody)
                 return (block, containerID, index, copy)
             }
         }
         return nil
+    }
+
+    /// True when any block in the tree (including nested bodies) satisfies
+    /// `predicate`.
+    public static func contains(
+        in blocks: [Block], where predicate: (Block) -> Bool
+    ) -> Bool {
+        blocks.contains { block in
+            if predicate(block) { return true }
+            guard let body = block.kind.containerBody else { return false }
+            return contains(in: body, where: predicate)
+        }
     }
 
     /// Variable names referenced anywhere in the tree — set/add targets and
@@ -189,6 +201,10 @@ public enum BlockTree {
                     visit(value)
                 case .repeatBlock(let count, let body):
                     visit(count)
+                    walk(body)
+                case .ifBlock(let condition, let body):
+                    visit(condition.lhs)
+                    visit(condition.rhs)
                     walk(body)
                 }
             }
@@ -232,6 +248,11 @@ public enum BlockTree {
                     block.kind = .addVariable(name: renamed(name), value: renamed(value))
                 case .repeatBlock(let count, let body):
                     block.kind = .repeatBlock(count: renamed(count), body: walk(body))
+                case .ifBlock(let condition, let body):
+                    var condition = condition
+                    condition.lhs = renamed(condition.lhs)
+                    condition.rhs = renamed(condition.rhs)
+                    block.kind = .ifBlock(condition: condition, body: walk(body))
                 }
                 return block
             }
@@ -251,11 +272,11 @@ public enum BlockTree {
             return copy
         }
         for (index, block) in blocks.enumerated() {
-            if case .repeatBlock(let count, let body) = block.kind,
+            if let body = block.kind.containerBody,
                 let newBody = updatingKind(of: id, to: kind, in: body)
             {
                 var copy = blocks
-                copy[index].kind = .repeatBlock(count: count, body: newBody)
+                copy[index].kind = block.kind.replacingBody(with: newBody)
                 return copy
             }
         }

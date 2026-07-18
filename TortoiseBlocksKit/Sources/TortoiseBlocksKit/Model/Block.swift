@@ -53,12 +53,50 @@ public enum BlockKind: Hashable, Sendable {
     case endFill
 
     // MARK: Control
-    /// ◯かい くりかえす — the only tree-forming block in the initial set.
+    /// ◯かい くりかえす — repeats its body.
     case repeatBlock(count: NumberValue, body: [Block])
+    /// もし◯◯なら — runs its body when the condition holds.
+    case ifBlock(condition: Condition, body: [Block])
 
     // MARK: Variables
     /// はこに いれる — set the named variable ("box") to the value.
     case setVariable(name: String, value: NumberValue)
     /// はこに たす — add the value to the named variable.
     case addVariable(name: String, value: NumberValue)
+}
+
+extension BlockKind {
+    /// The nested child list for container kinds (repeat, if); nil for
+    /// simple blocks. `BlockTree` and the workspace treat containers
+    /// uniformly through this pair, so a new container kind only has to
+    /// show up here (the exhaustive switch walks you there) and provide
+    /// its own header UI.
+    public var containerBody: [Block]? {
+        switch self {
+        case .repeatBlock(_, let body), .ifBlock(_, let body):
+            body
+        case .forward, .backward, .turnRight, .turnLeft, .home,
+            .penUp, .penDown, .penColor, .penWidth,
+            .fillColor, .beginFill, .endFill,
+            .setVariable, .addVariable:
+            nil
+        }
+    }
+
+    /// The same kind with its body replaced — the write half of
+    /// ``containerBody``. Returns `self` unchanged for simple blocks, so
+    /// callers must check ``containerBody`` first.
+    func replacingBody(with newBody: [Block]) -> BlockKind {
+        switch self {
+        case .repeatBlock(let count, _):
+            .repeatBlock(count: count, body: newBody)
+        case .ifBlock(let condition, _):
+            .ifBlock(condition: condition, body: newBody)
+        case .forward, .backward, .turnRight, .turnLeft, .home,
+            .penUp, .penDown, .penColor, .penWidth,
+            .fillColor, .beginFill, .endFill,
+            .setVariable, .addVariable:
+            self
+        }
+    }
 }

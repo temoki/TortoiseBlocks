@@ -121,6 +121,16 @@
         }
       }
     },
+    "Comparison": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "くらべかた"
+          }
+        }
+      }
+    },
     "Control": {
       "localizations": {
         "ja": {
@@ -267,6 +277,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "ホームへもどる"
+          }
+        }
+      }
+    },
+    "If": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "もし"
           }
         }
       }
@@ -631,6 +651,16 @@
         }
       }
     },
+    "Tap to choose a comparison": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タップしてくらべかたをえらびます"
+          }
+        }
+      }
+    },
     "This file was made with a newer version of TortoiseBlocks.": {
       "localizations": {
         "ja": {
@@ -731,7 +761,7 @@
         }
       }
     },
-    "When on, new palette blocks go inside this repeat": {
+    "When on, new palette blocks go inside this block": {
       "localizations": {
         "ja": {
           "stringUnit": {
@@ -771,6 +801,26 @@
         }
       }
     },
+    "equal to": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "とおなじ"
+          }
+        }
+      }
+    },
+    "greater than": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "よりおおきい"
+          }
+        }
+      }
+    },
     "green": {
       "localizations": {
         "ja": {
@@ -781,12 +831,42 @@
         }
       }
     },
+    "less than": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "よりちいさい"
+          }
+        }
+      }
+    },
     "magenta": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
             "value": "マゼンタ"
+          }
+        }
+      }
+    },
+    "or less": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "いか"
+          }
+        }
+      }
+    },
+    "or more": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "いじょう"
           }
         }
       }
@@ -817,6 +897,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "あか"
+          }
+        }
+      }
+    },
+    "then": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "なら"
           }
         }
       }

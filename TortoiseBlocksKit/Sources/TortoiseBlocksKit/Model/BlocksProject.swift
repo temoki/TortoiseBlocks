@@ -18,10 +18,16 @@ public struct BlocksProject: Codable, Hashable, Sendable {
     public var blocks: [Block]
 
     /// The minimum schema version able to read this document: 2 when any
-    /// variable feature appears in the tree, otherwise 1 — keeping
-    /// variable-free files byte-identical to what version-1 apps write.
+    /// version-2 feature (variables, if blocks) appears in the tree,
+    /// otherwise 1 — keeping such files byte-identical to what version-1
+    /// apps write. (Version 2 never shipped before gaining the if block, so
+    /// both features share it.)
     public var requiredSchemaVersion: Int {
-        BlockTree.usedVariableNames(in: blocks).isEmpty ? 1 : 2
+        let usesIf = BlockTree.contains(in: blocks) { block in
+            if case .ifBlock = block.kind { return true }
+            return false
+        }
+        return usesIf || !BlockTree.usedVariableNames(in: blocks).isEmpty ? 2 : 1
     }
 
     public init(

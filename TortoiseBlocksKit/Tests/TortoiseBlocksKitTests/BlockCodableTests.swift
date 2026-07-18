@@ -37,9 +37,18 @@ struct BlockCodableTests {
             ),
             #"{"repeat":{"body":[{"id":"00000000-0000-0000-0000-000000000001","kind":{"forward":{"literal":10}}}],"count":{"literal":4}}}"#
         ),
-        // Schema version 2 (variables): a bare name string for a reference,
-        // name + value payloads for the set/add blocks.
+        // Schema version 2 (variables + if): a bare name string for a
+        // reference, name + value payloads for the set/add blocks, and a
+        // condition (lhs/comparison/rhs) + body payload for the if block.
         (.forward(.variable("🌟")), #"{"forward":{"variable":"🌟"}}"#),
+        (
+            .ifBlock(
+                condition: Condition(
+                    lhs: .random(min: 1, max: 6), comparison: .greaterOrEqual, rhs: .literal(4)),
+                body: [Block(id: childID, kind: .home)]
+            ),
+            #"{"if":{"body":[{"id":"00000000-0000-0000-0000-000000000001","kind":{"home":{}}}],"condition":{"comparison":"greaterOrEqual","lhs":{"random":{"max":6,"min":1}},"rhs":{"literal":4}}}}"#
+        ),
         (
             .setVariable(name: "🌟", value: .literal(10)),
             #"{"setVariable":{"name":"🌟","value":{"literal":10}}}"#
@@ -130,6 +139,15 @@ struct BlockCodableTests {
         // A bare reference in a slot counts, not just the set/add blocks.
         let referenceOnly = [Block(kind: .forward(.variable("🌟")))]
         #expect(BlocksProject(title: "", blocks: referenceOnly).requiredSchemaVersion == 2)
+        // An if block is a version-2 feature even without variables.
+        let ifOnly = [
+            Block(
+                kind: .ifBlock(
+                    condition: Condition(lhs: .literal(1), comparison: .less, rhs: .literal(2)),
+                    body: []
+                ))
+        ]
+        #expect(BlocksProject(title: "", blocks: ifOnly).requiredSchemaVersion == 2)
     }
 
     @Test("a newer schemaVersion still decodes, preserving the value")

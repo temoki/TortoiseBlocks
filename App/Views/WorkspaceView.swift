@@ -168,9 +168,10 @@ struct DropGap: View {
     }
 }
 
-/// One block in the workspace. A repeat renders as a container with its
-/// body indented beneath it; every row carries move/delete controls.
-/// `isHighlighted` marks the executing block during playback.
+/// One block in the workspace. Containers (repeat, if) render their
+/// kind-specific header over the shared container chrome; every row
+/// carries move/delete controls. `isHighlighted` marks the executing block
+/// during playback.
 struct BlockRowView: View {
     let block: Block
     let workspace: WorkspaceEditor
@@ -178,49 +179,31 @@ struct BlockRowView: View {
     var highlightedID: UUID?
     var usedVariableNames: [String] = []
 
-    @State private var isDropTargeted = false
-
     var body: some View {
-        if case .repeatBlock(let count, let body) = block.kind {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
-                    Label("Repeat", systemImage: "repeat")
-                    NumberValueButton(value: count, usedNames: usedVariableNames) { new in
-                        workspace.updateKind(of: block.id, to: .repeatBlock(count: new, body: body))
-                    }
-                    Text("times")
-                    InsertionTargetButton(blockID: block.id, workspace: workspace)
-                    Spacer(minLength: 0)
-                    RowControls(blockID: block.id, workspace: workspace)
+        switch block.kind {
+        case .repeatBlock(let count, let body):
+            ContainerBlockRow(
+                block: block, childBlocks: body, workspace: workspace,
+                highlightedID: highlightedID, usedVariableNames: usedVariableNames
+            ) {
+                Label("Repeat", systemImage: "repeat")
+                NumberValueButton(value: count, usedNames: usedVariableNames) { new in
+                    workspace.updateKind(of: block.id, to: .repeatBlock(count: new, body: body))
                 }
-                .padding(8)
-                .background(
-                    BlockCategory.control.color.opacity(isDropTargeted ? 0.35 : 0.15),
-                    in: .rect(cornerRadius: 8)
-                )
-                .draggable(block)
-                // Dropping onto the header appends into this repeat's body.
-                .dropDestination(for: Block.self) { items, _ in
-                    guard let dropped = items.first else { return false }
-                    return workspace.handleDrop(dropped, at: body.count, inBodyOf: block.id)
-                } isTargeted: {
-                    isDropTargeted = $0
-                }
-
-                BlockListView(
-                    blocks: body, containerID: block.id, workspace: workspace,
-                    highlightedID: highlightedID,
-                    usedVariableNames: usedVariableNames
-                )
-                .padding(.leading, 16)
-                .overlay(alignment: .leading) {
-                    Rectangle()
-                        .fill(BlockCategory.control.color.opacity(0.5))
-                        .frame(width: 3)
-                        .padding(.leading, 4)
-                }
+                Text("times")
             }
-        } else {
+        case .ifBlock(let condition, let body):
+            ContainerBlockRow(
+                block: block, childBlocks: body, workspace: workspace,
+                highlightedID: highlightedID, usedVariableNames: usedVariableNames
+            ) {
+                Label("If", systemImage: "questionmark.diamond")
+                ConditionEditor(condition: condition, usedNames: usedVariableNames) { new in
+                    workspace.updateKind(of: block.id, to: .ifBlock(condition: new, body: body))
+                }
+                Text("then")
+            }
+        default:
             HStack(spacing: 8) {
                 SimpleBlockLabel(kind: block.kind, usedVariableNames: usedVariableNames) { new in
                     workspace.updateKind(of: block.id, to: new)
@@ -240,6 +223,58 @@ struct BlockRowView: View {
             .animation(.easeOut(duration: 0.15), value: isHighlighted)
             .draggable(block)
             .accessibilityValue(isHighlighted ? "Running" : "")
+        }
+    }
+}
+
+/// Chrome shared by every container kind (repeat, if): the tinted header
+/// row with target/move/delete controls and drop-to-append, then the
+/// indented body list with its guide bar. The kind-specific header cells
+/// come in as a ViewBuilder.
+struct ContainerBlockRow<Header: View>: View {
+    let block: Block
+    let childBlocks: [Block]
+    let workspace: WorkspaceEditor
+    var highlightedID: UUID?
+    var usedVariableNames: [String] = []
+    @ViewBuilder let header: Header
+
+    @State private var isDropTargeted = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                header
+                InsertionTargetButton(blockID: block.id, workspace: workspace)
+                Spacer(minLength: 0)
+                RowControls(blockID: block.id, workspace: workspace)
+            }
+            .padding(8)
+            .background(
+                block.kind.category.color.opacity(isDropTargeted ? 0.35 : 0.15),
+                in: .rect(cornerRadius: 8)
+            )
+            .draggable(block)
+            // Dropping onto the header appends into this container's body.
+            .dropDestination(for: Block.self) { items, _ in
+                guard let dropped = items.first else { return false }
+                return workspace.handleDrop(dropped, at: childBlocks.count, inBodyOf: block.id)
+            } isTargeted: {
+                isDropTargeted = $0
+            }
+
+            BlockListView(
+                blocks: childBlocks, containerID: block.id, workspace: workspace,
+                highlightedID: highlightedID,
+                usedVariableNames: usedVariableNames
+            )
+            .padding(.leading, 16)
+            .overlay(alignment: .leading) {
+                Rectangle()
+                    .fill(block.kind.category.color.opacity(0.5))
+                    .frame(width: 3)
+                    .padding(.leading, 4)
+            }
         }
     }
 }
@@ -296,7 +331,7 @@ struct SimpleBlockLabel: View {
                     onChange(.addVariable(name: $0, value: value))
                 }
                 numberButton(value) { onChange(.addVariable(name: name, value: $0)) }
-            case .repeatBlock:
+            case .repeatBlock, .ifBlock:
                 // Containers are rendered by BlockRowView, never here.
                 EmptyView()
             }
@@ -310,7 +345,7 @@ struct SimpleBlockLabel: View {
     }
 }
 
-/// Marks a repeat as the palette's insertion target.
+/// Marks a container block as the palette's insertion target.
 struct InsertionTargetButton: View {
     let blockID: UUID
     let workspace: WorkspaceEditor
@@ -329,7 +364,7 @@ struct InsertionTargetButton: View {
         .toggleStyle(.button)
         .labelStyle(.iconOnly)
         .tint(BlockCategory.control.color)
-        .accessibilityHint("When on, new palette blocks go inside this repeat")
+        .accessibilityHint("When on, new palette blocks go inside this block")
     }
 }
 

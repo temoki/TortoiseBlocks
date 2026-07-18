@@ -142,12 +142,18 @@ extension BlockKind: Codable {
         case beginFill
         case endFill
         case repeatBlock = "repeat"
+        case ifBlock = "if"
         case setVariable
         case addVariable
     }
 
     private enum RepeatKeys: String, CodingKey {
         case count
+        case body
+    }
+
+    private enum IfKeys: String, CodingKey {
+        case condition
         case body
     }
 
@@ -185,6 +191,12 @@ extension BlockKind: Codable {
                 keyedBy: RepeatKeys.self, forKey: .repeatBlock)
             self = .repeatBlock(
                 count: try payload.decode(NumberValue.self, forKey: .count),
+                body: try payload.decode([Block].self, forKey: .body)
+            )
+        case .ifBlock:
+            let payload = try container.nestedContainer(keyedBy: IfKeys.self, forKey: .ifBlock)
+            self = .ifBlock(
+                condition: try payload.decode(Condition.self, forKey: .condition),
                 body: try payload.decode([Block].self, forKey: .body)
             )
         case .setVariable:
@@ -239,6 +251,10 @@ extension BlockKind: Codable {
         case .repeatBlock(let count, let body):
             var payload = container.nestedContainer(keyedBy: RepeatKeys.self, forKey: .repeatBlock)
             try payload.encode(count, forKey: .count)
+            try payload.encode(body, forKey: .body)
+        case .ifBlock(let condition, let body):
+            var payload = container.nestedContainer(keyedBy: IfKeys.self, forKey: .ifBlock)
+            try payload.encode(condition, forKey: .condition)
             try payload.encode(body, forKey: .body)
         case .setVariable(let name, let value):
             var payload = container.nestedContainer(

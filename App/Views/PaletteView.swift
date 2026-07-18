@@ -75,6 +75,15 @@ enum Palette {
                 PaletteEntry(
                     title: "Repeat", systemImage: "repeat",
                     kind: .repeatBlock(count: .literal(4), body: [])),
+                PaletteEntry(
+                    title: "If", systemImage: "questionmark.diamond",
+                    // "The dice shows 4 or more" — playable without setting
+                    // up a variable first.
+                    kind: .ifBlock(
+                        condition: Condition(
+                            lhs: .random(min: 1, max: 6), comparison: .greaterOrEqual,
+                            rhs: .literal(4)),
+                        body: [])),
             ]),
         PaletteSection(
             title: "Variables", category: .variables,

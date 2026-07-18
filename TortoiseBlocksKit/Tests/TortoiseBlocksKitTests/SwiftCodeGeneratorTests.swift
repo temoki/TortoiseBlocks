@@ -103,6 +103,44 @@ struct SwiftCodeGeneratorTests {
         #expect(code.contains("for _ in 1...Int(💖) {"))
     }
 
+    @Test("an if block renders as a Swift if with the comparison operator")
+    func ifCode() {
+        let blocks = [
+            Block(
+                kind: .ifBlock(
+                    condition: Condition(
+                        lhs: .random(min: 1, max: 6), comparison: .greaterOrEqual,
+                        rhs: .literal(4)),
+                    body: [Block(kind: .penColor(.literal(.red)))]
+                ))
+        ]
+        let expected = """
+            let 🐢 = Tortoise()
+            if Double.random(in: 1...6) >= 4 {
+                🐢.penColor = .red
+            }
+            """
+        #expect(SwiftCodeGenerator.code(for: blocks) == expected)
+    }
+
+    @Test("a variable condition declares the variable and renders ==")
+    func ifVariableCode() {
+        let blocks = [
+            Block(
+                kind: .ifBlock(
+                    condition: Condition(lhs: .variable("🌟"), comparison: .equal, rhs: .literal(3)),
+                    body: []
+                ))
+        ]
+        let expected = """
+            let 🐢 = Tortoise()
+            var 🌟 = 0.0
+            if 🌟 == 3 {
+            }
+            """
+        #expect(SwiftCodeGenerator.code(for: blocks) == expected)
+    }
+
     @Test("a random color renders as a pick from every non-white preset")
     func randomColorCode() {
         let code = SwiftCodeGenerator.code(for: [Block(kind: .penColor(.random))])

@@ -51,6 +51,25 @@ struct CodeTokenizerTests {
         #expect(tokens.map { String(code[$0.range]) }.joined() == code)
     }
 
+    @Test("if is a keyword; condition lines stay fully covered")
+    func ifTokens() {
+        let code = SwiftCodeGenerator.code(for: [
+            Block(
+                kind: .ifBlock(
+                    condition: Condition(
+                        lhs: .variable("🌟"), comparison: .greaterOrEqual, rhs: .literal(4)),
+                    body: [Block(kind: .home)]
+                ))
+        ])
+        let tokens = CodeTokenizer.tokenize(code)
+        let keywords = tokens.filter { $0.kind == .keyword }
+        #expect(
+            keywords.map { describe($0, in: code) } == [
+                "keyword:let", "keyword:var", "keyword:if",
+            ])
+        #expect(tokens.map { String(code[$0.range]) }.joined() == code)
+    }
+
     @Test("tokens fully cover the input with no gaps or overlaps")
     func fullCoverage() {
         let code = SwiftCodeGenerator.code(for: SampleBlocks.randomStar())
