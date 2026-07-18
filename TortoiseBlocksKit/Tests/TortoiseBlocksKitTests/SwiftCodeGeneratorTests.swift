@@ -7,9 +7,9 @@ struct SwiftCodeGeneratorTests {
     @Test("a program covering every block kind renders as expected source")
     func fullProgramSnapshot() {
         let blocks: [Block] = [
-            Block(kind: .penColor(.orange)),
+            Block(kind: .penColor(.literal(.orange))),
             Block(kind: .penWidth(.literal(2))),
-            Block(kind: .fillColor(.cyan)),
+            Block(kind: .fillColor(.literal(.cyan))),
             Block(kind: .beginFill),
             Block(
                 kind: .repeatBlock(
@@ -65,5 +65,14 @@ struct SwiftCodeGeneratorTests {
     func numberFormatting() {
         let code = SwiftCodeGenerator.code(for: [Block(kind: .forward(.literal(100.0)))])
         #expect(code.hasSuffix("🐢.forward(100)"))
+    }
+
+    @Test("a random color renders as a pick from every non-white preset")
+    func randomColorCode() {
+        let code = SwiftCodeGenerator.code(for: [Block(kind: .penColor(.random))])
+        #expect(
+            code.hasSuffix(
+                "🐢.penColor = [.black, .red, .green, .blue, .yellow, .orange, .purple, .cyan, .magenta].randomElement()!"
+            ))
     }
 }

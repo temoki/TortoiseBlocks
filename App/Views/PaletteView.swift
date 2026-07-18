@@ -51,7 +51,7 @@ enum Palette {
                     kind: .penUp),
                 PaletteEntry(
                     title: "Pen Color", systemImage: "paintpalette",
-                    kind: .penColor(.blue)),
+                    kind: .penColor(.literal(.blue))),
                 PaletteEntry(
                     title: "Pen Width", systemImage: "lineweight",
                     kind: .penWidth(.literal(2))),
@@ -61,7 +61,7 @@ enum Palette {
             entries: [
                 PaletteEntry(
                     title: "Fill Color", systemImage: "drop.fill",
-                    kind: .fillColor(.yellow)),
+                    kind: .fillColor(.literal(.yellow))),
                 PaletteEntry(
                     title: "Start Fill", systemImage: "paintbrush.fill",
                     kind: .beginFill),

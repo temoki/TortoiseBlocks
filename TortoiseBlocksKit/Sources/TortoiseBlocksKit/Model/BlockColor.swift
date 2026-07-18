@@ -24,4 +24,8 @@ public enum BlockColor: String, Codable, Hashable, CaseIterable, Sendable {
         case .magenta: .magenta
         }
     }
+
+    /// Colors eligible for `ColorValue.random`'s draw — `white` is excluded
+    /// since the canvas background is white and a white pen/fill vanishes.
+    public static let randomizable: [BlockColor] = allCases.filter { $0 != .white }
 }

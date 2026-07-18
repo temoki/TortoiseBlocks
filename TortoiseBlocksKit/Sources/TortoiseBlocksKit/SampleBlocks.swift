@@ -5,7 +5,7 @@ public enum SampleBlocks {
     /// always comes out the same tidy shape (matches `SampleProgram.star()`).
     public static func star() -> [Block] {
         [
-            Block(kind: .penColor(.orange)),
+            Block(kind: .penColor(.literal(.orange))),
             Block(kind: .penWidth(.literal(2))),
             Block(
                 kind: .repeatBlock(
@@ -21,7 +21,7 @@ public enum SampleBlocks {
     /// A 36-point star whose ray lengths are rolled per iteration.
     public static func randomStar() -> [Block] {
         [
-            Block(kind: .penColor(.purple)),
+            Block(kind: .penColor(.literal(.purple))),
             Block(kind: .penWidth(.literal(2))),
             Block(
                 kind: .repeatBlock(
@@ -37,7 +37,7 @@ public enum SampleBlocks {
     /// A filled square — fill color, four repeated sides, then close the fill.
     public static func filledSquare() -> [Block] {
         [
-            Block(kind: .fillColor(.cyan)),
+            Block(kind: .fillColor(.literal(.cyan))),
             Block(kind: .beginFill),
             Block(
                 kind: .repeatBlock(

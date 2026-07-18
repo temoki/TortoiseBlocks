@@ -52,9 +52,9 @@ struct CodeTokenizerTests {
     @Test("a full program snapshot tokenizes as expected")
     func fullProgramSnapshot() {
         let blocks: [Block] = [
-            Block(kind: .penColor(.orange)),
+            Block(kind: .penColor(.literal(.orange))),
             Block(kind: .penWidth(.literal(2))),
-            Block(kind: .fillColor(.cyan)),
+            Block(kind: .fillColor(.literal(.cyan))),
             Block(kind: .beginFill),
             Block(
                 kind: .repeatBlock(

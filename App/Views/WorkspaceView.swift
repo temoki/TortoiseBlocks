@@ -260,13 +260,13 @@ struct SimpleBlockLabel: View {
                 Label("Pen Down", systemImage: "pencil")
             case .penColor(let color):
                 Label("Pen Color", systemImage: "paintpalette")
-                ColorValueButton(color: color) { onChange(.penColor($0)) }
+                ColorValueButton(value: color) { onChange(.penColor($0)) }
             case .penWidth(let value):
                 Label("Pen Width", systemImage: "lineweight")
                 NumberValueButton(value: value) { onChange(.penWidth($0)) }
             case .fillColor(let color):
                 Label("Fill Color", systemImage: "drop.fill")
-                ColorValueButton(color: color) { onChange(.fillColor($0)) }
+                ColorValueButton(value: color) { onChange(.fillColor($0)) }
             case .beginFill:
                 Label("Start Fill", systemImage: "paintbrush.fill")
             case .endFill:

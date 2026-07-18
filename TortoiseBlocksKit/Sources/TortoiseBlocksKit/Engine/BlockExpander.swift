@@ -72,11 +72,11 @@ public enum BlockExpander {
             case .penDown:
                 try emit(.penDown, block, &result, limit)
             case .penColor(let color):
-                try emit(.penColor(color.tortoiseColor), block, &result, limit)
+                try emit(.penColor(color.evaluated(using: &rng).tortoiseColor), block, &result, limit)
             case .penWidth(let value):
                 try emit(.penWidth(value.evaluated(using: &rng)), block, &result, limit)
             case .fillColor(let color):
-                try emit(.fillColor(color.tortoiseColor), block, &result, limit)
+                try emit(.fillColor(color.evaluated(using: &rng).tortoiseColor), block, &result, limit)
             case .beginFill:
                 try emit(.beginFill, block, &result, limit)
             case .endFill:

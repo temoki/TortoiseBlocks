@@ -40,13 +40,13 @@ public enum BlockKind: Hashable, Sendable {
     /// ペンを おろす
     case penDown
     /// ペンのいろ
-    case penColor(BlockColor)
+    case penColor(ColorValue)
     /// ペンのふとさ
     case penWidth(NumberValue)
 
     // MARK: Fill
     /// ぬりのいろ
-    case fillColor(BlockColor)
+    case fillColor(ColorValue)
     /// ぬりはじめ
     case beginFill
     /// ぬりおわり

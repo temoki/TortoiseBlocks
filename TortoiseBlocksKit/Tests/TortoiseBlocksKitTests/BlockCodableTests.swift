@@ -22,9 +22,12 @@ struct BlockCodableTests {
         (.home, #"{"home":{}}"#),
         (.penUp, #"{"penUp":{}}"#),
         (.penDown, #"{"penDown":{}}"#),
-        (.penColor(.red), #"{"penColor":"red"}"#),
+        // Bare preset strings — unchanged from before `ColorValue` existed,
+        // so old files decode as-is and new literal-only files stay
+        // byte-identical to what an older app would have written.
+        (.penColor(.literal(.red)), #"{"penColor":"red"}"#),
         (.penWidth(.literal(3)), #"{"penWidth":{"literal":3}}"#),
-        (.fillColor(.cyan), #"{"fillColor":"cyan"}"#),
+        (.fillColor(.literal(.cyan)), #"{"fillColor":"cyan"}"#),
         (.beginFill, #"{"beginFill":{}}"#),
         (.endFill, #"{"endFill":{}}"#),
         (
@@ -75,6 +78,15 @@ struct BlockCodableTests {
         let decoded = try JSONDecoder().decode(BlocksProject.self, from: data)
         #expect(decoded == project)
         #expect(decoded.schemaVersion == BlocksProject.currentSchemaVersion)
+    }
+
+    @Test("a random color block round-trips through JSON")
+    func randomColorRoundTrips() throws {
+        let kind = BlockKind.penColor(.random)
+        let json = try Self.sortedKeysJSON(kind)
+        #expect(json == #"{"penColor":{"random":{}}}"#)
+        let decoded = try JSONDecoder().decode(BlockKind.self, from: Data(json.utf8))
+        #expect(decoded == kind)
     }
 
     @Test("an unknown block kind fails to decode")

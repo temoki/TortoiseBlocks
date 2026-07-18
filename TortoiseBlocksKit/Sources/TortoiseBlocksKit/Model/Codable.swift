@@ -77,6 +77,40 @@ extension NumberValue: Codable {
     }
 }
 
+// MARK: - ColorValue
+
+extension ColorValue: Codable {
+    /// Wire format: a bare preset string for `.literal` — unchanged from
+    /// the pre-`ColorValue` format, so old files decode as-is and new
+    /// literal-only files stay byte-identical to what an older app would
+    /// write — or `{"random":{}}` for `.random`.
+    private enum CodingKeys: String, CodingKey {
+        case random
+    }
+
+    public init(from decoder: any Decoder) throws {
+        if let container = try? decoder.singleValueContainer(),
+            let color = try? container.decode(BlockColor.self)
+        {
+            self = .literal(color)
+            return
+        }
+        _ = try singleKnownKey(of: decoder, as: CodingKeys.self)
+        self = .random
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        switch self {
+        case .literal(let color):
+            var container = encoder.singleValueContainer()
+            try container.encode(color)
+        case .random:
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            _ = container.nestedContainer(keyedBy: RawCodingKey.self, forKey: .random)
+        }
+    }
+}
+
 // MARK: - BlockKind
 
 extension BlockKind: Codable {
@@ -115,8 +149,8 @@ extension BlockKind: Codable {
         func number() throws -> NumberValue {
             try container.decode(NumberValue.self, forKey: key)
         }
-        func color() throws -> BlockColor {
-            try container.decode(BlockColor.self, forKey: key)
+        func color() throws -> ColorValue {
+            try container.decode(ColorValue.self, forKey: key)
         }
 
         switch key {

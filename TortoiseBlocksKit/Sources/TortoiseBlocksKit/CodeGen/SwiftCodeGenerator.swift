@@ -30,11 +30,11 @@ public enum SwiftCodeGenerator {
             case .penDown:
                 lines.append("\(pad)🐢.penDown()")
             case .penColor(let color):
-                lines.append("\(pad)🐢.penColor = .\(color.rawValue)")
+                lines.append("\(pad)🐢.penColor = \(colorExpression(color))")
             case .penWidth(let value):
                 lines.append("\(pad)🐢.penWidth = \(doubleExpression(value))")
             case .fillColor(let color):
-                lines.append("\(pad)🐢.fillColor = .\(color.rawValue)")
+                lines.append("\(pad)🐢.fillColor = \(colorExpression(color))")
             case .beginFill:
                 lines.append("\(pad)🐢.beginFill()")
             case .endFill:
@@ -64,6 +64,16 @@ public enum SwiftCodeGenerator {
             return format(value)
         case .random(let min, let max):
             return "Int.random(in: \(format(min))...\(format(max)))"
+        }
+    }
+
+    private static func colorExpression(_ value: ColorValue) -> String {
+        switch value {
+        case .literal(let color):
+            return ".\(color.rawValue)"
+        case .random:
+            let cases = BlockColor.randomizable.map { ".\($0.rawValue)" }.joined(separator: ", ")
+            return "[\(cases)].randomElement()!"
         }
     }
 

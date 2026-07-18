@@ -19,7 +19,7 @@ struct SampleBlocksTests {
     func filledSquareStructure() {
         let blocks = SampleBlocks.filledSquare()
         #expect(blocks.map(\.kind.category) == [.fill, .fill, .control, .fill])
-        #expect(blocks[0].kind == .fillColor(.cyan))
+        #expect(blocks[0].kind == .fillColor(.literal(.cyan)))
         #expect(blocks[1].kind == .beginFill)
         #expect(blocks[3].kind == .endFill)
         guard case .repeatBlock(let count, let body) = blocks[2].kind else {

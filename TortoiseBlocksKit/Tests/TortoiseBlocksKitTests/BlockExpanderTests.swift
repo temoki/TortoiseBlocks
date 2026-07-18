@@ -36,9 +36,9 @@ struct BlockExpanderTests {
             Block(kind: .home),
             Block(kind: .penUp),
             Block(kind: .penDown),
-            Block(kind: .penColor(.red)),
+            Block(kind: .penColor(.literal(.red))),
             Block(kind: .penWidth(.literal(3))),
-            Block(kind: .fillColor(.cyan)),
+            Block(kind: .fillColor(.literal(.cyan))),
             Block(kind: .beginFill),
             Block(kind: .endFill),
         ]
@@ -106,6 +106,24 @@ struct BlockExpanderTests {
         }
         #expect(distances.count == 3)
         #expect(Set(distances).count > 1)
+    }
+
+    @Test("a random color inside a repeat is re-evaluated every iteration, never white")
+    func randomColorInsideRepeatReevaluates() throws {
+        let blocks = [
+            Block(
+                kind: .repeatBlock(
+                    count: .literal(50),
+                    body: [Block(kind: .penColor(.random))]
+                ))
+        ]
+        let colors = try expand(blocks).compactMap { expanded -> TortoiseCore.Color? in
+            guard case .penColor(let color) = expanded.command else { return nil }
+            return color
+        }
+        #expect(colors.count == 50)
+        #expect(!colors.contains(BlockColor.white.tortoiseColor))
+        #expect(Set(colors).count > 1)
     }
 
     @Test("an inverted random range is normalized instead of trapping")
