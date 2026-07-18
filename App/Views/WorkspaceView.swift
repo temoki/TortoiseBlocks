@@ -7,6 +7,13 @@ struct WorkspaceView: View {
     let workspace: WorkspaceEditor
     let runner: RunnerModel
 
+    /// The last blockID actually scrolled to, and when — lets repeat loops
+    /// (which revisit the same few rows) skip redundant `scrollTo` calls and
+    /// caps the fire rate to ~4/sec instead of once per committed command.
+    @State private var lastScrolledBlockID: UUID?
+    @State private var lastScrollTime: Date?
+    private let minScrollInterval: TimeInterval = 0.25
+
     var body: some View {
         VStack(spacing: 0) {
             HStack {
@@ -47,7 +54,13 @@ struct WorkspaceView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .onChange(of: runner.currentBlockID) { _, id in
-                        guard let id else { return }
+                        guard let id, id != lastScrolledBlockID else { return }
+                        let now = Date()
+                        if let lastScrollTime, now.timeIntervalSince(lastScrollTime) < minScrollInterval {
+                            return
+                        }
+                        lastScrolledBlockID = id
+                        lastScrollTime = now
                         withAnimation(.easeInOut(duration: 0.2)) {
                             proxy.scrollTo(id, anchor: .center)
                         }
