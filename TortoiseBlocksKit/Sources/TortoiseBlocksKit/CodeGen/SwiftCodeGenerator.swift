@@ -60,6 +60,12 @@ public enum SwiftCodeGenerator {
                 lines.append("\(pad)\(name) = \(doubleExpression(value))")
             case .addVariable(let name, let value):
                 lines.append("\(pad)\(name) += \(doubleExpression(value))")
+            case .subtractVariable(let name, let value):
+                lines.append("\(pad)\(name) -= \(doubleExpression(value))")
+            case .multiplyVariable(let name, let value):
+                lines.append("\(pad)\(name) *= \(doubleExpression(value))")
+            case .divideVariable(let name, let value):
+                lines.append("\(pad)\(name) /= \(doubleExpression(value))")
             }
         }
     }

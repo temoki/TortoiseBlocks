@@ -216,7 +216,10 @@ public enum BlockTree {
                     visit(value)
                 case .home, .penUp, .penDown, .penColor, .fillColor, .beginFill, .endFill:
                     break
-                case .setVariable(let name, let value), .addVariable(let name, let value):
+                case .setVariable(let name, let value), .addVariable(let name, let value),
+                    .subtractVariable(let name, let value),
+                    .multiplyVariable(let name, let value),
+                    .divideVariable(let name, let value):
                     record(name)
                     visit(value)
                 case .repeatBlock(let count, let body):
@@ -267,6 +270,12 @@ public enum BlockTree {
                     block.kind = .setVariable(name: renamed(name), value: renamed(value))
                 case .addVariable(let name, let value):
                     block.kind = .addVariable(name: renamed(name), value: renamed(value))
+                case .subtractVariable(let name, let value):
+                    block.kind = .subtractVariable(name: renamed(name), value: renamed(value))
+                case .multiplyVariable(let name, let value):
+                    block.kind = .multiplyVariable(name: renamed(name), value: renamed(value))
+                case .divideVariable(let name, let value):
+                    block.kind = .divideVariable(name: renamed(name), value: renamed(value))
                 case .repeatBlock(let count, let body):
                     block.kind = .repeatBlock(count: renamed(count), body: walk(body))
                 case .ifBlock(let condition, let body, let elseBody):

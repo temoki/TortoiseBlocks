@@ -134,6 +134,22 @@ public enum BlockExpander {
                 try charge(&steps, limit)
                 let delta = evaluate(value)
                 variables[name, default: 0] += delta
+            case .subtractVariable(let name, let value):
+                try charge(&steps, limit)
+                let delta = evaluate(value)
+                variables[name, default: 0] -= delta
+            case .multiplyVariable(let name, let value):
+                try charge(&steps, limit)
+                let factor = evaluate(value)
+                variables[name, default: 0] *= factor
+            case .divideVariable(let name, let value):
+                try charge(&steps, limit)
+                // Dividing by zero is a kid-friendly no-op — the box keeps
+                // its value. inf/NaN must never reach the tortoise.
+                let divisor = evaluate(value)
+                if divisor != 0 {
+                    variables[name, default: 0] /= divisor
+                }
             }
         }
     }

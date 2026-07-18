@@ -79,7 +79,10 @@ exactly while some block mentions it (`BlockTree.usedVariableNames`); unset
 reads are 0, scope is a single global environment, and the same
 once-per-count / every-iteration rules apply. The set/add blocks emit *no*
 command — highlight alignment is untouched — but they still count against
-the step cap, so assignment-only loops can't run away. Documents are written
+the step cap, so assignment-only loops can't run away. The arithmetic
+blocks (subtract/multiply/divide → `-=`/`*=`/`/=`) follow the same rules;
+dividing by zero is a no-op — the box keeps its value, because inf/NaN
+must never reach the tortoise. Documents are written
 with `requiredSchemaVersion` (2 only when v2 features appear; otherwise 1,
 byte-identical to the old format), and `BlocksDocument` probes
 `schemaVersion` *before* the full decode so newer files fail with the

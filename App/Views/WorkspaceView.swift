@@ -415,6 +415,24 @@ struct SimpleBlockLabel: View {
                     onChange(.addVariable(name: $0, value: value))
                 }
                 numberButton(value) { onChange(.addVariable(name: name, value: $0)) }
+            case .subtractVariable(let name, let value):
+                Label("Subtract from Box", systemImage: "minus.square")
+                VariableNameButton(name: name, usedNames: usedVariableNames) {
+                    onChange(.subtractVariable(name: $0, value: value))
+                }
+                numberButton(value) { onChange(.subtractVariable(name: name, value: $0)) }
+            case .multiplyVariable(let name, let value):
+                Label("Multiply Box", systemImage: "multiply.square")
+                VariableNameButton(name: name, usedNames: usedVariableNames) {
+                    onChange(.multiplyVariable(name: $0, value: value))
+                }
+                numberButton(value) { onChange(.multiplyVariable(name: name, value: $0)) }
+            case .divideVariable(let name, let value):
+                Label("Divide Box", systemImage: "divide.square")
+                VariableNameButton(name: name, usedNames: usedVariableNames) {
+                    onChange(.divideVariable(name: $0, value: value))
+                }
+                numberButton(value) { onChange(.divideVariable(name: name, value: $0)) }
             case .repeatBlock, .ifBlock:
                 // Containers are rendered by BlockRowView, never here.
                 EmptyView()

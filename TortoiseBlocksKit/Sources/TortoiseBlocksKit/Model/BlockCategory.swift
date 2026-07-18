@@ -18,7 +18,7 @@ extension BlockKind {
             .fill
         case .repeatBlock, .ifBlock:
             .control
-        case .setVariable, .addVariable:
+        case .setVariable, .addVariable, .subtractVariable, .multiplyVariable, .divideVariable:
             .variables
         }
     }

@@ -67,6 +67,13 @@ public enum BlockKind: Hashable, Sendable {
     case setVariable(name: String, value: NumberValue)
     /// はこに たす — add the value to the named variable.
     case addVariable(name: String, value: NumberValue)
+    /// はこから ひく — subtract the value from the named variable.
+    case subtractVariable(name: String, value: NumberValue)
+    /// はこに かける — multiply the named variable by the value.
+    case multiplyVariable(name: String, value: NumberValue)
+    /// はこを わる — divide the named variable by the value
+    /// (dividing by zero is a no-op — see `BlockExpander`).
+    case divideVariable(name: String, value: NumberValue)
 }
 
 /// Which mouth of a container a sibling list lives in. Only the if block
@@ -109,7 +116,7 @@ extension BlockKind {
         case .forward, .backward, .turnRight, .turnLeft, .home,
             .penUp, .penDown, .penColor, .penWidth,
             .fillColor, .beginFill, .endFill,
-            .setVariable, .addVariable:
+            .setVariable, .addVariable, .subtractVariable, .multiplyVariable, .divideVariable:
             []
         }
     }
@@ -138,7 +145,7 @@ extension BlockKind {
         case .forward, .backward, .turnRight, .turnLeft, .home,
             .penUp, .penDown, .penColor, .penWidth,
             .fillColor, .beginFill, .endFill,
-            .setVariable, .addVariable:
+            .setVariable, .addVariable, .subtractVariable, .multiplyVariable, .divideVariable:
             self
         }
     }

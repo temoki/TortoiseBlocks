@@ -94,6 +94,15 @@ enum Palette {
                 PaletteEntry(
                     title: "Add to Box", systemImage: "plus.square",
                     kind: .addVariable(name: variableNamePresets[0], value: .literal(10))),
+                PaletteEntry(
+                    title: "Subtract from Box", systemImage: "minus.square",
+                    kind: .subtractVariable(name: variableNamePresets[0], value: .literal(10))),
+                PaletteEntry(
+                    title: "Multiply Box", systemImage: "multiply.square",
+                    kind: .multiplyVariable(name: variableNamePresets[0], value: .literal(2))),
+                PaletteEntry(
+                    title: "Divide Box", systemImage: "divide.square",
+                    kind: .divideVariable(name: variableNamePresets[0], value: .literal(2))),
             ]),
     ]
 }

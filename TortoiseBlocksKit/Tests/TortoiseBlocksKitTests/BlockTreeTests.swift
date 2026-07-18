@@ -243,6 +243,18 @@ struct BlockTreeTests {
         #expect(BlockTree.usedVariableNames(in: renamed) == ["🌟", "💖", "🍀", "おもて"])
     }
 
+    @Test("arithmetic blocks record and rename their box like set/add")
+    func arithmeticVariableNames() throws {
+        let blocks = [
+            Block(kind: .subtractVariable(name: "🌟", value: .variable("💖"))),
+            Block(kind: .multiplyVariable(name: "🍀", value: .literal(2))),
+            Block(kind: .divideVariable(name: "🌟", value: .literal(2))),
+        ]
+        #expect(BlockTree.usedVariableNames(in: blocks) == ["🌟", "💖", "🍀"])
+        let renamed = try #require(BlockTree.renamingVariable("🌟", to: "ほし", in: blocks))
+        #expect(BlockTree.usedVariableNames(in: renamed) == ["ほし", "💖", "🍀"])
+    }
+
     @Test("else-mouth edits: append, insert, cross-mouth move, rejections")
     func elseMouthEdits() throws {
         let thenHome = Block(kind: .home)

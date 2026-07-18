@@ -94,6 +94,25 @@ struct SwiftCodeGeneratorTests {
         #expect(SwiftCodeGenerator.code(for: blocks) == expected)
     }
 
+    @Test("arithmetic blocks render as -=, *=, and /=")
+    func arithmeticCode() {
+        let blocks = [
+            Block(kind: .setVariable(name: "🌟", value: .literal(20))),
+            Block(kind: .subtractVariable(name: "🌟", value: .literal(4))),
+            Block(kind: .multiplyVariable(name: "🌟", value: .literal(3))),
+            Block(kind: .divideVariable(name: "🌟", value: .literal(2))),
+        ]
+        let expected = """
+            let 🐢 = Tortoise()
+            var 🌟 = 0.0
+            🌟 = 20
+            🌟 -= 4
+            🌟 *= 3
+            🌟 /= 2
+            """
+        #expect(SwiftCodeGenerator.code(for: blocks) == expected)
+    }
+
     @Test("a variable repeat count renders as Int(name)")
     func variableCountCode() {
         let code = SwiftCodeGenerator.code(for: [

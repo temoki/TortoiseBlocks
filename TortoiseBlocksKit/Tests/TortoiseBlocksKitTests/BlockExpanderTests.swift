@@ -126,6 +126,42 @@ struct BlockExpanderTests {
         #expect(Set(colors).count > 1)
     }
 
+    @Test("subtract, multiply, and divide do box arithmetic in order")
+    func arithmeticOperations() throws {
+        let blocks = [
+            Block(kind: .setVariable(name: "🌟", value: .literal(20))),
+            Block(kind: .subtractVariable(name: "🌟", value: .literal(4))),
+            Block(kind: .multiplyVariable(name: "🌟", value: .literal(3))),
+            Block(kind: .divideVariable(name: "🌟", value: .literal(2))),
+            Block(kind: .forward(.variable("🌟"))),
+        ]
+        // (20 − 4) × 3 ÷ 2 = 24
+        #expect(try expand(blocks).map(\.command) == [.forward(24)])
+    }
+
+    @Test("unset boxes start at 0 for every operation")
+    func arithmeticOnUnsetBoxes() throws {
+        let blocks = [
+            Block(kind: .subtractVariable(name: "あ", value: .literal(5))),
+            Block(kind: .multiplyVariable(name: "い", value: .literal(5))),
+            Block(kind: .forward(.variable("あ"))),
+            Block(kind: .forward(.variable("い"))),
+        ]
+        #expect(try expand(blocks).map(\.command) == [.forward(-5), .forward(0)])
+    }
+
+    @Test("dividing by zero is a no-op — the box keeps its value")
+    func divideByZero() throws {
+        let blocks = [
+            Block(kind: .setVariable(name: "🌟", value: .literal(12))),
+            Block(kind: .divideVariable(name: "🌟", value: .literal(0))),
+            // A dice that can only roll zero is guarded too.
+            Block(kind: .divideVariable(name: "🌟", value: .random(min: 0, max: 0))),
+            Block(kind: .forward(.variable("🌟"))),
+        ]
+        #expect(try expand(blocks).map(\.command) == [.forward(12)])
+    }
+
     @Test("an unset variable reads 0; a set one reads its stored value")
     func variableSetAndRead() throws {
         let blocks = [

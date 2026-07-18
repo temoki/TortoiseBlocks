@@ -191,6 +191,16 @@
         }
       }
     },
+    "Divide Box": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "はこをわる"
+          }
+        }
+      }
+    },
     "Drawing": {
       "localizations": {
         "ja": {
@@ -357,6 +367,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "うえへ"
+          }
+        }
+      }
+    },
+    "Multiply Box": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "はこにかける"
           }
         }
       }
@@ -637,6 +657,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "いっぽすすむ"
+          }
+        }
+      }
+    },
+    "Subtract from Box": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "はこからひく"
           }
         }
       }

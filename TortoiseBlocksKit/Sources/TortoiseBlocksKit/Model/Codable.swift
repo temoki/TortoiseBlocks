@@ -145,6 +145,9 @@ extension BlockKind: Codable {
         case ifBlock = "if"
         case setVariable
         case addVariable
+        case subtractVariable
+        case multiplyVariable
+        case divideVariable
     }
 
     private enum RepeatKeys: String, CodingKey {
@@ -218,6 +221,27 @@ extension BlockKind: Codable {
                 name: try payload.decode(String.self, forKey: .name),
                 value: try payload.decode(NumberValue.self, forKey: .value)
             )
+        case .subtractVariable:
+            let payload = try container.nestedContainer(
+                keyedBy: VariableKeys.self, forKey: .subtractVariable)
+            self = .subtractVariable(
+                name: try payload.decode(String.self, forKey: .name),
+                value: try payload.decode(NumberValue.self, forKey: .value)
+            )
+        case .multiplyVariable:
+            let payload = try container.nestedContainer(
+                keyedBy: VariableKeys.self, forKey: .multiplyVariable)
+            self = .multiplyVariable(
+                name: try payload.decode(String.self, forKey: .name),
+                value: try payload.decode(NumberValue.self, forKey: .value)
+            )
+        case .divideVariable:
+            let payload = try container.nestedContainer(
+                keyedBy: VariableKeys.self, forKey: .divideVariable)
+            self = .divideVariable(
+                name: try payload.decode(String.self, forKey: .name),
+                value: try payload.decode(NumberValue.self, forKey: .value)
+            )
         }
     }
 
@@ -270,6 +294,21 @@ extension BlockKind: Codable {
         case .addVariable(let name, let value):
             var payload = container.nestedContainer(
                 keyedBy: VariableKeys.self, forKey: .addVariable)
+            try payload.encode(name, forKey: .name)
+            try payload.encode(value, forKey: .value)
+        case .subtractVariable(let name, let value):
+            var payload = container.nestedContainer(
+                keyedBy: VariableKeys.self, forKey: .subtractVariable)
+            try payload.encode(name, forKey: .name)
+            try payload.encode(value, forKey: .value)
+        case .multiplyVariable(let name, let value):
+            var payload = container.nestedContainer(
+                keyedBy: VariableKeys.self, forKey: .multiplyVariable)
+            try payload.encode(name, forKey: .name)
+            try payload.encode(value, forKey: .value)
+        case .divideVariable(let name, let value):
+            var payload = container.nestedContainer(
+                keyedBy: VariableKeys.self, forKey: .divideVariable)
             try payload.encode(name, forKey: .name)
             try payload.encode(value, forKey: .value)
         }

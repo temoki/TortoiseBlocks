@@ -67,6 +67,18 @@ struct BlockCodableTests {
             .addVariable(name: "💖", value: .random(min: 1, max: 6)),
             #"{"addVariable":{"name":"💖","value":{"random":{"max":6,"min":1}}}}"#
         ),
+        (
+            .subtractVariable(name: "🌟", value: .literal(5)),
+            #"{"subtractVariable":{"name":"🌟","value":{"literal":5}}}"#
+        ),
+        (
+            .multiplyVariable(name: "🌟", value: .literal(2)),
+            #"{"multiplyVariable":{"name":"🌟","value":{"literal":2}}}"#
+        ),
+        (
+            .divideVariable(name: "🌟", value: .literal(2)),
+            #"{"divideVariable":{"name":"🌟","value":{"literal":2}}}"#
+        ),
     ]
 
     private static func sortedKeysJSON(_ value: some Encodable) throws -> String {
