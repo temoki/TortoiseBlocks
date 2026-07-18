@@ -421,6 +421,26 @@
         }
       }
     },
+    "Sample: Filled Square": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サンプル: しかくをぬる"
+          }
+        }
+      }
+    },
+    "Sample: Star": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サンプル: ほしをかく"
+          }
+        }
+      }
+    },
     "Share PNG": {
       "localizations": {
         "ja": {

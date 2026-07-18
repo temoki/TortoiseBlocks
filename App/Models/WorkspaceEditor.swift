@@ -50,6 +50,12 @@ struct WorkspaceEditor {
         }
     }
 
+    /// Replaces the (empty) tree with a sample program — goes through
+    /// `setBlocks`, so it's undoable and dirties the document like any edit.
+    func insertSample(_ blocks: [Block]) {
+        setBlocks(blocks)
+    }
+
     func delete(_ id: UUID) {
         guard let new = BlockTree.removing(blockWithID: id, from: blocks) else { return }
         setBlocks(new)

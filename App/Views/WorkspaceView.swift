@@ -33,11 +33,23 @@ struct WorkspaceView: View {
             .padding()
             Divider()
             if workspace.blocks.isEmpty {
-                ContentUnavailableView(
-                    "Build with Blocks",
-                    systemImage: "square.stack.3d.up",
-                    description: Text("Tap a palette block, or drag one here")
-                )
+                ContentUnavailableView {
+                    Label("Build with Blocks", systemImage: "square.stack.3d.up")
+                } description: {
+                    Text("Tap a palette block, or drag one here")
+                } actions: {
+                    // A one-tap educational on-ramp: dropping in a whole
+                    // sample goes through insertSample -> setBlocks, so it's
+                    // undoable and dirties the document like any other edit.
+                    VStack(spacing: 8) {
+                        Button("Sample: Filled Square") {
+                            workspace.insertSample(SampleBlocks.filledSquare())
+                        }
+                        Button("Sample: Star") {
+                            workspace.insertSample(SampleBlocks.star())
+                        }
+                    }
+                }
                 .frame(maxHeight: .infinity)
                 .dropDestination(for: Block.self) { items, _ in
                     guard let block = items.first else { return false }
