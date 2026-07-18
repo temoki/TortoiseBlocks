@@ -59,13 +59,32 @@ struct CodeTokenizerTests {
                     condition: Condition(
                         lhs: .variable("🌟"), comparison: .greaterOrEqual, rhs: .literal(4)),
                     body: [Block(kind: .home)]
-                ))
+                , elseBody: nil))
         ])
         let tokens = CodeTokenizer.tokenize(code)
         let keywords = tokens.filter { $0.kind == .keyword }
         #expect(
             keywords.map { describe($0, in: code) } == [
                 "keyword:let", "keyword:var", "keyword:if",
+            ])
+        #expect(tokens.map { String(code[$0.range]) }.joined() == code)
+    }
+
+    @Test("else is a keyword")
+    func elseTokens() {
+        let code = SwiftCodeGenerator.code(for: [
+            Block(
+                kind: .ifBlock(
+                    condition: Condition(lhs: .literal(1), comparison: .less, rhs: .literal(2)),
+                    body: [Block(kind: .home)],
+                    elseBody: [Block(kind: .penUp)]
+                ))
+        ])
+        let tokens = CodeTokenizer.tokenize(code)
+        let keywords = tokens.filter { $0.kind == .keyword }
+        #expect(
+            keywords.map { describe($0, in: code) } == [
+                "keyword:let", "keyword:if", "keyword:else",
             ])
         #expect(tokens.map { String(code[$0.range]) }.joined() == code)
     }

@@ -7,9 +7,10 @@ import TortoiseBlocksKit
 @Observable
 @MainActor
 final class WorkspaceUIState {
-    /// The container block (repeat/if) new palette blocks are appended into
-    /// (nil = top level). Toggled from the container row's target button.
-    var insertionTargetID: UUID?
+    /// The mouth (container + slot) new palette blocks are appended into
+    /// (nil = top level). Toggled from the container/else rows' target
+    /// buttons.
+    var insertionTarget: BodyAddress?
 }
 
 /// Value-type editing facade over the document.
@@ -26,9 +27,9 @@ struct WorkspaceEditor {
 
     var blocks: [Block] { document.wrappedValue.project.blocks }
 
-    var insertionTargetID: UUID? {
-        get { uiState.insertionTargetID }
-        nonmutating set { uiState.insertionTargetID = newValue }
+    var insertionTarget: BodyAddress? {
+        get { uiState.insertionTarget }
+        nonmutating set { uiState.insertionTarget = newValue }
     }
 
     // Reading these in body stays fresh without observation: every edit,
@@ -41,12 +42,12 @@ struct WorkspaceEditor {
     func add(_ kind: BlockKind) {
         let block = Block(kind: kind)
         // Fall back to top level if the target has been deleted meanwhile.
-        let target = validatedInsertionTarget()
-        guard let new = BlockTree.appending(block, toBodyOf: target, in: blocks) else { return }
+        let target = validatedInsertionTarget() ?? .topLevel
+        guard let new = BlockTree.appending(block, toBodyAt: target, in: blocks) else { return }
         setBlocks(new)
         // Adding a container makes it the natural next target.
         if kind.containerBody != nil {
-            insertionTargetID = block.id
+            insertionTarget = BodyAddress(containerID: block.id)
         }
     }
 
@@ -60,7 +61,7 @@ struct WorkspaceEditor {
         guard let new = BlockTree.removing(blockWithID: id, from: blocks) else { return }
         setBlocks(new)
         if validatedInsertionTarget() == nil {
-            insertionTargetID = nil
+            insertionTarget = nil
         }
     }
 
@@ -74,18 +75,18 @@ struct WorkspaceEditor {
         setBlocks(new)
     }
 
-    /// Handles a block drop at (containerID, index). A payload whose ID
+    /// Handles a block drop at (address, index). A payload whose ID
     /// already exists in the tree is *moved* (workspace drag); an unknown ID
     /// is *inserted* (palette drag). Identity moves and invalid targets are
     /// rejected without touching the undo stack.
     @discardableResult
-    func handleDrop(_ dropped: Block, at index: Int, inBodyOf containerID: UUID?) -> Bool {
+    func handleDrop(_ dropped: Block, at index: Int, inBodyAt address: BodyAddress) -> Bool {
         let new: [Block]?
         if BlockTree.block(withID: dropped.id, in: blocks) != nil {
             new = BlockTree.moving(
-                blockWithID: dropped.id, toIndex: index, inBodyOf: containerID, in: blocks)
+                blockWithID: dropped.id, toIndex: index, inBodyAt: address, in: blocks)
         } else {
-            new = BlockTree.inserting(dropped, at: index, inBodyOf: containerID, in: blocks)
+            new = BlockTree.inserting(dropped, at: index, inBodyAt: address, in: blocks)
         }
         guard let new else { return false }
         return setBlocks(new)
@@ -103,12 +104,13 @@ struct WorkspaceEditor {
 
     // MARK: - Private
 
-    private func validatedInsertionTarget() -> UUID? {
-        guard let id = uiState.insertionTargetID,
+    private func validatedInsertionTarget() -> BodyAddress? {
+        guard let target = uiState.insertionTarget,
+            let id = target.containerID,
             let block = BlockTree.block(withID: id, in: blocks),
-            block.kind.containerBody != nil
+            block.kind.body(for: target.slot) != nil
         else { return nil }
-        return id
+        return target
     }
 
     @discardableResult

@@ -152,9 +152,13 @@ extension BlockKind: Codable {
         case body
     }
 
+    /// `elseBody` is optional on the wire: absent = no else mouth (the
+    /// pre-else shape, so older files decode as-is and else-free blocks
+    /// stay byte-identical), `[]` = the mouth exists but is empty.
     private enum IfKeys: String, CodingKey {
         case condition
         case body
+        case elseBody
     }
 
     private enum VariableKeys: String, CodingKey {
@@ -197,7 +201,8 @@ extension BlockKind: Codable {
             let payload = try container.nestedContainer(keyedBy: IfKeys.self, forKey: .ifBlock)
             self = .ifBlock(
                 condition: try payload.decode(Condition.self, forKey: .condition),
-                body: try payload.decode([Block].self, forKey: .body)
+                body: try payload.decode([Block].self, forKey: .body),
+                elseBody: try payload.decodeIfPresent([Block].self, forKey: .elseBody)
             )
         case .setVariable:
             let payload = try container.nestedContainer(
@@ -252,10 +257,11 @@ extension BlockKind: Codable {
             var payload = container.nestedContainer(keyedBy: RepeatKeys.self, forKey: .repeatBlock)
             try payload.encode(count, forKey: .count)
             try payload.encode(body, forKey: .body)
-        case .ifBlock(let condition, let body):
+        case .ifBlock(let condition, let body, let elseBody):
             var payload = container.nestedContainer(keyedBy: IfKeys.self, forKey: .ifBlock)
             try payload.encode(condition, forKey: .condition)
             try payload.encode(body, forKey: .body)
+            try payload.encodeIfPresent(elseBody, forKey: .elseBody)
         case .setVariable(let name, let value):
             var payload = container.nestedContainer(
                 keyedBy: VariableKeys.self, forKey: .setVariable)

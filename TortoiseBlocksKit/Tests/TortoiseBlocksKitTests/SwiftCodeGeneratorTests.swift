@@ -112,12 +112,35 @@ struct SwiftCodeGeneratorTests {
                         lhs: .random(min: 1, max: 6), comparison: .greaterOrEqual,
                         rhs: .literal(4)),
                     body: [Block(kind: .penColor(.literal(.red)))]
+                , elseBody: nil))
+        ]
+        let expected = """
+            let 🐢 = Tortoise()
+            if Double.random(in: 1...6) >= 4 {
+                🐢.penColor = .red
+            }
+            """
+        #expect(SwiftCodeGenerator.code(for: blocks) == expected)
+    }
+
+    @Test("an else mouth renders as } else {")
+    func ifElseCode() {
+        let blocks = [
+            Block(
+                kind: .ifBlock(
+                    condition: Condition(
+                        lhs: .random(min: 1, max: 6), comparison: .greaterOrEqual,
+                        rhs: .literal(4)),
+                    body: [Block(kind: .penColor(.literal(.red)))],
+                    elseBody: [Block(kind: .penColor(.literal(.blue)))]
                 ))
         ]
         let expected = """
             let 🐢 = Tortoise()
             if Double.random(in: 1...6) >= 4 {
                 🐢.penColor = .red
+            } else {
+                🐢.penColor = .blue
             }
             """
         #expect(SwiftCodeGenerator.code(for: blocks) == expected)
@@ -130,7 +153,7 @@ struct SwiftCodeGeneratorTests {
                 kind: .ifBlock(
                     condition: Condition(lhs: .variable("🌟"), comparison: .equal, rhs: .literal(3)),
                     body: []
-                ))
+                , elseBody: nil))
         ]
         let expected = """
             let 🐢 = Tortoise()

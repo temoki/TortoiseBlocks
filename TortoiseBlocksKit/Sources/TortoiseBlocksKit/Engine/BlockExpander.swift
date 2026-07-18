@@ -107,14 +107,19 @@ public enum BlockExpander {
                         body, into: &result, variables: &variables, steps: &steps,
                         using: &rng, limit: limit)
                 }
-            case .ifBlock(let condition, let body):
+            case .ifBlock(let condition, let body, let elseBody):
                 // The test itself is a step (like set/add), so a
                 // false-branch-only loop can't slip past the cap. Evaluated
-                // per encounter — dice in a condition re-roll every time.
+                // per encounter — dice in a condition re-roll every time,
+                // and that single evaluation picks exactly one mouth.
                 try charge(&steps, limit)
                 if condition.holds(variables: variables, using: &rng) {
                     try expand(
                         body, into: &result, variables: &variables, steps: &steps,
+                        using: &rng, limit: limit)
+                } else if let elseBody {
+                    try expand(
+                        elseBody, into: &result, variables: &variables, steps: &steps,
                         using: &rng, limit: limit)
                 }
             case .setVariable(let name, let value):

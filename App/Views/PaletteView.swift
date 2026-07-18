@@ -83,7 +83,7 @@ enum Palette {
                         condition: Condition(
                             lhs: .random(min: 1, max: 6), comparison: .greaterOrEqual,
                             rhs: .literal(4)),
-                        body: [])),
+                        body: [], elseBody: nil)),
             ]),
         PaletteSection(
             title: "Variables", category: .variables,

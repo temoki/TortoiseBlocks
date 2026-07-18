@@ -90,15 +90,19 @@ Swift identifiers in the generated code; BMP lookalikes (⭐ ❤️) are not.
 **The if block shares schema version 2 with variables** (v2 never shipped
 between them). Its condition is two `NumberValue` slots around a
 `Comparison` (five operators, frozen raw strings), re-evaluated on every
-encounter — dice in a condition re-roll. Like set/add, the test emits no
-command but charges a step, so false-branch-only loops still hit the cap.
-There is deliberately *no* else branch: a second body would need a
-which-body discriminator in the `(containerID, index)` drop model; if it
-ever comes, it must be a new `ifElse` wire key + schema bump (extending the
-`"if"` payload would make older decoders silently drop the else body).
-Container kinds are handled uniformly via `BlockKind.containerBody` /
-`replacingBody(with:)` — a new container only adds its header UI
-(`ContainerBlockRow` in `WorkspaceView`) and the exhaustive switches.
+encounter — dice in a condition re-roll, and that single evaluation picks
+exactly one mouth. Like set/add, the test emits no command but charges a
+step, so false-branch-only loops still hit the cap. `elseBody` is optional
+*presence*: absent on the wire = no else mouth (byte-identical to the
+pre-else shape), `[]` = mouth exists but empty — this payload extension was
+only legal because v2 had never shipped; once a version is released, new
+payload fields would be silently dropped by fielded decoders, so
+post-release additions need a new wire key + schema bump. Sibling lists are
+addressed by `BodyAddress` (container + `BodySlot`), so the else mouth is a
+first-class drop/insertion target; container kinds stay uniform via
+`BlockKind.containerBodies` / `body(for:)` / `replacingBody(_:with:)` — a
+new container only adds its header UI (`ContainerBlockRow` in
+`WorkspaceView`) and the exhaustive switches.
 
 **Exports render `lastRunCommands`** (the evaluated stream of the last run),
 so what's on screen is exactly what exports — including rolled dice. PNG is

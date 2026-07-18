@@ -46,8 +46,18 @@ struct BlockCodableTests {
                 condition: Condition(
                     lhs: .random(min: 1, max: 6), comparison: .greaterOrEqual, rhs: .literal(4)),
                 body: [Block(id: childID, kind: .home)]
-            ),
+            , elseBody: nil),
             #"{"if":{"body":[{"id":"00000000-0000-0000-0000-000000000001","kind":{"home":{}}}],"condition":{"comparison":"greaterOrEqual","lhs":{"random":{"max":6,"min":1}},"rhs":{"literal":4}}}}"#
+        ),
+        // The else mouth is optional presence: key absent = no mouth (the
+        // fixture above), present = mouth exists — even when empty.
+        (
+            .ifBlock(
+                condition: Condition(lhs: .variable("🌟"), comparison: .less, rhs: .literal(3)),
+                body: [],
+                elseBody: [Block(id: childID, kind: .penUp)]
+            ),
+            #"{"if":{"body":[],"condition":{"comparison":"less","lhs":{"variable":"🌟"},"rhs":{"literal":3}},"elseBody":[{"id":"00000000-0000-0000-0000-000000000001","kind":{"penUp":{}}}]}}"#
         ),
         (
             .setVariable(name: "🌟", value: .literal(10)),
@@ -132,6 +142,20 @@ struct BlockCodableTests {
         #expect(decoded == .repeatBlock(count: .literal(2), body: []))
     }
 
+    @Test("an empty else mouth is preserved on the wire")
+    func emptyElseMouthRoundTrips() throws {
+        let kind = BlockKind.ifBlock(
+            condition: Condition(lhs: .literal(1), comparison: .less, rhs: .literal(2)),
+            body: [], elseBody: [])
+        let json = try Self.sortedKeysJSON(kind)
+        #expect(
+            json
+                == #"{"if":{"body":[],"condition":{"comparison":"less","lhs":{"literal":1},"rhs":{"literal":2}},"elseBody":[]}}"#
+        )
+        let decoded = try JSONDecoder().decode(BlockKind.self, from: Data(json.utf8))
+        #expect(decoded == kind)
+    }
+
     @Test("requiredSchemaVersion is 2 exactly when variables appear")
     func requiredSchemaVersion() {
         #expect(BlocksProject(title: "", blocks: SampleBlocks.star()).requiredSchemaVersion == 1)
@@ -145,7 +169,7 @@ struct BlockCodableTests {
                 kind: .ifBlock(
                     condition: Condition(lhs: .literal(1), comparison: .less, rhs: .literal(2)),
                     body: []
-                ))
+                , elseBody: nil))
         ]
         #expect(BlocksProject(title: "", blocks: ifOnly).requiredSchemaVersion == 2)
     }

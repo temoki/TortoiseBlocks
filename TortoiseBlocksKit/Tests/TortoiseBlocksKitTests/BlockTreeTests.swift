@@ -204,7 +204,7 @@ struct BlockTreeTests {
             kind: .ifBlock(
                 condition: Condition(lhs: .literal(1), comparison: .less, rhs: .literal(2)),
                 body: [home]
-            ))
+            , elseBody: nil))
 
         let appended = try #require(
             BlockTree.appending(Block(kind: .penUp), toBodyOf: ifBlock.id, in: [ifBlock]))
@@ -227,19 +227,78 @@ struct BlockTreeTests {
         #expect(moved[0].kind.containerBody?.map(\.id) == [outside.id, home.id])
     }
 
-    @Test("usedVariableNames and rename reach into if conditions and bodies")
+    @Test("usedVariableNames and rename reach into if conditions and both mouths")
     func variableNamesInConditions() throws {
         let blocks = [
             Block(
                 kind: .ifBlock(
                     condition: Condition(
                         lhs: .variable("🌟"), comparison: .less, rhs: .variable("💖")),
-                    body: [Block(kind: .forward(.variable("🍀")))]
+                    body: [Block(kind: .forward(.variable("🍀")))],
+                    elseBody: [Block(kind: .backward(.variable("うら")))]
                 ))
         ]
-        #expect(BlockTree.usedVariableNames(in: blocks) == ["🌟", "💖", "🍀"])
-        let renamed = try #require(BlockTree.renamingVariable("💖", to: "はーと", in: blocks))
-        #expect(BlockTree.usedVariableNames(in: renamed) == ["🌟", "はーと", "🍀"])
+        #expect(BlockTree.usedVariableNames(in: blocks) == ["🌟", "💖", "🍀", "うら"])
+        let renamed = try #require(BlockTree.renamingVariable("うら", to: "おもて", in: blocks))
+        #expect(BlockTree.usedVariableNames(in: renamed) == ["🌟", "💖", "🍀", "おもて"])
+    }
+
+    @Test("else-mouth edits: append, insert, cross-mouth move, rejections")
+    func elseMouthEdits() throws {
+        let thenHome = Block(kind: .home)
+        let elsePenUp = Block(kind: .penUp)
+        let ifBlock = Block(
+            kind: .ifBlock(
+                condition: Condition(lhs: .literal(1), comparison: .less, rhs: .literal(2)),
+                body: [thenHome],
+                elseBody: [elsePenUp]
+            ))
+        let elseAddress = BodyAddress(containerID: ifBlock.id, slot: .elseBody)
+
+        let appended = try #require(
+            BlockTree.appending(Block(kind: .penDown), toBodyAt: elseAddress, in: [ifBlock]))
+        #expect(appended[0].kind.body(for: .elseBody)?.count == 2)
+        // The then mouth is untouched.
+        #expect(appended[0].kind.body(for: .body)?.map(\.id) == [thenHome.id])
+
+        let inserted = try #require(
+            BlockTree.inserting(Block(kind: .penDown), at: 0, inBodyAt: elseAddress, in: [ifBlock]))
+        #expect(inserted[0].kind.body(for: .elseBody)?.first?.kind == .penDown)
+
+        // Cross-mouth drag: then → else.
+        let moved = try #require(
+            BlockTree.moving(blockWithID: thenHome.id, toIndex: 0, inBodyAt: elseAddress, in: [ifBlock]))
+        #expect(moved[0].kind.body(for: .body)?.isEmpty == true)
+        #expect(moved[0].kind.body(for: .elseBody)?.map(\.id) == [thenHome.id, elsePenUp.id])
+
+        // Same-list forward move inside the else mouth adjusts the index.
+        let penDown = Block(kind: .penDown)
+        let twoElse = Block(
+            kind: .ifBlock(
+                condition: Condition(lhs: .literal(1), comparison: .less, rhs: .literal(2)),
+                body: [], elseBody: [elsePenUp, penDown]
+            ))
+        let sameList = try #require(
+            BlockTree.moving(
+                blockWithID: elsePenUp.id, toIndex: 2,
+                inBodyAt: BodyAddress(containerID: twoElse.id, slot: .elseBody), in: [twoElse]))
+        #expect(sameList[0].kind.body(for: .elseBody)?.map(\.id) == [penDown.id, elsePenUp.id])
+
+        // Dropping the if into its own else mouth is rejected.
+        #expect(
+            BlockTree.moving(blockWithID: ifBlock.id, toIndex: 0, inBodyAt: elseAddress, in: [ifBlock])
+                == nil)
+
+        // The else mouth of an else-less if is not a valid target.
+        let noElse = Block(
+            kind: .ifBlock(
+                condition: Condition(lhs: .literal(1), comparison: .less, rhs: .literal(2)),
+                body: [], elseBody: nil
+            ))
+        #expect(
+            BlockTree.appending(
+                Block(kind: .home),
+                toBodyAt: BodyAddress(containerID: noElse.id, slot: .elseBody), in: [noElse]) == nil)
     }
 
     @Test("update a nested block's kind in place")

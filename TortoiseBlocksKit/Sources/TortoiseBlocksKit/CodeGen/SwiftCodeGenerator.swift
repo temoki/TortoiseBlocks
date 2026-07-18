@@ -48,9 +48,13 @@ public enum SwiftCodeGenerator {
                 lines.append("\(pad)for _ in 1...\(countExpression(count)) {")
                 append(body, to: &lines, indent: indent + 1)
                 lines.append("\(pad)}")
-            case .ifBlock(let condition, let body):
+            case .ifBlock(let condition, let body, let elseBody):
                 lines.append("\(pad)if \(conditionExpression(condition)) {")
                 append(body, to: &lines, indent: indent + 1)
+                if let elseBody {
+                    lines.append("\(pad)} else {")
+                    append(elseBody, to: &lines, indent: indent + 1)
+                }
                 lines.append("\(pad)}")
             case .setVariable(let name, let value):
                 lines.append("\(pad)\(name) = \(doubleExpression(value))")

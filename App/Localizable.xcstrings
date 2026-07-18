@@ -11,12 +11,32 @@
         }
       }
     },
+    "Add Otherwise": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "そうでなければをついか"
+          }
+        }
+      }
+    },
     "Add to Box": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
             "value": "はこにたす"
+          }
+        }
+      }
+    },
+    "Adds an otherwise mouth that runs when the condition fails": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "じょうけんがちがうときにうごく「そうでなければ」をついかします"
           }
         }
       }
@@ -381,6 +401,16 @@
         }
       }
     },
+    "Otherwise": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "そうでなければ"
+          }
+        }
+      }
+    },
     "Pause": {
       "localizations": {
         "ja": {
@@ -477,6 +507,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "やりなおす"
+          }
+        }
+      }
+    },
+    "Remove Otherwise": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "そうでなければをけす"
           }
         }
       }

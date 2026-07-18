@@ -246,7 +246,7 @@ struct BlockExpanderTests {
                 kind: .ifBlock(
                     condition: Condition(lhs: .literal(1), comparison: comparison, rhs: .literal(2)),
                     body: [Block(kind: .home)]
-                ))
+                , elseBody: nil))
         }
         #expect(try expand([ifBlock(.less)]).map(\.command) == [.home])
         #expect(try expand([ifBlock(.greater)]).isEmpty)
@@ -267,7 +267,7 @@ struct BlockExpanderTests {
                                     lhs: .variable("🌟"), comparison: .greaterOrEqual,
                                     rhs: .literal(3)),
                                 body: [Block(kind: .home)]
-                            )),
+                            , elseBody: nil)),
                     ]
                 ))
         ]
@@ -288,13 +288,76 @@ struct BlockExpanderTests {
                                     lhs: .random(min: 0, max: 1), comparison: .greaterOrEqual,
                                     rhs: .literal(0.5)),
                                 body: [Block(kind: .home)]
-                            ))
+                            , elseBody: nil))
                     ]
                 ))
         ]
         let count = try expand(blocks).count
         // A single evaluation would give 0 or 50; re-rolling lands between.
         #expect(count > 0 && count < 50)
+    }
+
+    @Test("the else mouth runs exactly when the condition fails")
+    func elseBranches() throws {
+        func ifElse(_ comparison: Comparison) -> Block {
+            Block(
+                kind: .ifBlock(
+                    condition: Condition(lhs: .literal(1), comparison: comparison, rhs: .literal(2)),
+                    body: [Block(kind: .home)],
+                    elseBody: [Block(kind: .penUp)]
+                ))
+        }
+        #expect(try expand([ifElse(.less)]).map(\.command) == [.home])
+        #expect(try expand([ifElse(.greater)]).map(\.command) == [.penUp])
+    }
+
+    @Test("one roll decides both mouths — then/else always sum to the iterations")
+    func diceElseExclusivity() throws {
+        let blocks = [
+            Block(
+                kind: .repeatBlock(
+                    count: .literal(50),
+                    body: [
+                        Block(
+                            kind: .ifBlock(
+                                condition: Condition(
+                                    lhs: .random(min: 0, max: 1), comparison: .greaterOrEqual,
+                                    rhs: .literal(0.5)),
+                                body: [Block(kind: .home)],
+                                elseBody: [Block(kind: .penUp)]
+                            ))
+                    ]
+                ))
+        ]
+        let commands = try expand(blocks).map(\.command)
+        // Two separate ifs with complementary dice conditions could emit
+        // anywhere from 0 to 100 commands; the else guarantees exactly one
+        // mouth per iteration.
+        #expect(commands.count == 50)
+        #expect(commands.contains(.home))
+        #expect(commands.contains(.penUp))
+    }
+
+    @Test("a counter flips from else to then at the boundary")
+    func counterBoundaryElse() throws {
+        let blocks = [
+            Block(
+                kind: .repeatBlock(
+                    count: .literal(5),
+                    body: [
+                        Block(kind: .addVariable(name: "🌟", value: .literal(1))),
+                        Block(
+                            kind: .ifBlock(
+                                condition: Condition(
+                                    lhs: .variable("🌟"), comparison: .greaterOrEqual,
+                                    rhs: .literal(3)),
+                                body: [Block(kind: .home)],
+                                elseBody: [Block(kind: .penUp)]
+                            )),
+                    ]
+                ))
+        ]
+        #expect(try expand(blocks).map(\.command) == [.penUp, .penUp, .home, .home, .home])
     }
 
     @Test("a false-branch-only runaway loop still hits the step limit")
@@ -314,7 +377,7 @@ struct BlockExpanderTests {
                                                 lhs: .literal(1), comparison: .greater,
                                                 rhs: .literal(2)),
                                             body: [Block(kind: .home)]
-                                        ))
+                                        , elseBody: nil))
                                 ]
                             ))
                     ]

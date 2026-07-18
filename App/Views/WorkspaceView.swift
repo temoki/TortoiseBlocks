@@ -56,13 +56,13 @@ struct WorkspaceView: View {
                 .frame(maxHeight: .infinity)
                 .dropDestination(for: Block.self) { items, _ in
                     guard let block = items.first else { return false }
-                    return workspace.handleDrop(block, at: 0, inBodyOf: nil)
+                    return workspace.handleDrop(block, at: 0, inBodyAt: .topLevel)
                 }
             } else {
                 ScrollViewReader { proxy in
                     ScrollView {
                         BlockListView(
-                            blocks: workspace.blocks, containerID: nil, workspace: workspace,
+                            blocks: workspace.blocks, address: .topLevel, workspace: workspace,
                             highlightedID: runner.currentBlockID,
                             // Computed once per render and passed as plain
                             // data — rows only need the list, not the tree.
@@ -95,8 +95,8 @@ struct WorkspaceView: View {
 /// row depends on exactly the value it renders.
 struct BlockListView: View {
     let blocks: [Block]
-    /// The repeat whose body this list renders; nil at the top level.
-    let containerID: UUID?
+    /// The mouth this list renders (container + slot); `.topLevel` at the top.
+    let address: BodyAddress
     let workspace: WorkspaceEditor
     var highlightedID: UUID?
     /// Variable names in use anywhere in the program — quick choices for
@@ -106,7 +106,7 @@ struct BlockListView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(blocks.enumerated()), id: \.element.id) { index, block in
-                DropGap(containerID: containerID, index: index, workspace: workspace)
+                DropGap(address: address, index: index, workspace: workspace)
                 BlockRowView(
                     block: block, workspace: workspace,
                     isHighlighted: block.id == highlightedID,
@@ -116,8 +116,8 @@ struct BlockListView: View {
                 .id(block.id)
             }
             DropGap(
-                containerID: containerID, index: blocks.count, workspace: workspace,
-                isEmphasized: blocks.isEmpty && containerID != nil
+                address: address, index: blocks.count, workspace: workspace,
+                isEmphasized: blocks.isEmpty && address.containerID != nil
             )
         }
     }
@@ -127,7 +127,7 @@ struct BlockListView: View {
 /// then shows the accent insertion line. The trailing gap of an empty
 /// repeat body renders as an explicit "drop here" zone instead.
 struct DropGap: View {
-    let containerID: UUID?
+    let address: BodyAddress
     let index: Int
     let workspace: WorkspaceEditor
     var isEmphasized = false
@@ -160,7 +160,7 @@ struct DropGap: View {
         .contentShape(.rect)
         .dropDestination(for: Block.self) { items, _ in
             guard let block = items.first else { return false }
-            return workspace.handleDrop(block, at: index, inBodyOf: containerID)
+            return workspace.handleDrop(block, at: index, inBodyAt: address)
         } isTargeted: {
             isTargeted = $0
         }
@@ -192,16 +192,30 @@ struct BlockRowView: View {
                 }
                 Text("times")
             }
-        case .ifBlock(let condition, let body):
+        case .ifBlock(let condition, let body, let elseBody):
             ContainerBlockRow(
                 block: block, childBlocks: body, workspace: workspace,
-                highlightedID: highlightedID, usedVariableNames: usedVariableNames
+                highlightedID: highlightedID, usedVariableNames: usedVariableNames,
+                elseBlocks: elseBody
             ) {
                 Label("If", systemImage: "questionmark.diamond")
                 ConditionEditor(condition: condition, usedNames: usedVariableNames) { new in
-                    workspace.updateKind(of: block.id, to: .ifBlock(condition: new, body: body))
+                    workspace.updateKind(
+                        of: block.id,
+                        to: .ifBlock(condition: new, body: body, elseBody: elseBody))
                 }
                 Text("then")
+                Button("Add Otherwise", systemImage: "arrow.triangle.branch") {
+                    workspace.updateKind(
+                        of: block.id,
+                        to: .ifBlock(condition: condition, body: body, elseBody: []))
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .controlSize(.small)
+                .opacity(elseBody == nil ? 1 : 0)
+                .disabled(elseBody != nil)
+                .accessibilityHint("Adds an otherwise mouth that runs when the condition fails")
             }
         default:
             HStack(spacing: 8) {
@@ -237,6 +251,9 @@ struct ContainerBlockRow<Header: View>: View {
     let workspace: WorkspaceEditor
     var highlightedID: UUID?
     var usedVariableNames: [String] = []
+    /// The if block's else mouth; nil for every other container (and for an
+    /// if without else). Rendered as a divider row plus a second body list.
+    var elseBlocks: [Block]? = nil
     @ViewBuilder let header: Header
 
     @State private var isDropTargeted = false
@@ -245,7 +262,8 @@ struct ContainerBlockRow<Header: View>: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
                 header
-                InsertionTargetButton(blockID: block.id, workspace: workspace)
+                InsertionTargetButton(
+                    address: BodyAddress(containerID: block.id), workspace: workspace)
                 Spacer(minLength: 0)
                 RowControls(blockID: block.id, workspace: workspace)
             }
@@ -258,16 +276,38 @@ struct ContainerBlockRow<Header: View>: View {
             // Dropping onto the header appends into this container's body.
             .dropDestination(for: Block.self) { items, _ in
                 guard let dropped = items.first else { return false }
-                return workspace.handleDrop(dropped, at: childBlocks.count, inBodyOf: block.id)
+                return workspace.handleDrop(
+                    dropped, at: childBlocks.count,
+                    inBodyAt: BodyAddress(containerID: block.id))
             } isTargeted: {
                 isDropTargeted = $0
             }
 
-            BlockListView(
-                blocks: childBlocks, containerID: block.id, workspace: workspace,
-                highlightedID: highlightedID,
-                usedVariableNames: usedVariableNames
-            )
+            indented(
+                BlockListView(
+                    blocks: childBlocks,
+                    address: BodyAddress(containerID: block.id),
+                    workspace: workspace,
+                    highlightedID: highlightedID,
+                    usedVariableNames: usedVariableNames
+                ))
+
+            if let elseBlocks {
+                ElseDividerRow(blockID: block.id, elseCount: elseBlocks.count, workspace: workspace)
+                indented(
+                    BlockListView(
+                        blocks: elseBlocks,
+                        address: BodyAddress(containerID: block.id, slot: .elseBody),
+                        workspace: workspace,
+                        highlightedID: highlightedID,
+                        usedVariableNames: usedVariableNames
+                    ))
+            }
+        }
+    }
+
+    private func indented(_ list: BlockListView) -> some View {
+        list
             .padding(.leading, 16)
             .overlay(alignment: .leading) {
                 Rectangle()
@@ -275,6 +315,50 @@ struct ContainerBlockRow<Header: View>: View {
                     .frame(width: 3)
                     .padding(.leading, 4)
             }
+    }
+}
+
+/// The if block's "otherwise" divider: labels the else mouth, hosts its
+/// insertion target and drop-to-append, and can remove the mouth (contents
+/// included — tree-swap undo makes that safe).
+struct ElseDividerRow: View {
+    let blockID: UUID
+    let elseCount: Int
+    let workspace: WorkspaceEditor
+
+    @State private var isDropTargeted = false
+
+    private var address: BodyAddress {
+        BodyAddress(containerID: blockID, slot: .elseBody)
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Label("Otherwise", systemImage: "arrow.triangle.branch")
+            InsertionTargetButton(address: address, workspace: workspace)
+            Spacer(minLength: 0)
+            Button("Remove Otherwise", systemImage: "xmark.circle", role: .destructive) {
+                guard let block = BlockTree.block(withID: blockID, in: workspace.blocks),
+                    case .ifBlock(let condition, let body, _) = block.kind
+                else { return }
+                workspace.updateKind(
+                    of: blockID, to: .ifBlock(condition: condition, body: body, elseBody: nil))
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+            .controlSize(.small)
+        }
+        .padding(8)
+        .background(
+            BlockCategory.control.color.opacity(isDropTargeted ? 0.35 : 0.1),
+            in: .rect(cornerRadius: 8)
+        )
+        // Dropping onto the divider appends into the else mouth.
+        .dropDestination(for: Block.self) { items, _ in
+            guard let dropped = items.first else { return false }
+            return workspace.handleDrop(dropped, at: elseCount, inBodyAt: address)
+        } isTargeted: {
+            isDropTargeted = $0
         }
     }
 }
@@ -345,12 +429,12 @@ struct SimpleBlockLabel: View {
     }
 }
 
-/// Marks a container block as the palette's insertion target.
+/// Marks a container mouth as the palette's insertion target.
 struct InsertionTargetButton: View {
-    let blockID: UUID
+    let address: BodyAddress
     let workspace: WorkspaceEditor
 
-    private var isTarget: Bool { workspace.insertionTargetID == blockID }
+    private var isTarget: Bool { workspace.insertionTarget == address }
 
     var body: some View {
         Toggle(
@@ -358,7 +442,7 @@ struct InsertionTargetButton: View {
             systemImage: isTarget ? "arrow.down.to.line.circle.fill" : "arrow.down.to.line.circle",
             isOn: Binding(
                 get: { isTarget },
-                set: { workspace.insertionTargetID = $0 ? blockID : nil }
+                set: { workspace.insertionTarget = $0 ? address : nil }
             )
         )
         .toggleStyle(.button)
