@@ -181,6 +181,26 @@
         }
       }
     },
+    "Export PNG…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PNG をかきだす…"
+          }
+        }
+      }
+    },
+    "Export SVG…": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SVG をかきだす…"
+          }
+        }
+      }
+    },
     "Fill": {
       "localizations": {
         "ja": {
@@ -397,6 +417,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "くりかえす"
+          }
+        }
+      }
+    },
+    "Resume": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "さいかい"
           }
         }
       }

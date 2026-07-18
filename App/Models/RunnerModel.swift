@@ -4,6 +4,7 @@ import SwiftUI
 import TortoiseBlocksKit
 import TortoiseSVG
 import TortoiseUI
+import UniformTypeIdentifiers
 
 /// Owns the tortoise and the player; turns a block tree into a running
 /// drawing and renders the last run for export.
@@ -23,6 +24,11 @@ final class RunnerModel {
 
     /// Set when expansion fails (command limit); drives a kid-friendly alert.
     var showsExpansionError = false
+
+    /// Set by the macOS menu's Export commands; `CanvasPane` watches this,
+    /// runs the same export it would from its own menu, and clears it back
+    /// to nil. `CanvasPane` still owns the actual `fileExporter` state.
+    var pendingExport: UTType?
 
     // Export renders are cached per run: `ShareLink(item:)` evaluates its
     // item eagerly whenever the Export menu is drawn, so without this an

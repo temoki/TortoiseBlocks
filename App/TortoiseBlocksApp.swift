@@ -6,5 +6,8 @@ struct TortoiseBlocksApp: App {
         DocumentGroup(newDocument: BlocksDocument()) { file in
             ContentView(document: file.$document)
         }
+        .commands {
+            TortoiseBlocksCommands()
+        }
     }
 }

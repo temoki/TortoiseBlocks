@@ -14,11 +14,15 @@ struct ContentView: View {
     var body: some View {
         let workspace = WorkspaceEditor(
             document: $document, undoManager: undoManager, uiState: uiState)
-        #if os(iOS)
-            AdaptiveRootView(workspace: workspace, runner: runner)
-        #else
-            RegularRootView(workspace: workspace, runner: runner)
-        #endif
+        Group {
+            #if os(iOS)
+                AdaptiveRootView(workspace: workspace, runner: runner)
+            #else
+                RegularRootView(workspace: workspace, runner: runner)
+            #endif
+        }
+        .focusedSceneValue(\.runner, runner)
+        .focusedSceneValue(\.workspaceBlocks, workspace.blocks)
     }
 }
 
@@ -158,6 +162,15 @@ struct CanvasPane: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("Try a smaller repeat count.")
+        }
+        .onChange(of: runner.pendingExport) { _, type in
+            guard let type else { return }
+            switch type {
+            case .svg: export(runner.svgData(), as: .svg)
+            case .png: export(runner.pngData(), as: .png)
+            default: break
+            }
+            runner.pendingExport = nil
         }
         .fileExporter(
             isPresented: Binding(
