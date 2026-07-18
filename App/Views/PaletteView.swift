@@ -104,6 +104,7 @@ struct PaletteView: View {
             }
             .padding()
         }
+        .paletteDropDeletion(workspace: workspace)
     }
 }
 
@@ -163,5 +164,46 @@ struct PaletteStrip: View {
             }
             .padding(.horizontal)
         }
+        .paletteDropDeletion(workspace: workspace)
+    }
+}
+
+/// Drop-to-delete for both palette layouts: a block dragged in from the
+/// workspace (its ID already exists in the tree) is deleted; a fresh
+/// palette-origin drag (no ID in the tree yet) is rejected, so
+/// palette→palette dragging is a no-op.
+private struct PaletteDropDeletion: ViewModifier {
+    let workspace: WorkspaceEditor
+
+    @State private var isTargeted = false
+
+    func body(content: Content) -> some View {
+        content
+            .overlay {
+                ZStack {
+                    Color.red
+                    Label("Drop to Delete", systemImage: "trash.fill")
+                        .font(.title2.bold())
+                        .foregroundStyle(.white)
+                }
+                .opacity(isTargeted ? 0.9 : 0)
+                .allowsHitTesting(false)
+            }
+            .dropDestination(for: Block.self) { items, _ in
+                guard let dropped = items.first,
+                    BlockTree.block(withID: dropped.id, in: workspace.blocks) != nil
+                else { return false }
+                workspace.delete(dropped.id)
+                return true
+            } isTargeted: {
+                isTargeted = $0
+            }
+            .animation(.easeOut(duration: 0.12), value: isTargeted)
+    }
+}
+
+extension View {
+    func paletteDropDeletion(workspace: WorkspaceEditor) -> some View {
+        modifier(PaletteDropDeletion(workspace: workspace))
     }
 }
