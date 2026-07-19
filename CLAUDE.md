@@ -17,6 +17,25 @@ xcodebuild -project TortoiseBlocks.xcodeproj -scheme TortoiseBlocks \
 pkill -x TortoiseBlocks; open ~/Library/Developer/Xcode/DerivedData/TortoiseBlocks-*/Build/Products/Debug/TortoiseBlocks.app
 ```
 
+## Issue Workflow
+
+Issues tagged `needs design` get a design comment on the issue *before*
+implementation; drop the label once the design settles, and wait for the
+maintainer's "GoGo" to start building. Issue bodies and comments are
+Japanese; commits are English with `Fixes #N`.
+
+- **Model / wire-format / engine design** — write a full spec comment
+  (仕様案 / やること / 受け入れ条件), the style of #12/#13. Wire-format
+  changes must follow the frozen-format rules below, and say explicitly
+  whether they ride the current schema version (pre-release only) or bump.
+- **UI design** — don't settle pixels in prose. First confirm only the
+  genuinely open UX forks (side-by-side options, ASCII mockups help), keep
+  the design comment at policy level, then implement in two stages: a
+  layout-only prototype commit → visual check in the running app (the
+  pkill/open loop above) → polish (tests, a11y, both builds), then commit.
+  Real widths, Dynamic Type, and touch targets are judged in the app, not
+  in the document.
+
 ## Architecture
 
 Two layers with a hard boundary:
