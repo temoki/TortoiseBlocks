@@ -29,7 +29,8 @@ Japanese; commits are English with `Fixes #N`.
   changes must follow the frozen-format rules below, and say explicitly
   whether they ride the current schema version (pre-release only) or bump.
 - **UI design** — don't settle pixels in prose. First confirm only the
-  genuinely open UX forks (side-by-side options, ASCII mockups help), keep
+  genuinely open UX forks, presented *visually* (an HTML mockup page styled
+  like the app, or a prototype build — ASCII art is not enough), keep
   the design comment at policy level, then implement in two stages: a
   layout-only prototype commit → visual check in the running app (the
   pkill/open loop above) → polish (tests, a11y, both builds), then commit.
