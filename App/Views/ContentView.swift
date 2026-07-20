@@ -278,6 +278,10 @@ struct PlaybackControls: View {
                 .disabled(runner.commandCount == 0)
                 Toggle("Pause", systemImage: "pause.fill", isOn: $player.isPaused)
                     .toggleStyle(.button)
+                    // Icon-only: "Pause"/いちじていし was the one label in
+                    // this row long enough to wrap to two lines once
+                    // everything shared a single row (§23).
+                    .labelStyle(.iconOnly)
                     .disabled(runner.commandCount == 0)
                 Spacer()
                 // The one place the run position shows — this used to be
