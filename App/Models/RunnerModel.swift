@@ -76,7 +76,9 @@ final class RunnerModel {
 
     // MARK: - Export
 
-    /// SVG of the last run, straight from the library's exporter.
+    /// SVG of the last run, straight from the library's exporter. `svg()`
+    /// defaults to `fit: true` — cropped tight to the drawing, tortoise-free
+    /// (#25); `pngData` deliberately mirrors that framing.
     func svgData() -> Data? {
         if let svgDataCache { return svgDataCache }
         guard canExport else { return nil }

@@ -128,10 +128,22 @@ new container only adds its header UI (`ContainerBlockRow` in
 `WorkspaceView`) and the exhaustive switches.
 
 **Exports render `lastRunCommands`** (the evaluated stream of the last run),
-so what's on screen is exactly what exports — including rolled dice. PNG is
-rendered statically: a `speed(0)` tortoise makes `CanvasModel` flush all
-frames at init, which is what lets `ImageRenderer` work without a live
-timeline.
+so the exported drawing is the one that actually ran — including rolled
+dice. But the export is *not* the on-screen framing (#25): the canvas pane
+is a fill-the-pane working view with the tortoise cursor, while both exports
+are the clean artifact — cropped tight to the drawing, tortoise-free.
+PNG mirrors SVG's `fit: true`: `RunnerModel.pngData` sizes the
+`ImageRenderer` frame to the drawing's bounding box (`DrawingBounds.compute`
+/ `CommandPlayer.play`, both public in `TortoiseCore`) instead of a fixed
+512×512 square, so it's pane-independent; `hideTortoise()` on the throwaway
+export tortoise drops the sprite (`CanvasRenderer.drawTortoise` guards on
+`isVisible`). Extreme aspect ratios clamp to 3:1 and an empty drawing falls
+back to 512×512, matching SVG's no-visible-output fallback. PNG is rendered
+statically: a `speed(0)` tortoise makes `CanvasModel` flush all frames at
+init, which is what lets `ImageRenderer` work without a live timeline. (The
+one gap: `.autoFit` always adds a small sprite-size inset, so PNG carries a
+uniform safe margin where SVG is edge-to-edge — pixel parity would need an
+upstream tight-fit mode, deliberately out of scope.)
 
 **Presentation modifiers clobber each other.** Attaching two `fileExporter`s
 (or sheets/alerts of the same kind) to one view silently drops all but the
