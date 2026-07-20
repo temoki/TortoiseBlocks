@@ -92,6 +92,36 @@
         }
       }
     },
+    "black" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "くろ"
+          }
+        }
+      }
+    },
+    "Blocks" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブロック"
+          }
+        }
+      }
+    },
+    "blue" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "あお"
+          }
+        }
+      }
+    },
     "Box" : {
       "localizations" : {
         "ja" : {
@@ -162,6 +192,16 @@
         }
       }
     },
+    "Collapsed" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "とじた"
+          }
+        }
+      }
+    },
     "Color %@" : {
       "localizations" : {
         "ja" : {
@@ -173,6 +213,7 @@
       }
     },
     "Command: %lld" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
@@ -218,6 +259,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "コードをコピー"
+          }
+        }
+      }
+    },
+    "cyan" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "みずいろ"
           }
         }
       }
@@ -302,6 +353,16 @@
         }
       }
     },
+    "Expanded" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ひろげた"
+          }
+        }
+      }
+    },
     "Export" : {
       "localizations" : {
         "ja" : {
@@ -382,6 +443,16 @@
         }
       }
     },
+    "green" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "みどり"
+          }
+        }
+      }
+    },
     "If" : {
       "localizations" : {
         "ja" : {
@@ -398,6 +469,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "よりちいさい"
+          }
+        }
+      }
+    },
+    "magenta" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "マゼンタ"
           }
         }
       }
@@ -522,6 +603,16 @@
         }
       }
     },
+    "orange" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オレンジ"
+          }
+        }
+      }
+    },
     "Otherwise" : {
       "localizations" : {
         "ja" : {
@@ -592,6 +683,16 @@
         }
       }
     },
+    "Playback Details" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "さいせいのせつめい"
+          }
+        }
+      }
+    },
     "PNG" : {
       "localizations" : {
         "ja" : {
@@ -622,12 +723,32 @@
         }
       }
     },
+    "purple" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "むらさき"
+          }
+        }
+      }
+    },
     "Put in Box" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "はこにいれる"
+          }
+        }
+      }
+    },
+    "red" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "あか"
           }
         }
       }
@@ -992,16 +1113,6 @@
         }
       }
     },
-    "black" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "くろ"
-          }
-        }
-      }
-    },
     "white" : {
       "localizations" : {
         "ja" : {
@@ -1012,92 +1123,12 @@
         }
       }
     },
-    "red" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "あか"
-          }
-        }
-      }
-    },
-    "green" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "みどり"
-          }
-        }
-      }
-    },
-    "blue" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "あお"
-          }
-        }
-      }
-    },
     "yellow" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "きいろ"
-          }
-        }
-      }
-    },
-    "orange" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "オレンジ"
-          }
-        }
-      }
-    },
-    "purple" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "むらさき"
-          }
-        }
-      }
-    },
-    "cyan" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "みずいろ"
-          }
-        }
-      }
-    },
-    "magenta" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "マゼンタ"
-          }
-        }
-      }
-    },
-    "Blocks" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ブロック"
           }
         }
       }
