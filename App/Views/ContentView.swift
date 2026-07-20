@@ -68,44 +68,39 @@ struct RegularRootView: View {
     let runner: RunnerModel
 
     var body: some View {
-        // Named so the column-collapse "back" button this view gets for
-        // free from NavigationSplitView reads sensibly instead of blank
-        // (§23) — WorkspaceView's own inline title steps aside here since
-        // this title already covers it.
         NavigationSplitView {
             PaletteView(workspace: workspace)
-                .navigationTitle("Blocks")
-                .compactNavigationTitle()
+                .columnLabel("Blocks")
                 .navigationSplitViewColumnWidth(220)
         } content: {
             WorkspaceView(workspace: workspace, runner: runner, showsTitle: false)
-                .navigationTitle("Program")
-                .compactNavigationTitle()
+                .columnLabel("Program")
                 .navigationSplitViewColumnWidth(min: 300, ideal: 360, max: 440)
         } detail: {
             // 280pt keeps the canvas usable (§23) — narrower and its own
             // playback row starts contesting space with the drawing.
             CanvasPane(workspace: workspace, runner: runner, usesToolbar: true)
-                .navigationTitle("Run")
-                .compactNavigationTitle()
+                .columnLabel("Run")
                 .navigationSplitViewColumnWidth(min: 280, ideal: 420)
         }
     }
 }
 
 extension View {
-    /// Keeps a `NavigationSplitView` column's title inline instead of the
-    /// large-title row iOS defaults to absent a reason to compact it (§23)
-    /// — without this, columns with toolbar items read compact while ones
-    /// without (like the workspace) don't, so the three read inconsistently
-    /// side by side. Only iOS has this concept; macOS's columns don't grow
-    /// a title row either way.
-    func compactNavigationTitle() -> some View {
-        #if os(iOS)
-            navigationBarTitleDisplayMode(.inline)
-        #else
-            self
-        #endif
+    /// A plain, non-editable label for a `NavigationSplitView` column
+    /// (§23) — deliberately *not* `.navigationTitle`, which inside this
+    /// app's `DocumentGroup` scene doubles as the document's own rename
+    /// control. Setting it per column meant the document-rename popover
+    /// (with the column's label swapped in for its title text) opened from
+    /// every column, not just the one place a kid should be renaming the
+    /// saved file from.
+    func columnLabel(_ text: LocalizedStringKey) -> some View {
+        toolbar {
+            ToolbarItem(placement: .principal) {
+                Text(text)
+                    .font(.headline)
+            }
+        }
     }
 }
 
