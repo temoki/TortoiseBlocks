@@ -6,11 +6,6 @@ import TortoiseBlocksKit
 struct WorkspaceView: View {
     let workspace: WorkspaceEditor
     let runner: RunnerModel
-    /// Regular width's `NavigationSplitView` gives this pane's column a
-    /// system title bar ("Program"), so the inline title here would just
-    /// double it up; compact width's plain `TabView` tab has no such title
-    /// of its own, so it keeps this one (§23).
-    var showsTitle = true
 
     /// The last blockID actually scrolled to, and when — lets repeat loops
     /// (which revisit the same few rows) skip redundant `scrollTo` calls and
@@ -22,10 +17,8 @@ struct WorkspaceView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                if showsTitle {
-                    Text("Program")
-                        .font(.headline)
-                }
+                Text("Program")
+                    .font(.headline)
                 Spacer()
                 Button("Undo", systemImage: "arrow.uturn.backward") {
                     workspace.undo()

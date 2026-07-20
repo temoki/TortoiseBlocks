@@ -122,20 +122,29 @@ extension BlockCategory {
     }
 }
 
-/// The tap-to-add palette (vertical, for regular width layouts).
+/// The tap-to-add palette (vertical, for regular width layouts) — only ever
+/// the `NavigationSplitView` sidebar (§23), so its title is a plain inline
+/// header rather than a parameter like `WorkspaceView`'s.
 struct PaletteView: View {
     let workspace: WorkspaceEditor
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                ForEach(Palette.sections) { section in
-                    PaletteSectionView(section: section, workspace: workspace)
+        VStack(spacing: 0) {
+            Text("Blocks")
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+            Divider()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    ForEach(Palette.sections) { section in
+                        PaletteSectionView(section: section, workspace: workspace)
+                    }
                 }
+                .padding()
             }
-            .padding()
+            .paletteDropDeletion(workspace: workspace)
         }
-        .paletteDropDeletion(workspace: workspace)
     }
 }
 

@@ -68,38 +68,25 @@ struct RegularRootView: View {
     let runner: RunnerModel
 
     var body: some View {
+        // Each column titles itself with a plain inline Text (§23) —
+        // PaletteView, WorkspaceView, and CanvasPane — rather than a
+        // `NavigationSplitView`/toolbar-level title. `.navigationTitle`,
+        // `.principal`, and `.status` toolbar placements all turned out to
+        // collide with this DocumentGroup scene's own document-title
+        // chrome in one way or another (rename-on-tap, "Liquid Glass"
+        // material, layout landing at the wrong edge) when three columns
+        // each tried to claim one.
         NavigationSplitView {
             PaletteView(workspace: workspace)
-                .columnLabel("Blocks")
                 .navigationSplitViewColumnWidth(220)
         } content: {
-            WorkspaceView(workspace: workspace, runner: runner, showsTitle: false)
-                .columnLabel("Program")
+            WorkspaceView(workspace: workspace, runner: runner)
                 .navigationSplitViewColumnWidth(min: 300, ideal: 360, max: 440)
         } detail: {
             // 280pt keeps the canvas usable (§23) — narrower and its own
             // playback row starts contesting space with the drawing.
             CanvasPane(workspace: workspace, runner: runner, usesToolbar: true)
-                .columnLabel("Run")
                 .navigationSplitViewColumnWidth(min: 280, ideal: 420)
-        }
-    }
-}
-
-extension View {
-    /// A plain, non-editable label for a `NavigationSplitView` column
-    /// (§23) — deliberately *not* `.navigationTitle`, which inside this
-    /// app's `DocumentGroup` scene doubles as the document's own rename
-    /// control. Setting it per column meant the document-rename popover
-    /// (with the column's label swapped in for its title text) opened from
-    /// every column, not just the one place a kid should be renaming the
-    /// saved file from.
-    func columnLabel(_ text: LocalizedStringKey) -> some View {
-        toolbar {
-            ToolbarItem(placement: .principal) {
-                Text(text)
-                    .font(.headline)
-            }
         }
     }
 }
@@ -123,7 +110,17 @@ struct CanvasPane: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if !usesToolbar {
+            if usesToolbar {
+                // A plain inline title, matching Blocks/Program (§23) —
+                // not `.navigationTitle`/`.principal`/`.status`, all three
+                // of which turned out to collide with this DocumentGroup
+                // scene's own document-title chrome one way or another.
+                Text("Run")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+                Divider()
+            } else {
                 HStack {
                     CanvasViewToggle(showsCode: $showsCode)
                     Spacer()
