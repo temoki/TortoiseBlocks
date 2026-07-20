@@ -87,20 +87,26 @@ final class RunnerModel {
         return data
     }
 
-    /// PNG of the last run: an instant-mode tortoise rendered statically —
-    /// `speed(0)` makes `CanvasModel` flush every frame at init, so
-    /// `ImageRenderer` sees the finished drawing without a running timeline.
-    /// `scale` is the pixel density (1x = 512px, 2x = 1024px, 3x = 1536px).
+    /// PNG of the last run, cropped tight to the drawing and turtle-free, so
+    /// it matches the SVG export instead of the old fixed 512×512 square
+    /// (#25). The render frame takes the drawing's bounding-box aspect ratio;
+    /// `.autoFit` then fills it, leaving only its own small uniform margin.
+    /// The tortoise sprite is a cursor, not part of the picture — the SVG
+    /// export omits it, so this does too (`hideTortoise`). `speed(0)` makes
+    /// `CanvasModel` flush every frame at init, so `ImageRenderer` sees the
+    /// finished drawing without a running timeline. `scale` is the pixel
+    /// density applied on top (1x/2x/3x).
     func pngData(scale: CGFloat = 2) -> Data? {
         if let cached = pngDataCache[scale] { return cached }
         guard canExport else { return nil }
         let export = Tortoise()
         export.speed = 0
         export.apply(lastRunCommands)
+        export.hideTortoise()
+        let size = Self.exportFrameSize(for: lastRunCommands)
         let renderer = ImageRenderer(
             content: TortoiseCanvas(export)
-                .padding(16)
-                .frame(width: 512, height: 512)
+                .frame(width: size.width, height: size.height)
         )
         renderer.scale = scale
         guard let cgImage = renderer.cgImage else { return nil }
@@ -113,5 +119,29 @@ final class RunnerModel {
         #endif
         pngDataCache[scale] = data
         return data
+    }
+
+    /// Base render size (before `scale`) for the tight PNG: the drawing's
+    /// bounding-box aspect ratio with the long side at 512pt (#25). A near-
+    /// straight-line drawing is clamped to at most 3:1 so it can't produce an
+    /// unusable sliver; an empty drawing (no bounds) falls back to a 512×512
+    /// square, mirroring SVG's own "no visible output" fallback.
+    private static func exportFrameSize(for commands: [TortoiseCommand]) -> CGSize {
+        let square = CGSize(width: 512, height: 512)
+        guard let bounds = DrawingBounds.compute(from: CommandPlayer.play(commands: commands))
+        else { return square }
+        // Mirrors TortoiseUI's autoFit inset (sprite half-size, tortoiseBase
+        // × tortoiseScaleMax = 20) so the drawing fills the frame with a
+        // uniform margin instead of a lopsided one. If the library changes
+        // that inset this only shifts the margin slightly — never breaks.
+        let inset = 20.0
+        let w = bounds.width + 2 * inset
+        let h = bounds.height + 2 * inset
+        guard w > 0, h > 0 else { return square }
+        let aspect = min(max(w / h, 1.0 / 3.0), 3.0)
+        let long = 512.0
+        return aspect >= 1
+            ? CGSize(width: long, height: long / aspect)
+            : CGSize(width: long * aspect, height: long)
     }
 }
