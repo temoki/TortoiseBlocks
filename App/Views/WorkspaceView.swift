@@ -68,6 +68,14 @@ struct WorkspaceView: View {
                             // data — rows only need the list, not the tree.
                             usedVariableNames: BlockTree.usedVariableNames(in: workspace.blocks)
                         )
+                        // Ambient default for every value slot in the tree
+                        // (NumberValueButton, ComparisonButton, etc.): the
+                        // white "chip" look that reads on a solid,
+                        // category-colored block (§21). ConditionEditor's
+                        // popover — the one place these slots sit on a
+                        // light background instead — resets back to
+                        // `.bordered` locally.
+                        .buttonStyle(WorkspaceChipButtonStyle())
                         .padding()
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -154,7 +162,10 @@ struct DropGap: View {
                     .fill(isTargeted ? Color.accentColor : Color.clear)
                     .frame(height: isTargeted ? 4 : 2)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 3)
+                    // The drawn line stays thin; centering it in a taller
+                    // frame grows only the drop-target hit area, to roughly
+                    // ±12pt (§21) instead of the previous ~8–10pt.
+                    .frame(height: 24)
             }
         }
         .contentShape(.rect)
@@ -169,9 +180,9 @@ struct DropGap: View {
 }
 
 /// One block in the workspace. Containers (repeat, if) render their
-/// kind-specific header over the shared container chrome; every row
-/// carries move/delete controls. `isHighlighted` marks the executing block
-/// during playback.
+/// kind-specific header over the shared container chrome; every row carries
+/// a delete control, with move up/down in its context menu. `isHighlighted`
+/// marks the executing block during playback.
 struct BlockRowView: View {
     let block: Block
     let workspace: WorkspaceEditor
@@ -199,23 +210,30 @@ struct BlockRowView: View {
                 elseBlocks: elseBody
             ) {
                 Label("If", systemImage: "questionmark.diamond")
-                ConditionEditor(condition: condition, usedNames: usedVariableNames) { new in
+                // The three-slot condition collapses into one summary chip
+                // (§21) — this is what makes the header fit at 360pt.
+                ConditionButton(condition: condition, usedNames: usedVariableNames) { new in
                     workspace.updateKind(
                         of: block.id,
                         to: .ifBlock(condition: new, body: body, elseBody: elseBody))
                 }
                 Text("then")
-                Button("Add Otherwise", systemImage: "arrow.triangle.branch") {
-                    workspace.updateKind(
-                        of: block.id,
-                        to: .ifBlock(condition: condition, body: body, elseBody: []))
+                // Omitted (not just faded) once there's already an else
+                // mouth, so it stops reserving header width for nothing
+                // (#24).
+                if elseBody == nil {
+                    Button("Add Otherwise", systemImage: "arrow.triangle.branch") {
+                        workspace.updateKind(
+                            of: block.id,
+                            to: .ifBlock(condition: condition, body: body, elseBody: []))
+                    }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .controlSize(.large)
+                    .tint(.white)
+                    .accessibilityHint(
+                        "Adds an otherwise mouth that runs when the condition fails")
                 }
-                .labelStyle(.iconOnly)
-                .buttonStyle(.borderless)
-                .controlSize(.small)
-                .opacity(elseBody == nil ? 1 : 0)
-                .disabled(elseBody != nil)
-                .accessibilityHint("Adds an otherwise mouth that runs when the condition fails")
             }
         default:
             HStack(spacing: 8) {
@@ -225,26 +243,18 @@ struct BlockRowView: View {
                 Spacer(minLength: 0)
                 RowControls(blockID: block.id, workspace: workspace)
             }
-            .padding(8)
-            .background(
-                block.kind.category.color.opacity(isHighlighted ? 0.4 : 0.15),
-                in: .rect(cornerRadius: 8)
-            )
-            .overlay {
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.accentColor, lineWidth: isHighlighted ? 3 : 0)
-            }
-            .animation(.easeOut(duration: 0.15), value: isHighlighted)
+            .blockChrome(block.kind.category.color, isHighlighted: isHighlighted)
             .draggable(block)
+            .rowContextMenu(blockID: block.id, workspace: workspace)
             .accessibilityValue(isHighlighted ? "Running" : "")
         }
     }
 }
 
-/// Chrome shared by every container kind (repeat, if): the tinted header
-/// row with target/move/delete controls and drop-to-append, then the
-/// indented body list with its guide bar. The kind-specific header cells
-/// come in as a ViewBuilder.
+/// Chrome shared by every container kind (repeat, if): the solid,
+/// category-colored header row with target/delete controls (move up/down in
+/// the context menu) and drop-to-append, then the indented body list with
+/// its guide bar. The kind-specific header cells come in as a ViewBuilder.
 struct ContainerBlockRow<Header: View>: View {
     let block: Block
     let childBlocks: [Block]
@@ -267,12 +277,9 @@ struct ContainerBlockRow<Header: View>: View {
                 Spacer(minLength: 0)
                 RowControls(blockID: block.id, workspace: workspace)
             }
-            .padding(8)
-            .background(
-                block.kind.category.color.opacity(isDropTargeted ? 0.35 : 0.15),
-                in: .rect(cornerRadius: 8)
-            )
+            .blockChrome(block.kind.category.color, isDropTargeted: isDropTargeted)
             .draggable(block)
+            .rowContextMenu(blockID: block.id, workspace: workspace)
             // Dropping onto the header appends into this container's body.
             .dropDestination(for: Block.self) { items, _ in
                 guard let dropped = items.first else { return false }
@@ -346,13 +353,9 @@ struct ElseDividerRow: View {
             }
             .labelStyle(.iconOnly)
             .buttonStyle(.borderless)
-            .controlSize(.small)
+            .controlSize(.large)
         }
-        .padding(8)
-        .background(
-            BlockCategory.control.color.opacity(isDropTargeted ? 0.35 : 0.1),
-            in: .rect(cornerRadius: 8)
-        )
+        .blockChrome(BlockCategory.control.color, isDropTargeted: isDropTargeted)
         // Dropping onto the divider appends into the else mouth.
         .dropDestination(for: Block.self) { items, _ in
             guard let dropped = items.first else { return false }
@@ -465,18 +468,41 @@ struct InsertionTargetButton: View {
         )
         .toggleStyle(.button)
         .labelStyle(.iconOnly)
-        .tint(BlockCategory.control.color)
+        .controlSize(.large)
+        // Every row this appears on (§21: container headers, the else
+        // divider) is now a solid `.control`-orange block, so white is the
+        // one tint that's never fighting its own background.
+        .tint(.white)
         .accessibilityHint("When on, new palette blocks go inside this block")
     }
 }
 
-/// Move-up / move-down / delete for one row.
+/// Delete for one row — the only row operation that stays always visible
+/// (§21); move up/down live in the row's context menu instead, where
+/// SwiftUI also surfaces them to VoiceOver as custom actions.
 struct RowControls: View {
     let blockID: UUID
     let workspace: WorkspaceEditor
 
     var body: some View {
-        HStack(spacing: 2) {
+        Button("Delete", systemImage: "xmark.circle", role: .destructive) {
+            workspace.delete(blockID)
+        }
+        .labelStyle(.iconOnly)
+        .buttonStyle(.borderless)
+        .controlSize(.large)
+    }
+}
+
+/// Row reordering as a long-press / right-click menu (§21) — the primary
+/// path stays drag & drop, but this is the discoverable fallback, and
+/// SwiftUI automatically exposes a `contextMenu`'s items to VoiceOver as
+/// custom actions, which covers the accessibility requirement for free.
+/// Reuses the same "Move Up" / "Move Down" / "Delete" strings the old
+/// always-visible buttons used, so no new localization keys are needed.
+extension View {
+    fileprivate func rowContextMenu(blockID: UUID, workspace: WorkspaceEditor) -> some View {
+        contextMenu {
             Button("Move Up", systemImage: "chevron.up") {
                 workspace.move(blockID, by: -1)
             }
@@ -487,8 +513,38 @@ struct RowControls: View {
                 workspace.delete(blockID)
             }
         }
-        .labelStyle(.iconOnly)
-        .buttonStyle(.borderless)
-        .controlSize(.small)
+    }
+}
+
+/// The shared "block" look for workspace rows (§21): a solid, saturated
+/// category color with white text, matching the palette's `.borderedProminent`
+/// buttons instead of the old pale tint. Opacity has no more room to signal
+/// state once the background is already opaque, so the execution highlight
+/// and drop-target feedback are a white border plus a brightness bump.
+private struct BlockChrome: ViewModifier {
+    let color: Color
+    var isHighlighted = false
+    var isDropTargeted = false
+
+    func body(content: Content) -> some View {
+        content
+            .foregroundStyle(.white)
+            .padding(8)
+            .background(color, in: .rect(cornerRadius: 8))
+            .overlay {
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(.white, lineWidth: isHighlighted ? 3 : (isDropTargeted ? 2 : 0))
+            }
+            .brightness(isHighlighted ? 0.2 : (isDropTargeted ? 0.12 : 0))
+            .animation(.easeOut(duration: 0.15), value: isHighlighted)
+            .animation(.easeOut(duration: 0.12), value: isDropTargeted)
+    }
+}
+
+extension View {
+    fileprivate func blockChrome(
+        _ color: Color, isHighlighted: Bool = false, isDropTargeted: Bool = false
+    ) -> some View {
+        modifier(BlockChrome(color: color, isHighlighted: isHighlighted, isDropTargeted: isDropTargeted))
     }
 }

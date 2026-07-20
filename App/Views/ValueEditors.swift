@@ -10,6 +10,30 @@ let variableNamePresets = ["🌟", "💖", "🍀"]
 /// Display-length cap for typed variable names.
 let variableNameMaxLength = 10
 
+/// A slot's "chip" look on the workspace's dark, category-colored block rows
+/// (§21): a white capsule with dark text, so it stays readable regardless of
+/// which category color it's sitting on — the same kind of fixed-color
+/// choice already made for `BlockCategory.color` itself, not a semantic one.
+///
+/// Applied ambiently to the whole block list (`WorkspaceView`), not to
+/// individual buttons here — these same slot views (`NumberValueButton`,
+/// `ComparisonButton`, `VariableNameButton`, `ConditionButton`) are also
+/// reused inside `ConditionEditor`'s popover, which sits on the system's
+/// light popover background rather than a block, and resets back to
+/// `.bordered` for that subtree.
+struct WorkspaceChipButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(.black)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .background(
+                Color.white.opacity(configuration.isPressed ? 0.75 : 0.92),
+                in: .capsule
+            )
+    }
+}
+
 /// Argument slot for a `NumberValue`: shows the current value, edits in a
 /// popover, and can flip between a literal, the dice (random) form, and a
 /// variable ("box") reference. `usedNames` are the variables already in the
@@ -28,9 +52,9 @@ struct NumberValueButton: View {
             Text(displayText)
                 .font(.body.monospacedDigit())
         }
-        .buttonStyle(.bordered)
         .popover(isPresented: $showsEditor) {
             NumberValueEditor(value: value, usedNames: usedNames, onChange: onChange)
+                .buttonStyle(.bordered)
                 .padding()
                 .presentationCompactAdaptation(.popover)
         }
@@ -38,15 +62,19 @@ struct NumberValueButton: View {
         .accessibilityHint("Tap to change the number")
     }
 
-    private var displayText: String {
-        switch value {
-        case .literal(let value):
-            format(value)
-        case .random(let min, let max):
-            "🎲 \(format(min))–\(format(max))"
-        case .variable(let name):
-            name
-        }
+    private var displayText: String { numberValueDisplayText(value) }
+}
+
+/// Display text for a `NumberValue` — shared by `NumberValueButton`'s own
+/// chip and `ConditionButton`'s summary chip, so the two read consistently.
+func numberValueDisplayText(_ value: NumberValue) -> String {
+    switch value {
+    case .literal(let value):
+        format(value)
+    case .random(let min, let max):
+        "🎲 \(format(min))–\(format(max))"
+    case .variable(let name):
+        name
     }
 }
 
@@ -152,6 +180,45 @@ struct NumberValueEditor: View {
     }
 }
 
+/// The if header's argument slot: a single summary chip (e.g. "🎲1–6 ≥ 4"),
+/// following the same "chip → popover" language as `NumberValueButton` and
+/// `ColorValueButton`. The popover hosts the existing three-slot
+/// `ConditionEditor` unchanged.
+struct ConditionButton: View {
+    let condition: Condition
+    let usedNames: [String]
+    let onChange: (Condition) -> Void
+
+    @State private var showsEditor = false
+
+    var body: some View {
+        Button {
+            showsEditor = true
+        } label: {
+            Text(displayText)
+                .font(.body.monospacedDigit())
+        }
+        .popover(isPresented: $showsEditor) {
+            HStack(spacing: 8) {
+                ConditionEditor(condition: condition, usedNames: usedNames, onChange: onChange)
+            }
+            // ConditionEditor's own NumberValueButton/ComparisonButton
+            // default to the dark-row chip look; reset to `.bordered` here
+            // since this popover sits on the system's (light) background,
+            // not a category-colored block.
+            .buttonStyle(.bordered)
+            .padding()
+            .presentationCompactAdaptation(.popover)
+        }
+        .accessibilityLabel(Text("Condition \(displayText)"))
+        .accessibilityHint("Tap to change the condition")
+    }
+
+    private var displayText: String {
+        "\(numberValueDisplayText(condition.lhs)) \(comparisonSymbol(condition.comparison)) \(numberValueDisplayText(condition.rhs))"
+    }
+}
+
 /// The if header's argument cells: lhs, comparison, rhs — three siblings
 /// laid out by the surrounding header HStack.
 struct ConditionEditor: View {
@@ -198,7 +265,6 @@ struct ComparisonButton: View {
             Text(comparisonSymbol(comparison))
         }
         .menuStyle(.button)
-        .buttonStyle(.bordered)
         .fixedSize()
         .accessibilityLabel(Text(comparisonName(comparison)))
         .accessibilityHint("Tap to choose a comparison")
@@ -243,12 +309,12 @@ struct VariableNameButton: View {
         } label: {
             Text(name)
         }
-        .buttonStyle(.bordered)
         .popover(isPresented: $showsEditor) {
             VariableNamePicker(selected: name, usedNames: usedNames) { new in
                 onChange(new)
                 showsEditor = false
             }
+            .buttonStyle(.bordered)
             .padding()
             .presentationCompactAdaptation(.popover)
         }
@@ -347,13 +413,17 @@ struct ColorValueButton: View {
         } label: {
             switch value {
             case .literal(let color):
+                // A white ring keeps the swatch legible against the row's
+                // own (now solid, saturated) category color.
                 Circle()
                     .fill(Color(color.tortoiseColor))
-                    .stroke(.secondary, lineWidth: 1)
+                    .stroke(.white, lineWidth: 1.5)
                     .frame(width: 20, height: 20)
             case .random:
-                Text("🎲")
+                Circle()
+                    .fill(.white.opacity(0.92))
                     .frame(width: 20, height: 20)
+                    .overlay { Text("🎲").font(.caption) }
             }
         }
         .buttonStyle(.plain)
