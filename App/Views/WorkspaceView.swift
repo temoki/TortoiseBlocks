@@ -162,10 +162,20 @@ struct DropGap: View {
                     .fill(isTargeted ? Color.accentColor : Color.clear)
                     .frame(height: isTargeted ? 4 : 2)
                     .frame(maxWidth: .infinity)
-                    // The drawn line stays thin; centering it in a taller
-                    // frame grows only the drop-target hit area, to roughly
-                    // ±12pt (§21) instead of the previous ~8–10pt.
+                    .padding(.vertical, 3)
+                    // Grows the drop-target hit area to roughly ±12pt (§21)
+                    // without widening the row-to-row margin: the negative
+                    // padding shrinks what this view reports to the
+                    // enclosing VStack back down near its original ~8–10pt
+                    // footprint, while its actual (rendered and
+                    // hit-tested) frame stays 24pt tall, centered on the
+                    // same line as before. Caveat to confirm on-device: a
+                    // VStack paints siblings in order, so this reliably
+                    // extends into the row *above* (painted earlier) but a
+                    // row *below* (painted after, so it covers the
+                    // overlap) may still win right at its own top edge.
                     .frame(height: 24)
+                    .padding(.vertical, -7)
             }
         }
         .contentShape(.rect)
