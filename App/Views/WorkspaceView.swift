@@ -488,8 +488,8 @@ struct InsertionTargetButton: View {
 }
 
 /// Delete for one row — the only row operation that stays always visible
-/// (§21); move up/down live in the row's context menu instead, where
-/// SwiftUI also surfaces them to VoiceOver as custom actions.
+/// (§21); move up/down live in the row's context menu instead (see
+/// `rowContextMenu`), with an explicit VoiceOver custom action alongside it.
 struct RowControls: View {
     let blockID: UUID
     let workspace: WorkspaceEditor
@@ -505,10 +505,8 @@ struct RowControls: View {
 }
 
 /// Row reordering as a long-press / right-click menu (§21) — the primary
-/// path stays drag & drop, but this is the discoverable fallback, and
-/// SwiftUI automatically exposes a `contextMenu`'s items to VoiceOver as
-/// custom actions, which covers the accessibility requirement for free.
-/// Reuses the same "Move Up" / "Move Down" / "Delete" strings the old
+/// path stays drag & drop, but this is the discoverable fallback. Reuses
+/// the same "Move Up" / "Move Down" / "Delete" strings the old
 /// always-visible buttons used, so no new localization keys are needed.
 extension View {
     fileprivate func rowContextMenu(blockID: UUID, workspace: WorkspaceEditor) -> some View {
@@ -522,6 +520,18 @@ extension View {
             Button("Delete", systemImage: "xmark.circle", role: .destructive) {
                 workspace.delete(blockID)
             }
+        }
+        // SwiftUI exposes a contextMenu's items to VoiceOver as custom
+        // actions on its own, but that isn't guaranteed everywhere this
+        // app runs (macOS's context menu is a right-click, not the
+        // long-press VoiceOver users get on iOS/iPadOS) — these two make
+        // ↑↓ reachable explicitly. Delete already has its own always-
+        // visible button, so it doesn't need a duplicate action.
+        .accessibilityAction(named: Text("Move Up")) {
+            workspace.move(blockID, by: -1)
+        }
+        .accessibilityAction(named: Text("Move Down")) {
+            workspace.move(blockID, by: 1)
         }
     }
 }
