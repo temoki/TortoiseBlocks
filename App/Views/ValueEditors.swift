@@ -483,9 +483,27 @@ struct ColorSwatchGrid: View {
     }
 }
 
-/// Localized display name for a palette color (keys are the raw values).
+/// Localized display name for a palette color.
+///
+/// A `switch` over static literals, not `String(localized:
+/// String.LocalizationValue(color.rawValue))` — Xcode's string extraction
+/// can't see through a dynamically-built key, so it judged those entries
+/// unused and pruned their Japanese translations the next time the catalog
+/// was resynced. Static literals per case (matching `comparisonName`
+/// below) keep the keys visible to that extraction.
 func colorName(_ color: BlockColor) -> String {
-    String(localized: String.LocalizationValue(color.rawValue))
+    switch color {
+    case .black: String(localized: "black")
+    case .white: String(localized: "white")
+    case .red: String(localized: "red")
+    case .green: String(localized: "green")
+    case .blue: String(localized: "blue")
+    case .yellow: String(localized: "yellow")
+    case .orange: String(localized: "orange")
+    case .purple: String(localized: "purple")
+    case .cyan: String(localized: "cyan")
+    case .magenta: String(localized: "magenta")
+    }
 }
 
 /// Localized display name for a `ColorValue` — a palette color, or "Dice"

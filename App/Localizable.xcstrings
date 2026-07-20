@@ -1,9 +1,7 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {
-
-    },
+    "" : {},
     "🎲" : {
       "localizations" : {
         "ja" : {
@@ -990,6 +988,106 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "オンにするとパレットのブロックがこのなかにはいります"
+          }
+        }
+      }
+    },
+    "black" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "くろ"
+          }
+        }
+      }
+    },
+    "white" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "しろ"
+          }
+        }
+      }
+    },
+    "red" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "あか"
+          }
+        }
+      }
+    },
+    "green" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "みどり"
+          }
+        }
+      }
+    },
+    "blue" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "あお"
+          }
+        }
+      }
+    },
+    "yellow" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "きいろ"
+          }
+        }
+      }
+    },
+    "orange" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オレンジ"
+          }
+        }
+      }
+    },
+    "purple" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "むらさき"
+          }
+        }
+      }
+    },
+    "cyan" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "みずいろ"
+          }
+        }
+      }
+    },
+    "magenta" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "マゼンタ"
           }
         }
       }
