@@ -1091,6 +1091,16 @@
           }
         }
       }
+    },
+    "Blocks" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブロック"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

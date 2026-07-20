@@ -68,16 +68,23 @@ struct RegularRootView: View {
     let runner: RunnerModel
 
     var body: some View {
+        // Named so the column-collapse "back" button this view gets for
+        // free from NavigationSplitView reads sensibly instead of blank
+        // (§23) — WorkspaceView's own inline title steps aside here since
+        // this title already covers it.
         NavigationSplitView {
             PaletteView(workspace: workspace)
+                .navigationTitle("Blocks")
                 .navigationSplitViewColumnWidth(220)
         } content: {
-            WorkspaceView(workspace: workspace, runner: runner)
+            WorkspaceView(workspace: workspace, runner: runner, showsTitle: false)
+                .navigationTitle("Program")
                 .navigationSplitViewColumnWidth(min: 300, ideal: 360, max: 440)
         } detail: {
             // 280pt keeps the canvas usable (§23) — narrower and its own
             // playback row starts contesting space with the drawing.
             CanvasPane(workspace: workspace, runner: runner, usesToolbar: true)
+                .navigationTitle("Run")
                 .navigationSplitViewColumnWidth(min: 280, ideal: 420)
         }
     }
