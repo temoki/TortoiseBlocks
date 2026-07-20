@@ -19,7 +19,7 @@ struct CodePane: View {
             HStack {
                 Spacer()
                 Button("Copy Code", systemImage: "doc.on.doc") {
-                    copyToPasteboard(code)
+                    copyCodeToPasteboard(code)
                 }
                 .labelStyle(.titleAndIcon)
             }
@@ -55,13 +55,15 @@ struct CodePane: View {
         case .plain: .primary
         }
     }
+}
 
-    private func copyToPasteboard(_ string: String) {
-        #if os(macOS)
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(string, forType: .string)
-        #else
-            UIPasteboard.general.string = string
-        #endif
-    }
+/// Shared with the Run menu's "Copy Code" command (§23), so both paths to
+/// copying the generated source go through the same platform pasteboard call.
+func copyCodeToPasteboard(_ string: String) {
+    #if os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(string, forType: .string)
+    #else
+        UIPasteboard.general.string = string
+    #endif
 }

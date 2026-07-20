@@ -36,6 +36,19 @@ struct TortoiseBlocksCommands: Commands {
             }
             .keyboardShortcut(.rightArrow, modifiers: [.command, .shift])
             .disabled(runner?.player.isPaused != true)
+
+            Divider()
+
+            Button("Clear") {
+                runner?.clear()
+            }
+            .disabled(runner == nil || runner?.commandCount == 0)
+
+            Button("Copy Code") {
+                copyCodeToPasteboard(SwiftCodeGenerator.code(for: workspaceBlocks ?? []))
+            }
+            .keyboardShortcut("c", modifiers: [.command, .shift])
+            .disabled((workspaceBlocks ?? []).isEmpty)
         }
         CommandGroup(after: .importExport) {
             // Just sets pendingExport; CanvasPane owns the actual

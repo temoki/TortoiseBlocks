@@ -68,15 +68,17 @@ struct RegularRootView: View {
     let runner: RunnerModel
 
     var body: some View {
-        HStack(spacing: 0) {
+        NavigationSplitView {
             PaletteView(workspace: workspace)
-                .frame(width: 220)
-            Divider()
+                .navigationSplitViewColumnWidth(220)
+        } content: {
             WorkspaceView(workspace: workspace, runner: runner)
-                .frame(minWidth: 300, idealWidth: 360, maxWidth: 440)
-            Divider()
-            CanvasPane(workspace: workspace, runner: runner)
-                .frame(maxWidth: .infinity)
+                .navigationSplitViewColumnWidth(min: 300, ideal: 360, max: 440)
+        } detail: {
+            // 280pt keeps the canvas usable (§23) — narrower and its own
+            // playback row starts contesting space with the drawing.
+            CanvasPane(workspace: workspace, runner: runner, usesToolbar: true)
+                .navigationSplitViewColumnWidth(min: 280, ideal: 420)
         }
     }
 }
@@ -86,6 +88,11 @@ struct RegularRootView: View {
 struct CanvasPane: View {
     let workspace: WorkspaceEditor
     @Bindable var runner: RunnerModel
+    /// Regular width hosts this pane inside `RegularRootView`'s
+    /// `NavigationSplitView`, which gives the view toggle and export menu a
+    /// toolbar to live in; compact width's plain `TabView` has no
+    /// navigation bar, so it keeps the inline header instead (§23).
+    var usesToolbar = false
 
     @State private var showsCode = false
     // One presentation state for both formats: attaching two fileExporter
@@ -95,53 +102,14 @@ struct CanvasPane: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Picker("View", selection: $showsCode) {
-                    Text("Canvas").tag(false)
-                    Text("Code").tag(true)
+            if !usesToolbar {
+                HStack {
+                    CanvasViewToggle(showsCode: $showsCode)
+                    Spacer()
+                    CanvasExportMenu(runner: runner, onExport: export)
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(maxWidth: 220)
-                Spacer()
-                Menu("Export", systemImage: "square.and.arrow.up") {
-                    Button("SVG") {
-                        export(runner.svgData(), as: .svg)
-                    }
-                    Menu("PNG") {
-                        Button("1x (512px)") {
-                            export(runner.pngData(scale: 1), as: .png)
-                        }
-                        Button("2x (1024px)") {
-                            export(runner.pngData(scale: 2), as: .png)
-                        }
-                        Button("3x (1536px)") {
-                            export(runner.pngData(scale: 3), as: .png)
-                        }
-                    }
-                    Divider()
-                    // svgData()/pngData() are cached per run, so evaluating
-                    // them here (ShareLink's items are eager) doesn't
-                    // re-render on every menu open.
-                    if let svgData = runner.svgData() {
-                        ShareLink(items: [SVGDrawing(data: svgData)]) { _ in
-                            SharePreview("Drawing")
-                        } label: {
-                            Label("Share SVG", systemImage: "square.and.arrow.up")
-                        }
-                    }
-                    if let pngData = runner.pngData() {
-                        ShareLink(items: [PNGDrawing(data: pngData)]) { _ in
-                            SharePreview("Drawing")
-                        } label: {
-                            Label("Share PNG", systemImage: "square.and.arrow.up")
-                        }
-                    }
-                }
-                .disabled(!runner.canExport)
-                .fixedSize()
+                .padding([.horizontal, .top])
             }
-            .padding([.horizontal, .top])
             // The canvas stays in the hierarchy while the code pane covers
             // it (opacity, not if/else) so playback identity is preserved.
             ZStack {
@@ -157,6 +125,14 @@ struct CanvasPane: View {
             Divider()
             PlaybackControls(workspace: workspace, runner: runner)
                 .padding()
+        }
+        .toolbar {
+            if usesToolbar {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    CanvasViewToggle(showsCode: $showsCode)
+                    CanvasExportMenu(runner: runner, onExport: export)
+                }
+            }
         }
         .alert("Too Many Blocks!", isPresented: $runner.showsExpansionError) {
             Button("OK", role: .cancel) {}
@@ -189,10 +165,77 @@ struct CanvasPane: View {
     }
 }
 
-/// Run / clear / pause / step / speed, driving the runner and player.
+/// The canvas/code segmented toggle — shared between `CanvasPane`'s inline
+/// header (compact) and its toolbar (regular, §23).
+struct CanvasViewToggle: View {
+    @Binding var showsCode: Bool
+
+    var body: some View {
+        Picker("View", selection: $showsCode) {
+            Text("Canvas").tag(false)
+            Text("Code").tag(true)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .frame(maxWidth: 220)
+    }
+}
+
+/// The export menu (SVG / PNG at three scales / ShareLink) — shared between
+/// `CanvasPane`'s inline header (compact) and its toolbar (regular, §23).
+/// `onExport` keeps this view free of `CanvasPane`'s own file-exporter state.
+struct CanvasExportMenu: View {
+    @Bindable var runner: RunnerModel
+    let onExport: (Data?, UTType) -> Void
+
+    var body: some View {
+        Menu("Export", systemImage: "square.and.arrow.up") {
+            Button("SVG") {
+                onExport(runner.svgData(), .svg)
+            }
+            Menu("PNG") {
+                Button("1x (512px)") {
+                    onExport(runner.pngData(scale: 1), .png)
+                }
+                Button("2x (1024px)") {
+                    onExport(runner.pngData(scale: 2), .png)
+                }
+                Button("3x (1536px)") {
+                    onExport(runner.pngData(scale: 3), .png)
+                }
+            }
+            Divider()
+            // svgData()/pngData() are cached per run, so evaluating them
+            // here (ShareLink's items are eager) doesn't re-render on every
+            // menu open.
+            if let svgData = runner.svgData() {
+                ShareLink(items: [SVGDrawing(data: svgData)]) { _ in
+                    SharePreview("Drawing")
+                } label: {
+                    Label("Share SVG", systemImage: "square.and.arrow.up")
+                }
+            }
+            if let pngData = runner.pngData() {
+                ShareLink(items: [PNGDrawing(data: pngData)]) { _ in
+                    SharePreview("Drawing")
+                } label: {
+                    Label("Share PNG", systemImage: "square.and.arrow.up")
+                }
+            }
+        }
+        .disabled(!runner.canExport)
+        .fixedSize()
+    }
+}
+
+/// Run / clear / pause / position, always visible in one row (§23); step,
+/// the scrubber, and speed reveal below on demand — `isExpanded` is UI-only
+/// state, deliberately not persisted across launches.
 struct PlaybackControls: View {
     let workspace: WorkspaceEditor
     @Bindable var runner: RunnerModel
+
+    @State private var isExpanded = false
 
     var body: some View {
         @Bindable var player = runner.player
@@ -206,22 +249,44 @@ struct PlaybackControls: View {
                 Button("Clear", systemImage: "trash") {
                     runner.clear()
                 }
-                Spacer()
-                Text("Command: \(runner.player.currentCommandIndex + 1)")
-                    .font(.body.monospacedDigit())
-                    .foregroundStyle(.secondary)
-            }
-            HStack(spacing: 16) {
+                .disabled(runner.commandCount == 0)
                 Toggle("Pause", systemImage: "pause.fill", isOn: $player.isPaused)
                     .toggleStyle(.button)
-                Button("Step", systemImage: "forward.frame.fill") {
-                    runner.player.step()
+                    .disabled(runner.commandCount == 0)
+                Spacer()
+                // The one place the run position shows — this used to be
+                // duplicated between "Command: N" here and "N / M" on the
+                // scrubber below.
+                Text(verbatim: positionText)
+                    .font(.body.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .frame(minWidth: 60, alignment: .trailing)
+                Button("Playback Details", systemImage: "chevron.down") {
+                    isExpanded.toggle()
                 }
-                .disabled(!runner.player.isPaused)
-                SpeedSlider(player: runner.player)
+                .labelStyle(.iconOnly)
+                .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                .accessibilityValue(isExpanded ? Text("Expanded") : Text("Collapsed"))
             }
-            PlaybackScrubber(runner: runner)
+            if isExpanded {
+                HStack(spacing: 16) {
+                    Button("Step", systemImage: "forward.frame.fill") {
+                        runner.player.step()
+                    }
+                    .disabled(!runner.player.isPaused)
+                    SpeedSlider(player: runner.player)
+                }
+                PlaybackScrubber(runner: runner)
+            }
         }
+    }
+
+    /// "N / M" once there's a run to show a position in; an idling scrubber
+    /// (nothing run yet, or cleared) reads as a plain dash rather than the
+    /// otherwise-confusing "0 / 0" (currentCommandIndex starts at -1).
+    private var positionText: String {
+        guard runner.commandCount > 0 else { return "–" }
+        return "\(runner.player.currentCommandIndex + 1) / \(runner.commandCount)"
     }
 }
 
@@ -231,17 +296,11 @@ struct PlaybackScrubber: View {
     let runner: RunnerModel
 
     var body: some View {
-        HStack {
-            Slider(value: position, in: -1...Double(max(runner.commandCount - 1, 0)), step: 1) {
-                Text("Position")
-            }
-            .labelsHidden()
-            .disabled(runner.commandCount == 0)
-            Text(verbatim: "\(runner.player.currentCommandIndex + 1) / \(runner.commandCount)")
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
-                .frame(minWidth: 70, alignment: .trailing)
+        Slider(value: position, in: -1...Double(max(runner.commandCount - 1, 0)), step: 1) {
+            Text("Position")
         }
+        .labelsHidden()
+        .disabled(runner.commandCount == 0)
     }
 
     private var position: Binding<Double> {
