@@ -280,6 +280,10 @@ struct PaletteEntryChip: View {
             VStack(spacing: 4) {
                 Image(systemName: entry.systemImage)
                     .font(.title3)
+                    // Decorative — VoiceOver reads the block name below, not
+                    // the SF Symbol's own description (matching the regular
+                    // sidebar's Label behavior).
+                    .accessibilityHidden(true)
                 Text(entry.title)
                     .font(.caption2)
                     .lineLimit(2)
