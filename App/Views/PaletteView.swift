@@ -189,23 +189,111 @@ struct PaletteEntryButton: View {
     }
 }
 
-/// Horizontal palette strip for compact (iPhone) layouts.
+/// Compact-width palette (iPhone / narrow split): a row of category tabs
+/// over the selected category's entries (§22). Grouping by category cuts the
+/// old flat 16-entry scroll to at most five entries per tab, so any block is
+/// two actions away — pick a tab, tap the block.
 struct PaletteStrip: View {
     let workspace: WorkspaceEditor
 
+    // Non-persisted UI state; starts on Motion, the first category.
+    @State private var selectedCategory: BlockCategory = .movement
+
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(Palette.sections) { section in
-                    ForEach(section.entries) { entry in
-                        PaletteEntryButton(
-                            entry: entry, category: section.category, workspace: workspace)
+        VStack(spacing: 8) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(Palette.sections) { section in
+                        CategoryTab(
+                            title: section.title,
+                            color: section.category.color,
+                            isSelected: selectedCategory == section.category
+                        ) {
+                            selectedCategory = section.category
+                        }
                     }
                 }
+                .padding(.horizontal)
             }
-            .padding(.horizontal)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: 8) {
+                    ForEach(selectedSection.entries) { entry in
+                        PaletteEntryChip(
+                            entry: entry, category: selectedCategory, workspace: workspace)
+                    }
+                }
+                .padding(.horizontal)
+            }
         }
+        // Applied to the whole strip, tab row included, so a workspace block
+        // dropped anywhere here is deleted (§22).
         .paletteDropDeletion(workspace: workspace)
+    }
+
+    private var selectedSection: PaletteSection {
+        Palette.sections.first { $0.category == selectedCategory } ?? Palette.sections[0]
+    }
+}
+
+/// One category tab: a capsule tinted with the category color, filled when
+/// selected. A real `Button` with the selected trait, so VoiceOver announces
+/// the selection (§22).
+struct CategoryTab: View {
+    let title: LocalizedStringResource
+    let color: Color
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(isSelected ? .white : color)
+                .padding(.vertical, 6)
+                .padding(.horizontal, 14)
+                .background(
+                    isSelected ? color : color.opacity(0.15),
+                    in: .capsule
+                )
+        }
+        .buttonStyle(.plain)
+        .pointerHover()
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+/// A compact palette entry for the strip: icon over label on a solid
+/// category-color block, matching the workspace's block look (§21). Fixed
+/// size (Dynamic-Type-scaled) keeps the row tidy regardless of label length.
+struct PaletteEntryChip: View {
+    let entry: PaletteEntry
+    let category: BlockCategory
+    let workspace: WorkspaceEditor
+
+    @ScaledMetric private var width: CGFloat = 78
+    @ScaledMetric private var height: CGFloat = 66
+
+    var body: some View {
+        Button {
+            workspace.add(entry.kind)
+        } label: {
+            VStack(spacing: 4) {
+                Image(systemName: entry.systemImage)
+                    .font(.title3)
+                Text(entry.title)
+                    .font(.caption2)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+            }
+            .foregroundStyle(.white)
+            .frame(width: width, height: height)
+            .background(category.color, in: .rect(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+        .pointerHover()
+        // Evaluated per drag, so every drag stamps a fresh Block (new ID).
+        .draggable(Block(kind: entry.kind))
+        .accessibilityHint("Tap to add to the end of the program. Drag to place anywhere.")
     }
 }
 
