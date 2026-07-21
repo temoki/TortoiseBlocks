@@ -182,6 +182,7 @@ struct PaletteEntryButton: View {
         }
         .buttonStyle(.borderedProminent)
         .tint(category.color)
+        .pointerHover()
         // Evaluated per drag, so every drag stamps a fresh Block (new ID).
         .draggable(Block(kind: entry.kind))
         .accessibilityHint("Tap to add to the end of the program. Drag to place anywhere.")

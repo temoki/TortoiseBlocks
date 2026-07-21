@@ -1132,6 +1132,16 @@
           }
         }
       }
+    },
+    "Value of box %@" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "はこ %@ のなかみ"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

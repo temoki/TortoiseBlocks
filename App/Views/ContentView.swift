@@ -67,6 +67,10 @@ struct RegularRootView: View {
     let workspace: WorkspaceEditor
     let runner: RunnerModel
 
+    // Grows the palette column with Dynamic Type so larger block labels
+    // don't truncate (#24).
+    @ScaledMetric private var paletteWidth: CGFloat = 220
+
     var body: some View {
         // Each column titles itself with a plain inline Text (§23) —
         // PaletteView, WorkspaceView, and CanvasPane — rather than a
@@ -78,7 +82,7 @@ struct RegularRootView: View {
         // each tried to claim one.
         NavigationSplitView {
             PaletteView(workspace: workspace)
-                .navigationSplitViewColumnWidth(220)
+                .navigationSplitViewColumnWidth(paletteWidth)
         } content: {
             WorkspaceView(workspace: workspace, runner: runner)
                 .navigationSplitViewColumnWidth(min: 300, ideal: 360, max: 440)
@@ -337,6 +341,8 @@ struct PlaybackScrubber: View {
 struct SpeedSlider: View {
     @Bindable var player: TortoisePlayer
 
+    @ScaledMetric private var sliderWidth: CGFloat = 240
+
     var body: some View {
         HStack {
             Label("Speed", systemImage: "tortoise")
@@ -344,7 +350,7 @@ struct SpeedSlider: View {
             Slider(value: speed, in: 1...10, step: 1) {
                 Text("Speed")
             }
-            .frame(maxWidth: 240)
+            .frame(maxWidth: sliderWidth)
             Label("Speed", systemImage: "hare")
                 .labelStyle(.iconOnly)
         }

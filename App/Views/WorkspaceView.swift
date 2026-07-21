@@ -277,6 +277,7 @@ struct ContainerBlockRow<Header: View>: View {
     @ViewBuilder let header: Header
 
     @State private var isDropTargeted = false
+    @ScaledMetric private var indent: CGFloat = 16
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -325,7 +326,7 @@ struct ContainerBlockRow<Header: View>: View {
 
     private func indented(_ list: BlockListView) -> some View {
         list
-            .padding(.leading, 16)
+            .padding(.leading, indent)
             .overlay(alignment: .leading) {
                 Rectangle()
                     .fill(block.kind.category.color.opacity(0.5))

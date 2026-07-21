@@ -34,6 +34,24 @@ struct WorkspaceChipButtonStyle: ButtonStyle {
     }
 }
 
+extension View {
+    /// Standard chrome for a slot editor's popover. Resets the foreground to
+    /// the adaptive label color (#24): the block row sets `.foregroundStyle
+    /// (.white)`, which otherwise leaks into the popover and leaves the label,
+    /// text field, and stepper invisible on the system background.
+    ///
+    /// `Color.primary` (the absolute label color), *not* the hierarchical
+    /// `.primary` — the latter is the primary *level* of the inherited base
+    /// style, so against a white base it resolves to white and doesn't fix
+    /// anything. `.tint` likewise restores control coloring for the stepper.
+    func slotPopoverContent() -> some View {
+        foregroundStyle(Color.primary)
+            .tint(Color.accentColor)
+            .padding()
+            .presentationCompactAdaptation(.popover)
+    }
+}
+
 /// Argument slot for a `NumberValue`: shows the current value, edits in a
 /// popover, and can flip between a literal, the dice (random) form, and a
 /// variable ("box") reference. `usedNames` are the variables already in the
@@ -49,20 +67,36 @@ struct NumberValueButton: View {
         Button {
             showsEditor = true
         } label: {
-            Text(displayText)
-                .font(.body.monospacedDigit())
+            HStack(spacing: 4) {
+                // A box glyph marks a *value read from* a box (#24), so it
+                // isn't mistaken for the bare-name box target it sits next
+                // to in "Add to Box [🌟] [💖]".
+                if case .variable = value {
+                    Image(systemName: "shippingbox")
+                        .imageScale(.small)
+                }
+                Text(displayText)
+                    .font(.body.monospacedDigit())
+            }
         }
+        .pointerHover()
         .popover(isPresented: $showsEditor) {
             NumberValueEditor(value: value, usedNames: usedNames, onChange: onChange)
                 .buttonStyle(.bordered)
-                .padding()
-                .presentationCompactAdaptation(.popover)
+                .slotPopoverContent()
         }
-        .accessibilityLabel(Text("Number \(displayText)"))
+        .accessibilityLabel(Text(accessibilityLabel))
         .accessibilityHint("Tap to change the number")
     }
 
     private var displayText: String { numberValueDisplayText(value) }
+
+    private var accessibilityLabel: String {
+        if case .variable(let name) = value {
+            return String(localized: "Value of box \(name)")
+        }
+        return String(localized: "Number \(displayText)")
+    }
 }
 
 /// Display text for a `NumberValue` — shared by `NumberValueButton`'s own
@@ -98,30 +132,15 @@ struct NumberValueEditor: View {
             switch value {
             case .literal(let number):
                 LabeledContent("Number") {
-                    HStack {
-                        TextField("Number", value: literalBinding(number), format: .number)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 80)
-                        Stepper("Number", value: literalBinding(number), step: 10)
-                            .labelsHidden()
-                    }
+                    // ±1 for fine nudges; the keyboard handles big jumps.
+                    NumberField(value: number, step: 1) { onChange(.literal($0)) }
                 }
             case .random(let min, let max):
                 LabeledContent("Minimum") {
-                    TextField(
-                        "Minimum", value: randomBinding(min: min, max: max, edits: .min),
-                        format: .number
-                    )
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 80)
+                    NumberField(value: min) { onChange(.random(min: $0, max: max)) }
                 }
                 LabeledContent("Maximum") {
-                    TextField(
-                        "Maximum", value: randomBinding(min: min, max: max, edits: .max),
-                        format: .number
-                    )
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 80)
+                    NumberField(value: max) { onChange(.random(min: min, max: $0)) }
                 }
             case .variable(let name):
                 VariableNamePicker(selected: name, usedNames: usedNames) {
@@ -162,21 +181,66 @@ struct NumberValueEditor: View {
         )
     }
 
-    private func literalBinding(_ number: Double) -> Binding<Double> {
-        Binding(get: { number }, set: { onChange(.literal($0)) })
+}
+
+/// A numeric text field, optionally with a ± stepper, that commits when
+/// editing ends — on Return and on losing focus, which is what fires when
+/// the enclosing popover is dismissed (#24). Committing on focus loss (not
+/// only on Return) means a typed number is never silently dropped by closing
+/// the popover. The stepper shares the field's own text, so ± updates the
+/// visible value immediately rather than round-tripping through the document.
+/// Shows the number pad on iOS; invalid text reverts to the last good value.
+struct NumberField: View {
+    let value: Double
+    var step: Double? = nil
+    let onCommit: (Double) -> Void
+
+    @State private var text = ""
+    @FocusState private var focused: Bool
+    @ScaledMetric private var fieldWidth: CGFloat = 80
+
+    var body: some View {
+        HStack(spacing: 8) {
+            TextField("Number", text: $text)
+                .textFieldStyle(.roundedBorder)
+                .numericKeyboard()
+                .frame(width: fieldWidth)
+                .focused($focused)
+                .onAppear { text = format(value) }
+                // value only changes from a committed edit (this field, the
+                // stepper, or undo) — never mid-typing, since typing doesn't
+                // commit — so mirroring it here can't clobber in-progress
+                // input.
+                .onChange(of: value) { _, new in text = format(new) }
+                .onChange(of: focused) { _, isFocused in
+                    if !isFocused { commit() }
+                }
+                .onSubmit { commit() }
+            if let step {
+                Stepper("Number", value: stepperBinding, step: step)
+                    .labelsHidden()
+            }
+        }
     }
 
-    private enum RandomEdge { case min, max }
-
-    private func randomBinding(min: Double, max: Double, edits edge: RandomEdge)
-        -> Binding<Double>
-    {
+    /// Drives the stepper off the committed `value`, but writes both the
+    /// visible text and the commit so ± reflects instantly.
+    private var stepperBinding: Binding<Double> {
         Binding(
-            get: { edge == .min ? min : max },
+            get: { value },
             set: { new in
-                onChange(edge == .min ? .random(min: new, max: max) : .random(min: min, max: new))
+                text = format(new)
+                onCommit(new)
             }
         )
+    }
+
+    private func commit() {
+        guard let parsed = Double(text.trimmingCharacters(in: .whitespaces)) else {
+            text = format(value)
+            return
+        }
+        if parsed != value { onCommit(parsed) }
     }
 }
 
@@ -198,17 +262,17 @@ struct ConditionButton: View {
             Text(displayText)
                 .font(.body.monospacedDigit())
         }
+        .pointerHover()
         .popover(isPresented: $showsEditor) {
             HStack(spacing: 8) {
                 ConditionEditor(condition: condition, usedNames: usedNames, onChange: onChange)
             }
             // ConditionEditor's own NumberValueButton/ComparisonButton
             // default to the dark-row chip look; reset to `.bordered` here
-            // since this popover sits on the system's (light) background,
-            // not a category-colored block.
+            // since this popover sits on the system's background, not a
+            // category-colored block.
             .buttonStyle(.bordered)
-            .padding()
-            .presentationCompactAdaptation(.popover)
+            .slotPopoverContent()
         }
         .accessibilityLabel(Text("Condition \(displayText)"))
         .accessibilityHint("Tap to change the condition")
@@ -266,6 +330,7 @@ struct ComparisonButton: View {
         }
         .menuStyle(.button)
         .fixedSize()
+        .pointerHover()
         .accessibilityLabel(Text(comparisonName(comparison)))
         .accessibilityHint("Tap to choose a comparison")
     }
@@ -309,14 +374,14 @@ struct VariableNameButton: View {
         } label: {
             Text(name)
         }
+        .pointerHover()
         .popover(isPresented: $showsEditor) {
             VariableNamePicker(selected: name, usedNames: usedNames) { new in
                 onChange(new)
                 showsEditor = false
             }
             .buttonStyle(.bordered)
-            .padding()
-            .presentationCompactAdaptation(.popover)
+            .slotPopoverContent()
         }
         .accessibilityLabel(Text("Box \(name)"))
         .accessibilityHint("Tap to choose a box")
@@ -406,6 +471,7 @@ struct ColorValueButton: View {
     let onChange: (ColorValue) -> Void
 
     @State private var showsEditor = false
+    @ScaledMetric private var swatch: CGFloat = 20
 
     var body: some View {
         Button {
@@ -418,22 +484,22 @@ struct ColorValueButton: View {
                 Circle()
                     .fill(Color(color.tortoiseColor))
                     .stroke(.white, lineWidth: 1.5)
-                    .frame(width: 20, height: 20)
+                    .frame(width: swatch, height: swatch)
             case .random:
                 Circle()
                     .fill(.white.opacity(0.92))
-                    .frame(width: 20, height: 20)
+                    .frame(width: swatch, height: swatch)
                     .overlay { Text("🎲").font(.caption) }
             }
         }
         .buttonStyle(.plain)
+        .pointerHover()
         .popover(isPresented: $showsEditor) {
             ColorSwatchGrid(selected: value) { new in
                 onChange(new)
                 showsEditor = false
             }
-            .padding()
-            .presentationCompactAdaptation(.popover)
+            .slotPopoverContent()
         }
         .accessibilityLabel(Text("Color \(colorValueName(value))"))
         .accessibilityHint("Tap to choose a color")
@@ -444,7 +510,13 @@ struct ColorSwatchGrid: View {
     let selected: ColorValue
     let onSelect: (ColorValue) -> Void
 
-    private let columns = Array(repeating: GridItem(.fixed(36)), count: 5)
+    @ScaledMetric private var swatch: CGFloat = 28
+
+    // Computed (not stored) so the columns track `swatch` as Dynamic Type
+    // scales it; the +8 keeps the cell gutter proportional.
+    private var columns: [GridItem] {
+        Array(repeating: GridItem(.fixed(swatch + 8)), count: 5)
+    }
 
     var body: some View {
         LazyVGrid(columns: columns, spacing: 8) {
@@ -459,9 +531,10 @@ struct ColorSwatchGrid: View {
                             isSelected ? Color.accentColor : .secondary,
                             lineWidth: isSelected ? 3 : 1
                         )
-                        .frame(width: 28, height: 28)
+                        .frame(width: swatch, height: swatch)
                 }
                 .buttonStyle(.plain)
+                .pointerHover()
                 .accessibilityLabel(Text(colorName(color)))
             }
             let isRandomSelected = selected == .random
@@ -474,10 +547,11 @@ struct ColorSwatchGrid: View {
                         isRandomSelected ? Color.accentColor : .secondary,
                         lineWidth: isRandomSelected ? 3 : 1
                     )
-                    .frame(width: 28, height: 28)
+                    .frame(width: swatch, height: swatch)
                     .overlay { Text("🎲") }
             }
             .buttonStyle(.plain)
+            .pointerHover()
             .accessibilityLabel(Text("Dice"))
         }
     }
