@@ -94,17 +94,6 @@ identifiers can never break saved files):
 }
 ```
 
-## Roadmap
-
-Remaining work is tracked in
-[GitHub Issues](https://github.com/temoki/TortoiseBlocks/issues): the
-[M7 milestone](https://github.com/temoki/TortoiseBlocks/milestone/1) covers
-polish toward a TestFlight release (accessibility audit, iPhone layout,
-macOS menus, App Store preparation), and the
-[Future milestone](https://github.com/temoki/TortoiseBlocks/milestone/2)
-collects ideas beyond it — visionOS, if-blocks and variables, a template
-gallery, more languages.
-
 ## License
 
 [MIT](LICENSE)
