@@ -61,7 +61,8 @@ final class RunnerModel {
             tortoise.apply(lastRunCommands)
             svgDataCache = nil
             pngDataCache = [:]
-        } catch {
+        }
+        catch {
             showsExpansionError = true
         }
     }

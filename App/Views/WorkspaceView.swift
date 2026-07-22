@@ -58,7 +58,8 @@ struct WorkspaceView: View {
                     guard let block = items.first else { return false }
                     return workspace.handleDrop(block, at: 0, inBodyAt: .topLevel)
                 }
-            } else {
+            }
+            else {
                 ScrollViewReader { proxy in
                     ScrollView {
                         BlockListView(
@@ -82,7 +83,9 @@ struct WorkspaceView: View {
                     .onChange(of: runner.currentBlockID) { _, id in
                         guard let id, id != lastScrolledBlockID else { return }
                         let now = Date()
-                        if let lastScrollTime, now.timeIntervalSince(lastScrollTime) < minScrollInterval {
+                        if let lastScrollTime,
+                            now.timeIntervalSince(lastScrollTime) < minScrollInterval
+                        {
                             return
                         }
                         lastScrolledBlockID = id
@@ -157,7 +160,8 @@ struct DropGap: View {
                             .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 2)
-            } else {
+            }
+            else {
                 Capsule()
                     .fill(isTargeted ? Color.accentColor : Color.clear)
                     .frame(height: isTargeted ? 4 : 2)
@@ -566,6 +570,7 @@ extension View {
     fileprivate func blockChrome(
         _ color: Color, isHighlighted: Bool = false, isDropTargeted: Bool = false
     ) -> some View {
-        modifier(BlockChrome(color: color, isHighlighted: isHighlighted, isDropTargeted: isDropTargeted))
+        modifier(
+            BlockChrome(color: color, isHighlighted: isHighlighted, isDropTargeted: isDropTargeted))
     }
 }

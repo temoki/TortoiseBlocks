@@ -98,7 +98,8 @@ struct BlockTreeTests {
         let clamped = try #require(BlockTree.inserting(new, at: 99, inBodyOf: nil, in: tree))
         #expect(clamped.last?.id == new.id)
 
-        let nested = try #require(BlockTree.inserting(new, at: 0, inBodyOf: outerRepeat.id, in: tree))
+        let nested = try #require(
+            BlockTree.inserting(new, at: 0, inBodyOf: outerRepeat.id, in: tree))
         guard case .repeatBlock(_, let body) = nested[1].kind else {
             Issue.record("outer repeat missing")
             return
@@ -203,8 +204,7 @@ struct BlockTreeTests {
         let ifBlock = Block(
             kind: .ifBlock(
                 condition: Condition(lhs: .literal(1), comparison: .less, rhs: .literal(2)),
-                body: [home]
-            , elseBody: nil))
+                body: [home], elseBody: nil))
 
         let appended = try #require(
             BlockTree.appending(Block(kind: .penUp), toBodyOf: ifBlock.id, in: [ifBlock]))
@@ -279,7 +279,8 @@ struct BlockTreeTests {
 
         // Cross-mouth drag: then → else.
         let moved = try #require(
-            BlockTree.moving(blockWithID: thenHome.id, toIndex: 0, inBodyAt: elseAddress, in: [ifBlock]))
+            BlockTree.moving(
+                blockWithID: thenHome.id, toIndex: 0, inBodyAt: elseAddress, in: [ifBlock]))
         #expect(moved[0].kind.body(for: .body)?.isEmpty == true)
         #expect(moved[0].kind.body(for: .elseBody)?.map(\.id) == [thenHome.id, elsePenUp.id])
 
@@ -298,7 +299,8 @@ struct BlockTreeTests {
 
         // Dropping the if into its own else mouth is rejected.
         #expect(
-            BlockTree.moving(blockWithID: ifBlock.id, toIndex: 0, inBodyAt: elseAddress, in: [ifBlock])
+            BlockTree.moving(
+                blockWithID: ifBlock.id, toIndex: 0, inBodyAt: elseAddress, in: [ifBlock])
                 == nil)
 
         // The else mouth of an else-less if is not a valid target.
@@ -310,7 +312,8 @@ struct BlockTreeTests {
         #expect(
             BlockTree.appending(
                 Block(kind: .home),
-                toBodyAt: BodyAddress(containerID: noElse.id, slot: .elseBody), in: [noElse]) == nil)
+                toBodyAt: BodyAddress(containerID: noElse.id, slot: .elseBody), in: [noElse]) == nil
+        )
     }
 
     @Test("update a nested block's kind in place")

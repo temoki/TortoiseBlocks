@@ -10,6 +10,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  format-lint:
+    name: Format Lint
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Select Xcode
+        uses: ./.github/actions/select-xcode
+
+      - name: swift format lint
+        run: |
+          swift format lint --strict --parallel --recursive \
+            App TortoiseBlocksKit/Sources TortoiseBlocksKit/Tests
+          swift format lint --strict TortoiseBlocksKit/Package.swift
+
   kit-test:
     name: Kit Tests
     runs-on: macos-15

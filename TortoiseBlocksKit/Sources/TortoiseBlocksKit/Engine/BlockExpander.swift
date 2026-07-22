@@ -117,7 +117,8 @@ public enum BlockExpander {
                     try expand(
                         body, into: &result, variables: &variables, steps: &steps,
                         using: &rng, limit: limit)
-                } else if let elseBody {
+                }
+                else if let elseBody {
                     try expand(
                         elseBody, into: &result, variables: &variables, steps: &steps,
                         using: &rng, limit: limit)

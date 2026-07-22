@@ -45,8 +45,7 @@ struct BlockCodableTests {
             .ifBlock(
                 condition: Condition(
                     lhs: .random(min: 1, max: 6), comparison: .greaterOrEqual, rhs: .literal(4)),
-                body: [Block(id: childID, kind: .home)]
-            , elseBody: nil),
+                body: [Block(id: childID, kind: .home)], elseBody: nil),
             #"{"if":{"body":[{"id":"00000000-0000-0000-0000-000000000001","kind":{"home":{}}}],"condition":{"comparison":"greaterOrEqual","lhs":{"random":{"max":6,"min":1}},"rhs":{"literal":4}}}}"#
         ),
         // The else mouth is optional presence: key absent = no mouth (the
@@ -180,8 +179,7 @@ struct BlockCodableTests {
             Block(
                 kind: .ifBlock(
                     condition: Condition(lhs: .literal(1), comparison: .less, rhs: .literal(2)),
-                    body: []
-                , elseBody: nil))
+                    body: [], elseBody: nil))
         ]
         #expect(BlocksProject(title: "", blocks: ifOnly).requiredSchemaVersion == 2)
     }

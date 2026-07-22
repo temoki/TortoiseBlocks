@@ -14,7 +14,8 @@ struct CodeTokenizerTests {
         // former should be tagged; "Int" itself stays plain.
         let code = "for _ in 1...Int.random(in: 1...3) {}"
         let tokens = CodeTokenizer.tokenize(code).filter { $0.kind == .keyword }
-        #expect(tokens.map { describe($0, in: code) } == ["keyword:for", "keyword:in", "keyword:in"])
+        #expect(
+            tokens.map { describe($0, in: code) } == ["keyword:for", "keyword:in", "keyword:in"])
     }
 
     @Test("integers and decimals, including a leading minus, are numbers")
@@ -58,8 +59,7 @@ struct CodeTokenizerTests {
                 kind: .ifBlock(
                     condition: Condition(
                         lhs: .variable("🌟"), comparison: .greaterOrEqual, rhs: .literal(4)),
-                    body: [Block(kind: .home)]
-                , elseBody: nil))
+                    body: [Block(kind: .home)], elseBody: nil))
         ])
         let tokens = CodeTokenizer.tokenize(code)
         let keywords = tokens.filter { $0.kind == .keyword }

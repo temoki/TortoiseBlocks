@@ -85,7 +85,8 @@ struct WorkspaceEditor {
         if BlockTree.block(withID: dropped.id, in: blocks) != nil {
             new = BlockTree.moving(
                 blockWithID: dropped.id, toIndex: index, inBodyAt: address, in: blocks)
-        } else {
+        }
+        else {
             new = BlockTree.inserting(dropped, at: index, inBodyAt: address, in: blocks)
         }
         guard let new else { return false }

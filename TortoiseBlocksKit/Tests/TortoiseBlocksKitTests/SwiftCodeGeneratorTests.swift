@@ -130,8 +130,7 @@ struct SwiftCodeGeneratorTests {
                     condition: Condition(
                         lhs: .random(min: 1, max: 6), comparison: .greaterOrEqual,
                         rhs: .literal(4)),
-                    body: [Block(kind: .penColor(.literal(.red)))]
-                , elseBody: nil))
+                    body: [Block(kind: .penColor(.literal(.red)))], elseBody: nil))
         ]
         let expected = """
             let 🐢 = Tortoise()
@@ -171,8 +170,7 @@ struct SwiftCodeGeneratorTests {
             Block(
                 kind: .ifBlock(
                     condition: Condition(lhs: .variable("🌟"), comparison: .equal, rhs: .literal(3)),
-                    body: []
-                , elseBody: nil))
+                    body: [], elseBody: nil))
         ]
         let expected = """
             let 🐢 = Tortoise()

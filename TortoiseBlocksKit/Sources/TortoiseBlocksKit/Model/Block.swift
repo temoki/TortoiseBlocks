@@ -110,7 +110,8 @@ extension BlockKind {
         case .ifBlock(_, let body, let elseBody):
             if let elseBody {
                 [(.body, body), (.elseBody, elseBody)]
-            } else {
+            }
+            else {
                 [(.body, body)]
             }
         case .forward, .backward, .turnRight, .turnLeft, .home,

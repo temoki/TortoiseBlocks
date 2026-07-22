@@ -45,7 +45,9 @@ public enum BlockTree {
                 copy[index].kind = candidate.kind.replacingBody(address.slot, with: body + [block])
                 return copy
             }
-            if let newBlock = descending(into: candidate, { appending(block, toBodyAt: address, in: $0) }) {
+            if let newBlock = descending(
+                into: candidate, { appending(block, toBodyAt: address, in: $0) })
+            {
                 var copy = blocks
                 copy[index] = newBlock
                 return copy
@@ -85,7 +87,9 @@ public enum BlockTree {
             return copy
         }
         for (index, block) in blocks.enumerated() {
-            if let newBlock = descending(into: block, { moving(blockWithID: id, by: offset, in: $0) }) {
+            if let newBlock = descending(
+                into: block, { moving(blockWithID: id, by: offset, in: $0) })
+            {
                 var copy = blocks
                 copy[index] = newBlock
                 return copy
@@ -121,7 +125,9 @@ public enum BlockTree {
                 copy[i].kind = candidate.kind.replacingBody(address.slot, with: newBody)
                 return copy
             }
-            if let newBlock = descending(into: candidate, { inserting(block, at: index, inBodyAt: address, in: $0) }) {
+            if let newBlock = descending(
+                into: candidate, { inserting(block, at: index, inBodyAt: address, in: $0) })
+            {
                 var copy = blocks
                 copy[i] = newBlock
                 return copy
@@ -135,7 +141,9 @@ public enum BlockTree {
     public static func moving(
         blockWithID id: UUID, toIndex: Int, inBodyOf containerID: UUID?, in blocks: [Block]
     ) -> [Block]? {
-        moving(blockWithID: id, toIndex: toIndex, inBodyAt: BodyAddress(containerID: containerID), in: blocks)
+        moving(
+            blockWithID: id, toIndex: toIndex, inBodyAt: BodyAddress(containerID: containerID),
+            in: blocks)
     }
 
     /// Moves an existing block to `index` in the sibling list at `address`

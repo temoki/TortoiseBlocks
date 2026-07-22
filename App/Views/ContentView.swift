@@ -35,7 +35,8 @@ struct ContentView: View {
         var body: some View {
             if horizontalSizeClass == .compact {
                 CompactRootView(workspace: workspace, runner: runner)
-            } else {
+            }
+            else {
                 RegularRootView(workspace: workspace, runner: runner)
             }
         }
@@ -124,7 +125,8 @@ struct CanvasPane: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding()
                 Divider()
-            } else {
+            }
+            else {
                 HStack {
                     CanvasViewToggle(showsCode: $showsCode)
                     Spacer()

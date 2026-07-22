@@ -58,13 +58,15 @@ struct BlockExpanderTests {
         let repeatBlock = Block(kind: .repeatBlock(count: .literal(3), body: [forward, turn]))
 
         let expanded = try expand([repeatBlock])
-        #expect(expanded.map(\.command) == [
-            .forward(10), .rotate(90), .forward(10), .rotate(90), .forward(10), .rotate(90),
-        ])
+        #expect(
+            expanded.map(\.command) == [
+                .forward(10), .rotate(90), .forward(10), .rotate(90), .forward(10), .rotate(90),
+            ])
         // Highlighting targets the body blocks, not the repeat container.
-        #expect(expanded.map(\.blockID) == [
-            forward.id, turn.id, forward.id, turn.id, forward.id, turn.id,
-        ])
+        #expect(
+            expanded.map(\.blockID) == [
+                forward.id, turn.id, forward.id, turn.id, forward.id, turn.id,
+            ])
     }
 
     @Test("nested repeats multiply")
@@ -79,7 +81,8 @@ struct BlockExpanderTests {
     @Test("repeat count is rounded and clamped to zero")
     func repeatCountRoundingAndClamping() throws {
         let body = [Block(kind: .home)]
-        #expect(try expand([Block(kind: .repeatBlock(count: .literal(2.6), body: body))]).count == 3)
+        #expect(
+            try expand([Block(kind: .repeatBlock(count: .literal(2.6), body: body))]).count == 3)
         #expect(try expand([Block(kind: .repeatBlock(count: .literal(-5), body: body))]).isEmpty)
     }
 
@@ -280,9 +283,9 @@ struct BlockExpanderTests {
         func ifBlock(_ comparison: Comparison) -> Block {
             Block(
                 kind: .ifBlock(
-                    condition: Condition(lhs: .literal(1), comparison: comparison, rhs: .literal(2)),
-                    body: [Block(kind: .home)]
-                , elseBody: nil))
+                    condition: Condition(
+                        lhs: .literal(1), comparison: comparison, rhs: .literal(2)),
+                    body: [Block(kind: .home)], elseBody: nil))
         }
         #expect(try expand([ifBlock(.less)]).map(\.command) == [.home])
         #expect(try expand([ifBlock(.greater)]).isEmpty)
@@ -302,8 +305,7 @@ struct BlockExpanderTests {
                                 condition: Condition(
                                     lhs: .variable("🌟"), comparison: .greaterOrEqual,
                                     rhs: .literal(3)),
-                                body: [Block(kind: .home)]
-                            , elseBody: nil)),
+                                body: [Block(kind: .home)], elseBody: nil)),
                     ]
                 ))
         ]
@@ -323,8 +325,7 @@ struct BlockExpanderTests {
                                 condition: Condition(
                                     lhs: .random(min: 0, max: 1), comparison: .greaterOrEqual,
                                     rhs: .literal(0.5)),
-                                body: [Block(kind: .home)]
-                            , elseBody: nil))
+                                body: [Block(kind: .home)], elseBody: nil))
                     ]
                 ))
         ]
@@ -338,7 +339,8 @@ struct BlockExpanderTests {
         func ifElse(_ comparison: Comparison) -> Block {
             Block(
                 kind: .ifBlock(
-                    condition: Condition(lhs: .literal(1), comparison: comparison, rhs: .literal(2)),
+                    condition: Condition(
+                        lhs: .literal(1), comparison: comparison, rhs: .literal(2)),
                     body: [Block(kind: .home)],
                     elseBody: [Block(kind: .penUp)]
                 ))
@@ -412,8 +414,7 @@ struct BlockExpanderTests {
                                             condition: Condition(
                                                 lhs: .literal(1), comparison: .greater,
                                                 rhs: .literal(2)),
-                                            body: [Block(kind: .home)]
-                                        , elseBody: nil))
+                                            body: [Block(kind: .home)], elseBody: nil))
                                 ]
                             ))
                     ]
