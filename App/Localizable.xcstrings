@@ -1,7 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {},
+    "" : {
+
+    },
     "🎲" : {
       "localizations" : {
         "ja" : {
@@ -208,17 +210,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "いろ %@"
-          }
-        }
-      }
-    },
-    "Command: %lld" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "コマンド: %lld"
           }
         }
       }
@@ -1083,6 +1074,16 @@
         }
       }
     },
+    "Value of box %@" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "はこ %@ のなかみ"
+          }
+        }
+      }
+    },
     "Variables" : {
       "localizations" : {
         "ja" : {
@@ -1129,16 +1130,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "きいろ"
-          }
-        }
-      }
-    },
-    "Value of box %@" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "はこ %@ のなかみ"
           }
         }
       }
