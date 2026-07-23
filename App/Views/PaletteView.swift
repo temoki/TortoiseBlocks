@@ -130,11 +130,6 @@ struct PaletteView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text("Blocks")
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
-            Divider()
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     ForEach(Palette.sections) { section in

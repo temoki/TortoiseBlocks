@@ -15,23 +15,7 @@ struct WorkspaceView: View {
     private let minScrollInterval: TimeInterval = 0.25
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Program")
-                    .font(.headline)
-                Spacer()
-                Button("Undo", systemImage: "arrow.uturn.backward") {
-                    workspace.undo()
-                }
-                .disabled(!workspace.canUndo)
-                Button("Redo", systemImage: "arrow.uturn.forward") {
-                    workspace.redo()
-                }
-                .disabled(!workspace.canRedo)
-            }
-            .labelStyle(.iconOnly)
-            .padding()
-            Divider()
+        Group {
             if workspace.blocks.isEmpty {
                 ContentUnavailableView {
                     Label("Build with Blocks", systemImage: "square.stack.3d.up")
@@ -95,6 +79,18 @@ struct WorkspaceView: View {
                         }
                     }
                 }
+            }
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button("Undo", systemImage: "arrow.uturn.backward") {
+                    workspace.undo()
+                }
+                .disabled(!workspace.canUndo)
+                Button("Redo", systemImage: "arrow.uturn.forward") {
+                    workspace.redo()
+                }
+                .disabled(!workspace.canRedo)
             }
         }
     }

@@ -104,16 +104,6 @@
         }
       }
     },
-    "Blocks" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ブロック"
-          }
-        }
-      }
-    },
     "blue" : {
       "localizations" : {
         "ja" : {
@@ -700,16 +690,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "さいせいいち"
-          }
-        }
-      }
-    },
-    "Program" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プログラム"
           }
         }
       }

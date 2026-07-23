@@ -90,7 +90,7 @@ struct RegularRootView: View {
         } detail: {
             // 280pt keeps the canvas usable (§23) — narrower and its own
             // playback row starts contesting space with the drawing.
-            CanvasPane(workspace: workspace, runner: runner, usesToolbar: true)
+            CanvasPane(workspace: workspace, runner: runner)
                 .navigationSplitViewColumnWidth(min: 280, ideal: 420)
         }
     }
@@ -101,11 +101,6 @@ struct RegularRootView: View {
 struct CanvasPane: View {
     let workspace: WorkspaceEditor
     @Bindable var runner: RunnerModel
-    /// Regular width hosts this pane inside `RegularRootView`'s
-    /// `NavigationSplitView`, which gives the view toggle and export menu a
-    /// toolbar to live in; compact width's plain `TabView` has no
-    /// navigation bar, so it keeps the inline header instead (§23).
-    var usesToolbar = false
 
     @State private var showsCode = false
     // One presentation state for both formats: attaching two fileExporter
@@ -115,25 +110,6 @@ struct CanvasPane: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if usesToolbar {
-                // A plain inline title, matching Blocks/Program (§23) —
-                // not `.navigationTitle`/`.principal`/`.status`, all three
-                // of which turned out to collide with this DocumentGroup
-                // scene's own document-title chrome one way or another.
-                Text("Run")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
-                Divider()
-            }
-            else {
-                HStack {
-                    CanvasViewToggle(showsCode: $showsCode)
-                    Spacer()
-                    CanvasExportMenu(runner: runner, onExport: export)
-                }
-                .padding([.horizontal, .top])
-            }
             // The canvas stays in the hierarchy while the code pane covers
             // it (opacity, not if/else) so playback identity is preserved.
             ZStack {
@@ -151,11 +127,16 @@ struct CanvasPane: View {
                 .padding()
         }
         .toolbar {
-            if usesToolbar {
-                ToolbarItemGroup(placement: .primaryAction) {
-                    CanvasViewToggle(showsCode: $showsCode)
-                    CanvasExportMenu(runner: runner, onExport: export)
-                }
+            ToolbarSpacer(.flexible, placement: .primaryAction)
+
+            ToolbarItemGroup(placement: .primaryAction) {
+                CanvasViewToggle(showsCode: $showsCode)
+            }
+            
+            ToolbarSpacer(.fixed, placement: .primaryAction)
+
+            ToolbarItemGroup(placement: .primaryAction) {
+                CanvasExportMenu(runner: runner, onExport: export)
             }
         }
         .alert("Too Many Blocks!", isPresented: $runner.showsExpansionError) {
