@@ -17,18 +17,26 @@ extension NumberValue {
     /// `variables` for a variable reference (an unset variable reads 0 —
     /// kid-friendly, never an error).
     /// An inverted range (min > max) is normalized instead of trapping.
+    ///
+    /// Every result is saturated into `domain` (see ``NumberDomain``). The
+    /// dice case clamps its *bounds* rather than only the roll: a range too
+    /// wide for `Double` to represent traps inside `Double.random(in:)`
+    /// itself, before there is any result to clamp (#27).
     func evaluated(
+        in domain: NumberDomain,
         variables: [String: Double],
         using rng: inout some RandomNumberGenerator
     ) -> Double {
         switch self {
         case .literal(let value):
-            return value
+            return domain.clamp(value)
         case .random(let min, let max):
-            let range = min <= max ? min...max : max...min
+            let low = domain.clamp(min)
+            let high = domain.clamp(max)
+            let range = low <= high ? low...high : high...low
             return Double.random(in: range, using: &rng)
         case .variable(let name):
-            return variables[name] ?? 0
+            return domain.clamp(variables[name] ?? 0)
         }
     }
 }

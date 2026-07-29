@@ -59,6 +59,11 @@ extension View {
 struct NumberValueButton: View {
     let value: NumberValue
     let usedNames: [String]
+    /// The slot's legal range — refused at the point of entry, so an
+    /// out-of-range literal never reaches the document (#27). Deliberately
+    /// has no default: the domain is the one part of the limits the compiler
+    /// *can* force a new call site to think about.
+    let domain: NumberDomain
     let onChange: (NumberValue) -> Void
 
     @State private var showsEditor = false
@@ -81,9 +86,11 @@ struct NumberValueButton: View {
         }
         .pointerHover()
         .popover(isPresented: $showsEditor) {
-            NumberValueEditor(value: value, usedNames: usedNames, onChange: onChange)
-                .buttonStyle(.bordered)
-                .slotPopoverContent()
+            NumberValueEditor(
+                value: value, usedNames: usedNames, domain: domain, onChange: onChange
+            )
+            .buttonStyle(.bordered)
+            .slotPopoverContent()
         }
         .accessibilityLabel(Text(accessibilityLabel))
         .accessibilityHint("Tap to change the number")
@@ -115,6 +122,7 @@ func numberValueDisplayText(_ value: NumberValue) -> String {
 struct NumberValueEditor: View {
     let value: NumberValue
     let usedNames: [String]
+    let domain: NumberDomain
     let onChange: (NumberValue) -> Void
 
     private enum ValueForm: Hashable { case literal, random, variable }
@@ -133,15 +141,23 @@ struct NumberValueEditor: View {
             case .literal(let number):
                 LabeledContent("Number") {
                     // ±1 for fine nudges; the keyboard handles big jumps.
-                    NumberField(value: number, step: 1) { onChange(.literal($0)) }
+                    NumberField(value: number, domain: domain, step: 1) {
+                        onChange(.literal($0))
+                    }
                 }
+                NumberRangeHint(domain: domain)
             case .random(let min, let max):
                 LabeledContent("Minimum") {
-                    NumberField(value: min) { onChange(.random(min: $0, max: max)) }
+                    NumberField(value: min, domain: domain) {
+                        onChange(.random(min: $0, max: max))
+                    }
                 }
                 LabeledContent("Maximum") {
-                    NumberField(value: max) { onChange(.random(min: min, max: $0)) }
+                    NumberField(value: max, domain: domain) {
+                        onChange(.random(min: min, max: $0))
+                    }
                 }
+                NumberRangeHint(domain: domain)
             case .variable(let name):
                 VariableNamePicker(selected: name, usedNames: usedNames) {
                     onChange(.variable($0))
@@ -161,17 +177,22 @@ struct NumberValueEditor: View {
                 }
             },
             set: { newForm in
+                // Every seeded value goes through the domain too — switching
+                // forms must not manufacture what typing can't.
                 switch (newForm, value) {
                 case (.literal, .random(let min, let max)):
-                    onChange(.literal(((min + max) / 2).rounded()))
+                    onChange(.literal(domain.clamp(((min + max) / 2).rounded())))
                 case (.literal, .variable):
                     // Boxes start at 0, so that's the natural way back.
-                    onChange(.literal(0))
+                    onChange(.literal(domain.clamp(0)))
                 case (.random, .literal(let number)):
                     // Seed a friendly range around the literal.
-                    onChange(.random(min: max(0, number - 50), max: number + 50))
+                    onChange(
+                        .random(
+                            min: domain.clamp(max(0, number - 50)),
+                            max: domain.clamp(number + 50)))
                 case (.random, .variable):
-                    onChange(.random(min: 0, max: 100))
+                    onChange(.random(min: domain.clamp(0), max: domain.clamp(100)))
                 case (.variable, .literal), (.variable, .random):
                     onChange(.variable(usedNames.first ?? variableNamePresets[0]))
                 default:
@@ -190,8 +211,14 @@ struct NumberValueEditor: View {
 /// the popover. The stepper shares the field's own text, so ± updates the
 /// visible value immediately rather than round-tripping through the document.
 /// Shows the number pad on iOS; invalid text reverts to the last good value.
+///
+/// Out-of-range input is refused rather than clamped (#27), through the same
+/// revert-to-last-good path as unparseable text — so no new idea is introduced
+/// and a literal outside `domain` never enters the document. The stepper
+/// simply stops at the bounds, which also greys out its arrow for VoiceOver.
 struct NumberField: View {
     let value: Double
+    let domain: NumberDomain
     var step: Double? = nil
     let onCommit: (Double) -> Void
 
@@ -217,7 +244,7 @@ struct NumberField: View {
                 }
                 .onSubmit { commit() }
             if let step {
-                Stepper("Number", value: stepperBinding, step: step)
+                Stepper("Number", value: stepperBinding, in: domain.range, step: step)
                     .labelsHidden()
             }
         }
@@ -235,12 +262,29 @@ struct NumberField: View {
         )
     }
 
+    /// `range.contains` doubles as the finiteness check: `Double("inf")` and
+    /// `Double("nan")` both parse, and neither is contained by any range.
     private func commit() {
-        guard let parsed = Double(text.trimmingCharacters(in: .whitespaces)) else {
+        guard let parsed = Double(text.trimmingCharacters(in: .whitespaces)),
+            domain.range.contains(parsed)
+        else {
             text = format(value)
             return
         }
         if parsed != value { onCommit(parsed) }
+    }
+}
+
+/// The slot's allowed range, shown as ambient guidance rather than an error:
+/// out-of-range input is refused silently, so the bounds have to be visible
+/// before a kid types one.
+struct NumberRangeHint: View {
+    let domain: NumberDomain
+
+    var body: some View {
+        Text("\(format(domain.range.lowerBound)) to \(format(domain.range.upperBound))")
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(.secondary)
     }
 }
 
@@ -291,7 +335,9 @@ struct ConditionEditor: View {
     let onChange: (Condition) -> Void
 
     var body: some View {
-        NumberValueButton(value: condition.lhs, usedNames: usedNames) { new in
+        // A condition compares plain numbers, not a distance or an angle, so
+        // both operands take the general domain (matching `Condition.holds`).
+        NumberValueButton(value: condition.lhs, usedNames: usedNames, domain: .general) { new in
             var condition = condition
             condition.lhs = new
             onChange(condition)
@@ -301,7 +347,7 @@ struct ConditionEditor: View {
             condition.comparison = new
             onChange(condition)
         }
-        NumberValueButton(value: condition.rhs, usedNames: usedNames) { new in
+        NumberValueButton(value: condition.rhs, usedNames: usedNames, domain: .general) { new in
             var condition = condition
             condition.rhs = new
             onChange(condition)

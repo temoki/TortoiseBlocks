@@ -63,13 +63,16 @@ extension Condition {
     /// Evaluates both sides and applies the comparison. Called once per
     /// encounter, so dice in a condition re-roll every time (same rule as
     /// values in a repeat body).
+    ///
+    /// Both operands are ``NumberDomain/general`` — a condition compares plain
+    /// numbers, not a distance or an angle.
     func holds(
         variables: [String: Double],
         using rng: inout some RandomNumberGenerator
     ) -> Bool {
         comparison.holds(
-            lhs.evaluated(variables: variables, using: &rng),
-            rhs.evaluated(variables: variables, using: &rng)
+            lhs.evaluated(in: .general, variables: variables, using: &rng),
+            rhs.evaluated(in: .general, variables: variables, using: &rng)
         )
     }
 }

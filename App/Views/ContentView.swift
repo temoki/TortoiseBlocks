@@ -132,7 +132,7 @@ struct CanvasPane: View {
             ToolbarItemGroup(placement: .primaryAction) {
                 CanvasViewToggle(showsCode: $showsCode)
             }
-            
+
             ToolbarSpacer(.fixed, placement: .primaryAction)
 
             ToolbarItemGroup(placement: .primaryAction) {

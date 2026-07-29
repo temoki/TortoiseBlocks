@@ -14,6 +14,16 @@
         }
       }
     },
+    "%@ to %@" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 〜 %@"
+          }
+        }
+      }
+    },
     "1x (512px)" : {
       "localizations" : {
         "ja" : {

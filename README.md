@@ -94,6 +94,21 @@ identifiers can never break saved files):
 }
 ```
 
+Number slots are bounded, by the slot they sit in:
+
+| Slot | Range |
+| --- | --- |
+| Forward / Backward | −1000 … 1000 |
+| Turn Right / Turn Left | −360 … 360 |
+| Pen Width | 0 … 100 |
+| Repeat count | 0 … 1000 |
+| Box values, condition operands, dice bounds | −1000 … 1000 |
+
+The editor refuses out-of-range input, but **reading a document never
+validates or rewrites it**: a value outside these ranges loads exactly as
+saved and is saturated to the nearest bound when the program runs. Box
+arithmetic saturates the same way, so a value can never run off to infinity.
+
 ## License
 
 [MIT](LICENSE)

@@ -208,7 +208,10 @@ struct BlockRowView: View {
                 highlightedID: highlightedID, usedVariableNames: usedVariableNames
             ) {
                 Label("Repeat", systemImage: "repeat")
-                NumberValueButton(value: count, usedNames: usedVariableNames) { new in
+                NumberValueButton(
+                    value: count, usedNames: usedVariableNames,
+                    domain: block.kind.numberDomain ?? .repeatCount
+                ) { new in
                     workspace.updateKind(of: block.id, to: .repeatBlock(count: new, body: body))
                 }
                 Text("times")
@@ -454,10 +457,15 @@ struct SimpleBlockLabel: View {
         }
     }
 
+    /// The slot's range comes from the kind being rendered, so every call site
+    /// above gets it right by construction — and `BlockKind.numberDomain` is
+    /// an exhaustive switch, so a new kind can't quietly land without one.
     private func numberButton(
         _ value: NumberValue, onChange: @escaping (NumberValue) -> Void
     ) -> NumberValueButton {
-        NumberValueButton(value: value, usedNames: usedVariableNames, onChange: onChange)
+        NumberValueButton(
+            value: value, usedNames: usedVariableNames,
+            domain: kind.numberDomain ?? .general, onChange: onChange)
     }
 }
 

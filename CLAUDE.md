@@ -73,6 +73,7 @@ document-format contract — breaking one breaks users' saved files.
 
 **When adding a block kind**, update: `CodingKeys` + both switches in
 `Model/Codable.swift`, `BlockExpander`, `SwiftCodeGenerator`,
+`BlockKind.numberDomain` (`Model/NumberDomain.swift`),
 `BlockCodableTests.kindFixtures`, the palette entry (`PaletteView`),
 `SimpleBlockLabel` (`WorkspaceView`), and `App/Localizable.xcstrings`.
 The compiler only forces the exhaustive switches — do not skip the rest.
@@ -99,6 +100,24 @@ standard document behavior. UI state that must not be persisted
 in the *body* re-roll every iteration. Expansion is capped (10,000 steps)
 and the overflow surfaces as a kid-friendly alert. Tests inject `SeededRNG`
 for determinism.
+
+**Numeric slots are bounded, and the bound belongs to the slot** —
+`NumberDomain` (distance ±1000, angle ±360, pen width 0–100, repeat count
+0–1000, general ±1000) is the single definition all three layers read.
+*Input* refuses out-of-range values (the stepper stops at the bound; typed
+text reverts to the last good value, the same path unparseable text already
+took) so a bad literal never enters the tree. *Execution* saturates instead:
+`BlockExpander` clamps every evaluated value and every arithmetic write-back,
+because boxes drift past the bounds through `+=`/`*=` and dice bounds and
+decoded documents never pass through the editor. *Storage* validates nothing
+— the format is frozen, so out-of-range values load as written and saturate
+only when they run. Dice clamp their *bounds*, not just the roll:
+`Double.random(in:)` traps on a range too wide to represent, before there is
+a result to clamp. Repeat counts convert through
+`NumberDomain.iterationCount` — a bare `Int(Double)` traps outside `Int`'s
+range and on inf/NaN — and the count cap is what bounds an *empty* repeat
+body, which charges no step and so can never hit the 10,000-step limit
+(#27: three crashes and a freeze, all reachable from ordinary editing).
 
 **Variables are names, not registrations.** A variable ("box") exists
 exactly while some block mentions it (`BlockTree.usedVariableNames`); unset
