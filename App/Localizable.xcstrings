@@ -94,6 +94,16 @@
         }
       }
     },
+    "Back to Start" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "さいしょにもどる"
+          }
+        }
+      }
+    },
     "Backward" : {
       "localizations" : {
         "ja" : {
@@ -190,16 +200,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "コード"
-          }
-        }
-      }
-    },
-    "Collapsed" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "とじた"
           }
         }
       }
@@ -344,16 +344,6 @@
         }
       }
     },
-    "Expanded" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ひろげた"
-          }
-        }
-      }
-    },
     "Export" : {
       "localizations" : {
         "ja" : {
@@ -454,6 +444,16 @@
         }
       }
     },
+    "Instant" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すぐに"
+          }
+        }
+      }
+    },
     "less than" : {
       "localizations" : {
         "ja" : {
@@ -540,6 +540,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "あたらしいなまえ"
+          }
+        }
+      }
+    },
+    "Nothing to play" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "まだ なにも うごかしていません"
           }
         }
       }
@@ -674,12 +684,22 @@
         }
       }
     },
-    "Playback Details" : {
+    "Play" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "さいせいのせつめい"
+            "value" : "さいせい"
+          }
+        }
+      }
+    },
+    "Play Again" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "もういちど さいせい"
           }
         }
       }
@@ -774,6 +794,16 @@
         }
       }
     },
+    "Roll Again" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ふりなおす"
+          }
+        }
+      }
+    },
     "Run" : {
       "localizations" : {
         "ja" : {
@@ -790,6 +820,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "じっこうちゅう"
+          }
+        }
+      }
+    },
+    "Runs the program again, rolling any dice for new values" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "もういちど うごかします。サイコロは ふりなおされます"
           }
         }
       }
@@ -864,7 +904,27 @@
         }
       }
     },
-    "Step" : {
+    "Step %lld of %lld" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld / %lld こめ"
+          }
+        }
+      }
+    },
+    "Step Back" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "いっぽもどる"
+          }
+        }
+      }
+    },
+    "Step Forward" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {

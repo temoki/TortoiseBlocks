@@ -123,8 +123,11 @@ struct CanvasPane: View {
                 }
             }
             Divider()
-            PlaybackControls(workspace: workspace, runner: runner)
-                .padding()
+            PlaybackControls(
+                workspace: workspace, runner: runner,
+                isStale: runner.isStale(comparedTo: workspace.blocks)
+            )
+            .padding()
         }
         .toolbar {
             ToolbarSpacer(.flexible, placement: .primaryAction)
@@ -136,6 +139,7 @@ struct CanvasPane: View {
             ToolbarSpacer(.fixed, placement: .primaryAction)
 
             ToolbarItemGroup(placement: .primaryAction) {
+                CanvasRollAgainButton(workspace: workspace, runner: runner)
                 CanvasExportMenu(runner: runner, onExport: export)
             }
         }
@@ -230,123 +234,6 @@ struct CanvasExportMenu: View {
         }
         .disabled(!runner.canExport)
         .fixedSize()
-    }
-}
-
-/// Run / clear / pause / position, always visible in one row (§23); step,
-/// the scrubber, and speed reveal below on demand — `isExpanded` is UI-only
-/// state, deliberately not persisted across launches.
-struct PlaybackControls: View {
-    let workspace: WorkspaceEditor
-    @Bindable var runner: RunnerModel
-
-    @State private var isExpanded = false
-
-    var body: some View {
-        @Bindable var player = runner.player
-        VStack(spacing: 12) {
-            HStack(spacing: 16) {
-                Button("Run", systemImage: "play.fill") {
-                    runner.run(workspace.blocks)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(workspace.blocks.isEmpty)
-                Button("Clear", systemImage: "trash") {
-                    runner.clear()
-                }
-                .disabled(runner.commandCount == 0)
-                Toggle("Pause", systemImage: "pause.fill", isOn: $player.isPaused)
-                    .toggleStyle(.button)
-                    // Icon-only: "Pause"/いちじていし was the one label in
-                    // this row long enough to wrap to two lines once
-                    // everything shared a single row (§23).
-                    .labelStyle(.iconOnly)
-                    .disabled(runner.commandCount == 0)
-                Spacer()
-                // The one place the run position shows — this used to be
-                // duplicated between "Command: N" here and "N / M" on the
-                // scrubber below.
-                Text(verbatim: positionText)
-                    .font(.body.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .frame(minWidth: 60, alignment: .trailing)
-                Button("Playback Details", systemImage: "chevron.down") {
-                    isExpanded.toggle()
-                }
-                .labelStyle(.iconOnly)
-                .rotationEffect(.degrees(isExpanded ? 180 : 0))
-                .accessibilityValue(isExpanded ? Text("Expanded") : Text("Collapsed"))
-            }
-            if isExpanded {
-                HStack(spacing: 16) {
-                    Button("Step", systemImage: "forward.frame.fill") {
-                        runner.player.step()
-                    }
-                    .disabled(!runner.player.isPaused)
-                    SpeedSlider(player: runner.player)
-                }
-                PlaybackScrubber(runner: runner)
-            }
-        }
-    }
-
-    /// "N / M" once there's a run to show a position in; an idling scrubber
-    /// (nothing run yet, or cleared) reads as a plain dash rather than the
-    /// otherwise-confusing "0 / 0" (currentCommandIndex starts at -1).
-    private var positionText: String {
-        guard runner.commandCount > 0 else { return "–" }
-        return "\(runner.player.currentCommandIndex + 1) / \(runner.commandCount)"
-    }
-}
-
-/// Timeline scrubber: shows the playback position and seeks on drag —
-/// forward and backward, even mid-run.
-struct PlaybackScrubber: View {
-    let runner: RunnerModel
-
-    var body: some View {
-        Slider(value: position, in: -1...Double(max(runner.commandCount - 1, 0)), step: 1) {
-            Text("Position")
-        }
-        .labelsHidden()
-        .disabled(runner.commandCount == 0)
-    }
-
-    private var position: Binding<Double> {
-        Binding(
-            get: { Double(runner.player.currentCommandIndex) },
-            set: { runner.player.seek(to: Int($0.rounded())) }
-        )
-    }
-}
-
-/// Viewer-side speed control bound to `TortoisePlayer.speedOverride`.
-struct SpeedSlider: View {
-    @Bindable var player: TortoisePlayer
-
-    @ScaledMetric private var sliderWidth: CGFloat = 240
-
-    var body: some View {
-        HStack {
-            Label("Speed", systemImage: "tortoise")
-                .labelStyle(.iconOnly)
-            Slider(value: speed, in: 1...10, step: 1) {
-                Text("Speed")
-            }
-            .frame(maxWidth: sliderWidth)
-            Label("Speed", systemImage: "hare")
-                .labelStyle(.iconOnly)
-        }
-        .foregroundStyle(.secondary)
-    }
-
-    /// `speedOverride` is optional (nil = follow the stream); the slider
-    /// always overrides, defaulting to the library's default speed.
-    private var speed: Binding<Double> {
-        Binding(
-            get: { player.speedOverride ?? 5 },
-            set: { player.speedOverride = $0 }
-        )
     }
 }
 

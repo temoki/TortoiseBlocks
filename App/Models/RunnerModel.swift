@@ -25,6 +25,13 @@ final class RunnerModel {
     /// Set when expansion fails (command limit); drives a kid-friendly alert.
     var showsExpansionError = false
 
+    /// Identity of the block tree the current run was expanded from. Editing
+    /// the workspace makes the drawing on screen stale, which is what turns
+    /// the transport's centre button back into "run" (#28). A hash is enough:
+    /// it never leaves the process, and a collision would only cost a
+    /// stale-looking button until the next edit.
+    private var lastRunTreeHash: Int?
+
     /// Set by the macOS menu's Export commands; `CanvasPane` watches this,
     /// runs the same export it would from its own menu, and clears it back
     /// to nil. `CanvasPane` still owns the actual `fileExporter` state.
@@ -49,14 +56,39 @@ final class RunnerModel {
     /// Total command count of the last run (the scrubber's range).
     var commandCount: Int { expandedBlockIDs.count }
 
+    /// Whether the frame-by-frame controls apply: there is a drawing, and it
+    /// is standing still. While the animation runs they would fight it, so
+    /// they wait rather than yanking playback to a stop.
+    ///
+    /// Deliberately not gated on staleness — editing a block doesn't stop the
+    /// drawing already on screen from being worth stepping through.
+    var canStep: Bool {
+        commandCount > 0 && (player.isPaused || player.isFinished)
+    }
+
     var canExport: Bool { !lastRunCommands.isEmpty }
 
-    func run(_ blocks: [Block]) {
+    /// Whether `blocks` has been edited since the run that is on screen.
+    /// `true` before anything has run at all, so the one check covers both
+    /// "nothing to play yet" and "what's playing is out of date".
+    func isStale(comparedTo blocks: [Block]) -> Bool {
+        lastRunTreeHash != blocks.hashValue
+    }
+
+    /// Expands `blocks` and starts drawing. Randomness is drawn fresh every
+    /// time, so this is also the "roll again" action — a program with dice
+    /// draws a different picture on each run.
+    ///
+    /// `startPaused` loads the new stream without playing it: rolling again
+    /// from the canvas swaps in a fresh set of dice and waits at the start,
+    /// so the drawing appears only when the transport says to.
+    func run(_ blocks: [Block], startPaused: Bool = false) {
         do {
             let expanded = try BlockExpander.expand(blocks)
             expandedBlockIDs = expanded.map(\.blockID)
             lastRunCommands = expanded.map(\.command)
-            player.isPaused = false
+            lastRunTreeHash = blocks.hashValue
+            player.isPaused = startPaused
             tortoise.reset()
             tortoise.apply(lastRunCommands)
             svgDataCache = nil
@@ -70,9 +102,31 @@ final class RunnerModel {
     func clear() {
         expandedBlockIDs = []
         lastRunCommands = []
+        lastRunTreeHash = nil
         tortoise.reset()
         svgDataCache = nil
         pngDataCache = [:]
+    }
+
+    /// Moves the playhead without ever starting playback that wasn't already
+    /// running.
+    ///
+    /// A finished stream is held still by `isFinished`, not by `isPaused` —
+    /// seeking away from the end clears that flag, and an unpaused player
+    /// takes off on its own. So the stop has to be made explicit first.
+    /// Scrubbing *during* playback still tracks live, which is why this
+    /// pauses only when the drawing had already played out.
+    func seek(to index: Int) {
+        if player.isFinished { player.isPaused = true }
+        player.seek(to: index)
+    }
+
+    /// Replays the run already on screen from the beginning — the same
+    /// command stream, so the picture is identical (dice are not re-rolled;
+    /// that is what `run(_:)` is for).
+    func replay() {
+        player.seek(to: -1)
+        player.isPaused = false
     }
 
     // MARK: - Export

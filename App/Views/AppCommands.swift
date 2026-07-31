@@ -31,11 +31,23 @@ struct TortoiseBlocksCommands: Commands {
             .keyboardShortcut("p", modifiers: [.command, .shift])
             .disabled(runner == nil)
 
-            Button("Step") {
+            Button("Step Forward") {
                 runner?.player.step()
             }
             .keyboardShortcut(.rightArrow, modifiers: [.command, .shift])
-            .disabled(runner?.player.isPaused != true)
+            .disabled(runner?.canStep != true)
+
+            Button("Step Back") {
+                guard let runner else { return }
+                runner.seek(to: runner.player.currentCommandIndex - 1)
+            }
+            .keyboardShortcut(.leftArrow, modifiers: [.command, .shift])
+            .disabled(runner?.canStep != true || runner?.player.currentCommandIndex ?? -1 < 0)
+
+            Button("Back to Start") {
+                runner?.seek(to: -1)
+            }
+            .disabled(runner?.canStep != true)
 
             Divider()
 
