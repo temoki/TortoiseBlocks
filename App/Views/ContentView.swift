@@ -34,14 +34,16 @@ struct RootView: View {
     @ScaledMetric private var paletteWidth: CGFloat = 220
 
     var body: some View {
-        // Each column titles itself with a plain inline Text (§23) —
-        // PaletteView, WorkspaceView, and CanvasPane — rather than a
-        // `NavigationSplitView`/toolbar-level title. `.navigationTitle`,
-        // `.principal`, and `.status` toolbar placements all turned out to
-        // collide with this DocumentGroup scene's own document-title
-        // chrome in one way or another (rename-on-tap, "Liquid Glass"
-        // material, layout landing at the wrong edge) when three columns
-        // each tried to claim one.
+        // No column carries a title of its own (§23). Columns used to name
+        // themselves with a plain inline Text; 0de22dd moved their controls
+        // into native toolbars and dropped the headers, and nothing replaced
+        // them, because a title per column is exactly what doesn't work here:
+        // `.navigationTitle` and the `.principal` / `.status` toolbar
+        // placements each collided with this DocumentGroup scene's own
+        // document-title chrome (rename-on-tap, "Liquid Glass" material,
+        // layout landing at the wrong edge). The one title on screen is the
+        // document's, in the sidebar's bar — see `CanvasPane` for the copy
+        // iPadOS puts in the detail column (#31).
         NavigationSplitView {
             PaletteView(workspace: workspace)
                 .navigationSplitViewColumnWidth(paletteWidth)
@@ -90,6 +92,15 @@ struct CanvasPane: View {
             )
             .padding()
         }
+        // The document title belongs to the sidebar's bar, once (#31). On
+        // iPadOS the DocumentGroup hands its title chrome to *both* ends of the
+        // split view — sidebar and detail — so the document name and its
+        // rename chevron can end up on screen twice; rotating is the reliable
+        // way to get there, since the detail keeps the chrome it had before the
+        // columns rearranged. This drops the copy here. The back chevron it
+        // sits next to is not ours to remove — neither dropping this column's
+        // toolbar nor `navigationBarBackButtonHidden` touches it.
+        .toolbar(removing: .title)
         .toolbar {
             ToolbarSpacer(.flexible, placement: .primaryAction)
 

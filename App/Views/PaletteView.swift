@@ -123,8 +123,9 @@ extension BlockCategory {
 }
 
 /// The tap-to-add palette — only ever the `NavigationSplitView` sidebar
-/// (§23), so its title is a plain inline header rather than a parameter like
-/// `WorkspaceView`'s.
+/// (§23), and untitled like the other two columns: the section headers name
+/// its contents, and the bar above it belongs to the document (see
+/// `RootView`).
 struct PaletteView: View {
     let workspace: WorkspaceEditor
 
