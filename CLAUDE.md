@@ -77,6 +77,8 @@ document-format contract — breaking one breaks users' saved files.
 `BlockCodableTests.kindFixtures`, the palette entry (`PaletteView`),
 `SimpleBlockLabel` (`WorkspaceView`), and `App/Localizable.xcstrings`.
 The compiler only forces the exhaustive switches — do not skip the rest.
+Check the new SF Symbol against `BlockLabelStyle.widestSystemImage` too (see
+below).
 
 **All tree edits are pure functions** (`BlockTree`): they return a new tree,
 or `nil` when the operation can't apply — callers treat `nil` as a no-op and
@@ -184,6 +186,29 @@ header's "Add Here" toggle) is the accessibility alternative and must stay.
 **Project file**: buildable folders (objectVersion 77) — files added under
 `App/` need no pbxproj edits. Custom Info.plist keys (exported UTTypes,
 document types) live in `Support/Info.plist`, merged via `INFOPLIST_FILE`.
+
+**Row icons share one slot width.** SF Symbols differ in width by up to 9pt
+at body size, and `Label` lets each title start wherever its own icon ended,
+so a column of rows comes out ragged. `BlockLabelStyle` centres every icon in
+a slot sized by a hidden copy of `widestSystemImage` (`house`) — measured, not
+hard-coded, so it stays right across the macOS body size (13pt), the iOS one
+(17pt), and every Dynamic Type step. A *wider* symbol isn't clipped; it pushes
+its own title right and the ragged edge is back, so a new block kind's icon
+has to be no wider than `house` (or that constant moves to the new widest).
+The style is on the palette entries and every workspace block row, but not on
+`PaletteEntryChip`, whose icon sits above a centered title.
+
+**And one height.** Row height otherwise follows the tallest control the row
+happens to hold — 32pt for a bare label, 40pt with a value chip, 43pt for a
+container header (macOS body size) — so a program steps unevenly down the
+page. `rowShape()` is the shared outer shape: a hidden `RowHeightFloor`
+stacked behind the content, then the row padding. `BlockChrome` wears it, and
+so does an empty mouth's "drop here" zone, which stands in for a row and so
+has to measure like one (its 2pt outer margin sits outside the shape, playing
+the same part as the gap between rows). The floor is measured rather than
+hard-coded, and correct only while nothing taller joins a row. Note the
+failure mode is silent in both cases: too small a floor leaves the tall rows
+tall, exactly as if the fix were missing.
 
 **Localization**: `en` is the source language; Japanese (kid-friendly
 hiragana) lives in `App/Localizable.xcstrings`. Palette titles are

@@ -144,16 +144,20 @@ struct DropGap: View {
     var body: some View {
         Group {
             if isEmphasized {
-                RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(
-                        isTargeted ? Color.accentColor : Color.secondary.opacity(0.4),
-                        style: StrokeStyle(lineWidth: 2, dash: [5])
-                    )
-                    .frame(height: 32)
-                    .overlay {
-                        Text("Drop Here")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                // An empty mouth's drop zone stands in for the block that
+                // would sit there, so it takes a block row's shape rather
+                // than a height of its own.
+                Text("Drop Here")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .rowShape()
+                    .background {
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(
+                                isTargeted ? Color.accentColor : Color.secondary.opacity(0.4),
+                                style: StrokeStyle(lineWidth: 2, dash: [5])
+                            )
                     }
                     .padding(.vertical, 2)
             }
@@ -208,6 +212,7 @@ struct BlockRowView: View {
                 highlightedID: highlightedID, usedVariableNames: usedVariableNames
             ) {
                 Label("Repeat", systemImage: "repeat")
+                    .labelStyle(BlockLabelStyle())
                 NumberValueButton(
                     value: count, usedNames: usedVariableNames,
                     domain: block.kind.numberDomain ?? .repeatCount
@@ -223,6 +228,7 @@ struct BlockRowView: View {
                 elseBlocks: elseBody
             ) {
                 Label("If", systemImage: "questionmark.diamond")
+                    .labelStyle(BlockLabelStyle())
                 // The three-slot condition collapses into one summary chip
                 // (§21) — this is what makes the header fit at 360pt.
                 ConditionButton(condition: condition, usedNames: usedVariableNames) { new in
@@ -356,6 +362,7 @@ struct ElseDividerRow: View {
     var body: some View {
         HStack(spacing: 8) {
             Label("Otherwise", systemImage: "arrow.triangle.branch")
+                .labelStyle(BlockLabelStyle())
             InsertionTargetButton(address: address, workspace: workspace)
             Spacer(minLength: 0)
             Button("Remove Otherwise", systemImage: "xmark.circle", role: .destructive) {
@@ -455,6 +462,11 @@ struct SimpleBlockLabel: View {
                 EmptyView()
             }
         }
+        // Set once for all the cases above: sibling rows line their icons up
+        // on one centre and their titles on one left edge. The value buttons
+        // that follow can't align — the titles they trail are different
+        // lengths — so this is deliberately only about the label.
+        .labelStyle(BlockLabelStyle())
     }
 
     /// The slot's range comes from the kind being rendered, so every call site
@@ -558,7 +570,7 @@ private struct BlockChrome: ViewModifier {
     func body(content: Content) -> some View {
         content
             .foregroundStyle(.white)
-            .padding(8)
+            .rowShape()
             .background(color, in: .rect(cornerRadius: 8))
             .overlay {
                 RoundedRectangle(cornerRadius: 8)
@@ -567,6 +579,45 @@ private struct BlockChrome: ViewModifier {
             .brightness(isHighlighted ? 0.2 : (isDropTargeted ? 0.12 : 0))
             .animation(.easeOut(duration: 0.15), value: isHighlighted)
             .animation(.easeOut(duration: 0.12), value: isDropTargeted)
+    }
+}
+
+extension View {
+    /// The outer shape every block-sized thing in the workspace shares: held
+    /// to a common minimum height, then the row padding. Carried by the block
+    /// rows themselves and by an empty mouth's "drop here" zone, which stands
+    /// in for a row and so has to measure like one.
+    ///
+    /// Height otherwise follows whatever the row happens to hold, which at the
+    /// macOS body size means 32pt for a bare label, 40pt with a value chip and
+    /// 43pt for a container header — a program that steps unevenly down the
+    /// page.
+    fileprivate func rowShape() -> some View {
+        ZStack {
+            RowHeightFloor()
+            self
+        }
+        .padding(8)
+    }
+}
+
+/// The minimum, as a hidden copy of the tallest control a row can hold rather
+/// than a fixed number — for the same reason `BlockLabelStyle` sizes its icon
+/// slot from a hidden glyph. Control metrics differ between macOS and iOS and
+/// move again with Dynamic Type, so no single hard-coded value is right for
+/// all of them, and too small a one wouldn't fail loudly: the tall rows would
+/// simply stay tall.
+private struct RowHeightFloor: View {
+    var body: some View {
+        // Matches `InsertionTargetButton`, the tallest of them: a bordered
+        // control at `.large`. Update this if a taller one joins a row.
+        Button("", systemImage: "arrow.down.to.line.circle") {}
+            .labelStyle(.iconOnly)
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            .hidden()
+            // An invisible control has no business in the accessibility tree.
+            .accessibilityHidden(true)
     }
 }
 

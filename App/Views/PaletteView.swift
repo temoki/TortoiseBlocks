@@ -173,6 +173,7 @@ struct PaletteEntryButton: View {
             } icon: {
                 Image(systemName: entry.systemImage)
             }
+            .labelStyle(BlockLabelStyle())
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(.borderedProminent)
