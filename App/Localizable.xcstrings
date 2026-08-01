@@ -154,16 +154,6 @@
         }
       }
     },
-    "Build" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "つくる"
-          }
-        }
-      }
-    },
     "Build with Blocks" : {
       "localizations" : {
         "ja" : {

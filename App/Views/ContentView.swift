@@ -3,8 +3,7 @@ import TortoiseBlocksKit
 import TortoiseUI
 import UniformTypeIdentifiers
 
-/// Root: palette | workspace | canvas (regular width),
-/// or a Build / Run tab pair (compact width).
+/// Root: palette | workspace | canvas.
 struct ContentView: View {
     @Binding var document: BlocksDocument
     @State private var uiState = WorkspaceUIState()
@@ -14,57 +13,19 @@ struct ContentView: View {
     var body: some View {
         let workspace = WorkspaceEditor(
             document: $document, undoManager: undoManager, uiState: uiState)
-        Group {
-            #if os(iOS)
-                AdaptiveRootView(workspace: workspace, runner: runner)
-            #else
-                RegularRootView(workspace: workspace, runner: runner)
-            #endif
-        }
-        .focusedSceneValue(\.runner, runner)
-        .focusedSceneValue(\.workspaceBlocks, workspace.blocks)
+        RootView(workspace: workspace, runner: runner)
+            .focusedSceneValue(\.runner, runner)
+            .focusedSceneValue(\.workspaceBlocks, workspace.blocks)
     }
 }
 
-#if os(iOS)
-    struct AdaptiveRootView: View {
-        let workspace: WorkspaceEditor
-        let runner: RunnerModel
-        @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-
-        var body: some View {
-            if horizontalSizeClass == .compact {
-                CompactRootView(workspace: workspace, runner: runner)
-            }
-            else {
-                RegularRootView(workspace: workspace, runner: runner)
-            }
-        }
-    }
-
-    struct CompactRootView: View {
-        let workspace: WorkspaceEditor
-        let runner: RunnerModel
-
-        var body: some View {
-            TabView {
-                Tab("Build", systemImage: "square.stack.3d.up") {
-                    VStack(spacing: 0) {
-                        WorkspaceView(workspace: workspace, runner: runner)
-                        Divider()
-                        PaletteStrip(workspace: workspace)
-                            .padding(.vertical, 8)
-                    }
-                }
-                Tab("Run", systemImage: "tortoise") {
-                    CanvasPane(workspace: workspace, runner: runner)
-                }
-            }
-        }
-    }
-#endif
-
-struct RegularRootView: View {
+/// The one layout, on both platforms (#29). The app is iPad and Mac only, and
+/// compact width — an iPhone, or an iPad window squeezed into Slide Over — is
+/// no longer a design target: three panes' worth of information (palette,
+/// program, canvas) folded into one 390pt column never came out usable. A
+/// window narrow enough to go compact gets `NavigationSplitView`'s own
+/// collapse, not a layout of ours.
+struct RootView: View {
     let workspace: WorkspaceEditor
     let runner: RunnerModel
 
@@ -174,8 +135,7 @@ struct CanvasPane: View {
     }
 }
 
-/// The canvas/code segmented toggle — shared between `CanvasPane`'s inline
-/// header (compact) and its toolbar (regular, §23).
+/// The canvas/code segmented toggle, in `CanvasPane`'s toolbar (§23).
 struct CanvasViewToggle: View {
     @Binding var showsCode: Bool
 
@@ -190,9 +150,9 @@ struct CanvasViewToggle: View {
     }
 }
 
-/// The export menu (SVG / PNG at three scales / ShareLink) — shared between
-/// `CanvasPane`'s inline header (compact) and its toolbar (regular, §23).
-/// `onExport` keeps this view free of `CanvasPane`'s own file-exporter state.
+/// The export menu (SVG / PNG at three scales / ShareLink), in `CanvasPane`'s
+/// toolbar (§23). `onExport` keeps this view free of `CanvasPane`'s own
+/// file-exporter state.
 struct CanvasExportMenu: View {
     @Bindable var runner: RunnerModel
     let onExport: (Data?, UTType) -> Void

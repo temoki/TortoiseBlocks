@@ -17,7 +17,7 @@ swift format lint --strict --recursive App TortoiseBlocksKit/Sources TortoiseBlo
 xcodebuild -project TortoiseBlocks.xcodeproj -scheme TortoiseBlocks \
   -destination 'platform=macOS' -quiet build
 xcodebuild -project TortoiseBlocks.xcodeproj -scheme TortoiseBlocks \
-  -destination 'platform=iOS Simulator,name=iPhone 17' -quiet build
+  -destination 'platform=iOS Simulator,name=iPad Pro 11-inch (M5)' -quiet build
 
 # Manual verification loop (macOS):
 pkill -x TortoiseBlocks; open ~/Library/Developer/Xcode/DerivedData/TortoiseBlocks-*/Build/Products/Debug/TortoiseBlocks.app
@@ -186,6 +186,16 @@ header's "Add Here" toggle) is the accessibility alternative and must stay.
 **Project file**: buildable folders (objectVersion 77) — files added under
 `App/` need no pbxproj edits. Custom Info.plist keys (exported UTTypes,
 document types) live in `Support/Info.plist`, merged via `INFOPLIST_FILE`.
+`TARGETED_DEVICE_FAMILY` is `"2"` — iPad and Mac, no iPhone (#29).
+
+**Compact width is not a design target** (#29). There is one layout,
+`RootView`'s three-column `NavigationSplitView`; the "つくる / うごかす" tab
+pair and its bottom palette strip are gone, because three panes' worth of
+information never folded into one 390pt column usably. An iPad window narrow
+enough to report compact (Slide Over, a squeezed window) gets
+`NavigationSplitView`'s own collapse — that is the whole fallback, and no
+`horizontalSizeClass` branch should come back. Don't restore a compact
+layout without reopening the scope decision.
 
 **Row icons share one slot width.** SF Symbols differ in width by up to 9pt
 at body size, and `Label` lets each title start wherever its own icon ended,

@@ -2,7 +2,7 @@
 
 [![Swift](https://img.shields.io/badge/Swift-6.2-orange.svg)](https://swift.org)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-iOS%2026%2B%20%7C%20iPadOS%2026%2B%20%7C%20macOS%2026%2B-lightgrey.svg)]()
+[![Platform](https://img.shields.io/badge/platform-iPadOS%2026%2B%20%7C%20macOS%2026%2B-lightgrey.svg)]()
 
 A visual programming app for kids — snap blocks together, press Run, and
 watch the tortoise draw. Powered by
@@ -34,7 +34,7 @@ graphics engine written in Swift.
 ## Requirements
 
 - **Xcode** 26+ (Swift 6.2)
-- **Platforms** iOS / iPadOS 26+ · macOS 26+ (visionOS planned)
+- **Platforms** iPadOS 26+ · macOS 26+ (visionOS planned)
 
 ## Getting Started
 

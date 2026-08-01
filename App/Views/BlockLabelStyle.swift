@@ -9,8 +9,7 @@ import SwiftUI
 ///
 /// Applied to the palette entries (`PaletteEntryButton`) and to every
 /// workspace block row (`SimpleBlockLabel`, the container headers, the else
-/// divider). Not to `PaletteEntryChip`, which stacks its icon *above* a
-/// centered title and so has nothing to align.
+/// divider).
 struct BlockLabelStyle: LabelStyle {
     /// The widest glyph used by any block row or palette entry. A hidden copy
     /// sits behind every icon to size the icon slot, which is what keeps the
