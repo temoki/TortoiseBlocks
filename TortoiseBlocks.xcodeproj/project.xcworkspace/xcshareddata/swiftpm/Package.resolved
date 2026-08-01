@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/temoki/TortoiseGraphics2",
       "state" : {
-        "revision" : "519e774ca4d8888b4ba78bd6c8fd04e84e492619",
-        "version" : "2.0.0-beta9"
+        "revision" : "1d3e505afc0b98e355b5d474589e972bd2b6bac7",
+        "version" : "2.0.0-beta10"
       }
     }
   ],
