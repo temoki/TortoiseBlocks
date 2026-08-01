@@ -35,7 +35,7 @@ jobs:
         uses: ./.github/actions/select-xcode
 
       - name: Cache SwiftPM build directory
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: TortoiseBlocksKit/.build
           key: spm-kit-${{ runner.os }}-${{ hashFiles('TortoiseBlocksKit/Package.resolved') }}
