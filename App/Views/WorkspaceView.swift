@@ -270,10 +270,18 @@ struct BlockRowView: View {
     }
 }
 
-/// Chrome shared by every container kind (repeat, if): the solid,
-/// category-colored header row with target/delete controls (move up/down in
-/// the context menu) and drop-to-append, then the indented body list with
-/// its guide bar. The kind-specific header cells come in as a ViewBuilder.
+/// Chrome shared by every container kind (repeat, if). The container is drawn
+/// as one C-shaped block that holds its children in the mouth — the Scratch /
+/// Blockly vocabulary — rather than as a header with an indented list under
+/// it: header along the top, a solid spine down the left, a foot along the
+/// bottom, all in the category color, with the workspace showing through the
+/// mouth between them. The kind-specific header cells come in as a
+/// ViewBuilder.
+///
+/// The C is assembled from parts rather than cut out of one shape, so no piece
+/// ever has to know the mouth's geometry and nothing has to match the pane's
+/// background color: the arms are drawn where they are, and the mouth is
+/// simply where nothing is drawn.
 struct ContainerBlockRow<Header: View>: View {
     let block: Block
     let childBlocks: [Block]
@@ -286,10 +294,21 @@ struct ContainerBlockRow<Header: View>: View {
     @ViewBuilder let header: Header
 
     @State private var isDropTargeted = false
-    @ScaledMetric private var indent: CGFloat = 16
+    /// The left arm: wide enough to read as a limb of the block rather than
+    /// as a rule beside it (the guide bar it replaces was 3pt).
+    @ScaledMetric private var spine: CGFloat = 12
+    /// Clearance between the spine and the blocks it holds, so a child's
+    /// corner doesn't touch the arm.
+    @ScaledMetric private var gutter: CGFloat = 6
+    /// The bottom arm. Thinner than a row — it closes the shape, it isn't
+    /// something to read — but thick enough not to look like a hairline.
+    @ScaledMetric private var foot: CGFloat = 11
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        // Spacing 0: the arms have to meet. What separates the header from the
+        // first child is the mouth's own leading `DropGap`, which is also what
+        // separates any two sibling rows.
+        VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
                 header
                 InsertionTargetButton(
@@ -297,7 +316,10 @@ struct ContainerBlockRow<Header: View>: View {
                 Spacer(minLength: 0)
                 RowControls(blockID: block.id, workspace: workspace)
             }
-            .blockChrome(block.kind.category.color, isDropTargeted: isDropTargeted)
+            .blockChrome(
+                block.kind.category.color, corners: .containerHeader,
+                isDropTargeted: isDropTargeted
+            )
             .draggable(block)
             .rowContextMenu(blockID: block.id, workspace: workspace)
             // Dropping onto the header appends into this container's body.
@@ -310,7 +332,7 @@ struct ContainerBlockRow<Header: View>: View {
                 isDropTargeted = $0
             }
 
-            indented(
+            mouth(
                 BlockListView(
                     blocks: childBlocks,
                     address: BodyAddress(containerID: block.id),
@@ -321,7 +343,7 @@ struct ContainerBlockRow<Header: View>: View {
 
             if let elseBlocks {
                 ElseDividerRow(blockID: block.id, elseCount: elseBlocks.count, workspace: workspace)
-                indented(
+                mouth(
                     BlockListView(
                         blocks: elseBlocks,
                         address: BodyAddress(containerID: block.id, slot: .elseBody),
@@ -330,17 +352,24 @@ struct ContainerBlockRow<Header: View>: View {
                         usedVariableNames: usedVariableNames
                     ))
             }
+
+            UnevenRoundedRectangle(cornerRadii: RowCorners.containerFoot.radii)
+                .fill(block.kind.category.color)
+                .frame(height: foot)
         }
     }
 
-    private func indented(_ list: BlockListView) -> some View {
+    /// One mouth: the children, held off the left edge far enough to clear the
+    /// spine, with the spine drawn behind that clearance. A background rather
+    /// than an overlay — the arm sits under the blocks it holds, and can never
+    /// cover a drop target.
+    private func mouth(_ list: BlockListView) -> some View {
         list
-            .padding(.leading, indent)
-            .overlay(alignment: .leading) {
+            .padding(.leading, spine + gutter)
+            .background(alignment: .leading) {
                 Rectangle()
-                    .fill(block.kind.category.color.opacity(0.5))
-                    .frame(width: 3)
-                    .padding(.leading, 4)
+                    .fill(block.kind.category.color)
+                    .frame(width: spine)
             }
     }
 }
@@ -376,7 +405,10 @@ struct ElseDividerRow: View {
             .buttonStyle(.borderless)
             .controlSize(.large)
         }
-        .blockChrome(BlockCategory.control.color, isDropTargeted: isDropTargeted)
+        .blockChrome(
+            BlockCategory.control.color, corners: .containerDivider,
+            isDropTargeted: isDropTargeted
+        )
         // Dropping onto the divider appends into the else mouth.
         .dropDestination(for: Block.self) { items, _ in
             guard let dropped = items.first else { return false }
@@ -557,6 +589,43 @@ extension View {
     }
 }
 
+/// Which corners a piece of the workspace rounds.
+///
+/// A free-standing row is a rounded rectangle. A container is one C-shaped
+/// block assembled from three pieces (`ContainerBlockRow`), so its corners
+/// split three ways: the four *outer* corners of the C round at 10 — a little
+/// wider than a row, because the shape they enclose is; the two corners facing
+/// the *mouth* round at a row's own 8; and every edge where the spine runs on
+/// into the next piece stays square, which is what makes the parts read as one
+/// block.
+enum RowCorners {
+    /// A row that stands on its own.
+    case standalone
+    /// A container header — the C's top arm, with the spine leaving its
+    /// bottom-left.
+    case containerHeader
+    /// The if block's else divider — an arm with spine both above and below,
+    /// so neither leading corner rounds.
+    case containerDivider
+    /// The C's bottom arm, closing the shape.
+    case containerFoot
+
+    var radii: RectangleCornerRadii {
+        switch self {
+        case .standalone:
+            RectangleCornerRadii(topLeading: 8, bottomLeading: 8, bottomTrailing: 8, topTrailing: 8)
+        case .containerHeader:
+            RectangleCornerRadii(
+                topLeading: 10, bottomLeading: 0, bottomTrailing: 8, topTrailing: 10)
+        case .containerDivider:
+            RectangleCornerRadii(topLeading: 0, bottomLeading: 0, bottomTrailing: 8, topTrailing: 8)
+        case .containerFoot:
+            RectangleCornerRadii(
+                topLeading: 0, bottomLeading: 10, bottomTrailing: 10, topTrailing: 8)
+        }
+    }
+}
+
 /// The shared "block" look for workspace rows (§21): a solid, saturated
 /// category color with white text, matching the palette's `.borderedProminent`
 /// buttons instead of the old pale tint. Opacity has no more room to signal
@@ -564,17 +633,19 @@ extension View {
 /// and drop-target feedback are a white border plus a brightness bump.
 private struct BlockChrome: ViewModifier {
     let color: Color
+    var corners: RowCorners = .standalone
     var isHighlighted = false
     var isDropTargeted = false
+
+    private var shape: UnevenRoundedRectangle { .rect(cornerRadii: corners.radii) }
 
     func body(content: Content) -> some View {
         content
             .foregroundStyle(.white)
             .rowShape()
-            .background(color, in: .rect(cornerRadius: 8))
+            .background(color, in: shape)
             .overlay {
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(.white, lineWidth: isHighlighted ? 3 : (isDropTargeted ? 2 : 0))
+                shape.stroke(.white, lineWidth: isHighlighted ? 3 : (isDropTargeted ? 2 : 0))
             }
             .brightness(isHighlighted ? 0.2 : (isDropTargeted ? 0.12 : 0))
             .animation(.easeOut(duration: 0.15), value: isHighlighted)
@@ -623,9 +694,12 @@ private struct RowHeightFloor: View {
 
 extension View {
     fileprivate func blockChrome(
-        _ color: Color, isHighlighted: Bool = false, isDropTargeted: Bool = false
+        _ color: Color, corners: RowCorners = .standalone, isHighlighted: Bool = false,
+        isDropTargeted: Bool = false
     ) -> some View {
         modifier(
-            BlockChrome(color: color, isHighlighted: isHighlighted, isDropTargeted: isDropTargeted))
+            BlockChrome(
+                color: color, corners: corners, isHighlighted: isHighlighted,
+                isDropTargeted: isDropTargeted))
     }
 }

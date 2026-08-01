@@ -210,6 +210,24 @@ hard-coded, and correct only while nothing taller joins a row. Note the
 failure mode is silent in both cases: too small a floor leaves the tall rows
 tall, exactly as if the fix were missing.
 
+**A container is one C-shaped block, assembled from parts.** Indent plus a
+3pt guide bar left "what is inside this repeat, and where does it end?"
+to be inferred; `ContainerBlockRow` now draws the Scratch/Blockly C — header
+along the top, a 12pt spine down the left, an 11pt foot along the bottom,
+all in the category color, with the children held off the spine by a 6pt
+gutter (so a level of nesting costs 18pt, up from 16pt). The arms are
+*drawn additively, not cut out of one shape*: nothing has to know the
+mouth's geometry, and — the reason this beat filling the mouth with a
+matched color — nothing has to guess the pane's background, since the
+mouth is simply where no arm is drawn. `RowCorners` holds the whole shape
+vocabulary: a standalone row rounds 8 everywhere; the C's four outer
+corners round 10 and the two facing the mouth round 8; every edge the
+spine runs on through (a header's bottom-leading, both leading corners of
+the else divider) stays square, and that squareness is what makes the
+pieces read as one block. Verify it that way too — a vertical scan down
+the spine of a rendered container must be one unbroken run of the
+category color, through the else divider and into the foot.
+
 **Localization**: `en` is the source language; Japanese (kid-friendly
 hiragana) lives in `App/Localizable.xcstrings`. Palette titles are
 `LocalizedStringResource` — a plain `String` there would silently bypass
