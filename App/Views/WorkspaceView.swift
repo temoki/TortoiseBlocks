@@ -81,6 +81,21 @@ struct WorkspaceView: View {
                 }
             }
         }
+        // `safeAreaInset` rather than an overlay: it also insets the scroll
+        // content, so the last block can still be scrolled clear of the can
+        // instead of sitting under it for good. Nothing to throw away means
+        // no can — the empty state has its own drop target already.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if !workspace.blocks.isEmpty {
+                WorkspaceTrashZone(workspace: workspace)
+                    .padding(.vertical, 12)
+            }
+        }
+        // Puts the inset on the window's bottom edge. Without it SwiftUI keeps
+        // the home indicator's 20pt *inside* the inset, which reads as 36pt
+        // under the can against 12pt above it. Note it has to be applied here
+        // rather than to the inset's own content, where it does nothing.
+        .ignoresSafeArea(.container, edges: .bottom)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Button("Undo", systemImage: "arrow.uturn.backward") {
@@ -93,6 +108,60 @@ struct WorkspaceView: View {
                 .disabled(!workspace.canRedo)
             }
         }
+    }
+}
+
+/// Somewhere to put a block you have picked up and thought better of — the one
+/// thing dragging was missing (#30). Deleting was never hidden: every row
+/// carries a ✕ and a context-menu entry. What there was no answer for was
+/// "I'm holding this and I don't want it", where the only way out was to put
+/// it back exactly where it came from.
+///
+/// It is always visible rather than appearing mid-drag because SwiftUI has no
+/// cross-platform signal for "a drag started" — `onDragSessionUpdated` is
+/// macOS-only — so a zone that appeared on drag could not reliably learn that
+/// the drag was cancelled, and would sooner or later be a zone that never went
+/// away. Being visible up front is the better trade regardless: you can see
+/// where to aim before you pick anything up.
+struct WorkspaceTrashZone: View {
+    let workspace: WorkspaceEditor
+
+    @State private var isTargeted = false
+
+    @ScaledMetric private var diameter: CGFloat = 56
+
+    var body: some View {
+        Image(systemName: isTargeted ? "trash.fill" : "trash")
+            .font(.title2)
+            .foregroundStyle(isTargeted ? Color.red : Color.secondary)
+            .frame(width: diameter, height: diameter)
+            .background {
+                Circle()
+                    .fill(isTargeted ? Color.red.opacity(0.15) : Color.clear)
+                    .stroke(
+                        isTargeted ? Color.red : Color.secondary.opacity(0.4),
+                        lineWidth: 2)
+            }
+            .scaleEffect(isTargeted ? 1.1 : 1)
+            .dropDestination(for: Block.self) { items, _ in
+                guard let dropped = items.first else { return false }
+                // A palette-origin block has no ID in the tree, so this is a
+                // no-op for it (`BlockTree.removing` returns nil and
+                // `delete` bails before touching undo). That is the right
+                // outcome: throwing away a block you were carrying but never
+                // placed just means not placing it.
+                workspace.delete(dropped.id)
+                return true
+            } isTargeted: {
+                isTargeted = $0
+            }
+            .animation(.easeOut(duration: 0.12), value: isTargeted)
+            // The icon carries the meaning on its own, but a pointer gets the
+            // words too.
+            .help("Drop to Delete")
+            // Drop-only, so VoiceOver can't operate it at all; the ✕ on every
+            // row and the context menu's Delete stay the accessible paths.
+            .accessibilityHidden(true)
     }
 }
 
