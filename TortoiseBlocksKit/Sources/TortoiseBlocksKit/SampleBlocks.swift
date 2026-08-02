@@ -1,5 +1,8 @@
-/// Sample block programs — the block-tree counterpart of `SampleProgram`,
-/// exercising repeat + random end to end until the editor (M2) exists.
+/// Ready-made block programs. `star()`, `filledSquare()`, and `spiral()` are
+/// the one-tap starting points an empty workspace offers (they go in through
+/// the normal editing path, so they undo and dirty the document like any
+/// other edit); `randomStar()` is the fixture the expander and Codable tests
+/// build on.
 public enum SampleBlocks {
     /// A 36-point orange star — deterministic, unlike `randomStar()`, so it
     /// always comes out the same tidy shape (matches `SampleProgram.star()`).

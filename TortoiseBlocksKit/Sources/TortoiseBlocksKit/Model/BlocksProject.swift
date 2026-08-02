@@ -2,13 +2,14 @@ import Foundation
 
 /// The document: a titled top-level block sequence.
 ///
-/// Serialized as JSON inside the `.tortoiseblocks` document (M5).
+/// Serialized as JSON inside the `.tortoiseblocks` document.
 /// `schemaVersion` guards future migrations — decoding a newer version
 /// than ``BlocksProject/currentSchemaVersion`` should be surfaced to the
 /// user as "made with a newer version" rather than silently mangled.
 public struct BlocksProject: Codable, Hashable, Sendable {
-    /// 1 = the original format; 2 adds variables (`NumberValue.variable`,
-    /// set/add blocks). Documents are written with
+    /// 1 = the original format; 2 adds variables (`NumberValue.variable` and
+    /// the set / add / subtract / multiply / divide blocks) and the if block
+    /// with its optional else. Documents are written with
     /// ``requiredSchemaVersion``, not this constant, so files that don't use
     /// newer features stay openable in older apps.
     public static let currentSchemaVersion = 2

@@ -49,8 +49,10 @@ Two layers with a hard boundary:
 
 - **TortoiseBlocksKit** — local SwiftPM package, depends only on
   `TortoiseCore`. Model (block tree + frozen JSON format + pure editing
-  functions), Engine (`BlockExpander`), CodeGen (`SwiftCodeGenerator`).
-  Everything here is unit-tested; UI iteration never touches logic.
+  functions), Engine (`BlockExpander`), CodeGen (`SwiftCodeGenerator` plus
+  `CodeTokenizer`, which spans the generated source for the code pane's
+  syntax coloring). Everything here is unit-tested; UI iteration never
+  touches logic.
 - **App** — SwiftUI document app; depends on Kit + `TortoiseUI` +
   `TortoiseSVG`. Views are palette | workspace | canvas.
 
@@ -179,13 +181,60 @@ last. There is exactly one `fileExporter` with a dynamic content type.
 **The canvas hides with `opacity`, not `if/else`,** when the code pane is
 shown — destroying `TortoiseCanvas` would reset playback identity.
 
-**Drop model**: a `DropGap` between rows carries `(containerID, index)`, so
-insertion semantics need no y-coordinate math. Tap-to-add (with the repeat
-header's "Add Here" toggle) is the accessibility alternative and must stay.
+**The playback row is a video transport** (#28): a scrubber, then rewind /
+step back / centre / step forward / speed, all visible at once — no
+disclosure, no clear button. The centre button is one control with four
+meanings (`TransportAction`: run when the tree is stale, pause, play/resume,
+replay), so the same position always answers "what happens if I press this";
+`run` rolls fresh dice, `replay` redraws the identical stream. Two costs
+shaped this row, both because it re-renders on *every committed command*.
+Staleness is a hash of the block tree, and `CanvasPane` computes it and
+passes it down rather than letting `PlaybackControls` hash on each redraw.
+And the scrubber carries no `step`: `Slider` draws one tick per step and
+redrawing costs faster than linearly in their number, while the range here
+*is* the command count — 25ms per update at 1,000 commands against 0.35ms
+with no step, paid ten times a second during playback. The
+one-command unit the step used to give VoiceOver and the keyboard now comes
+from `accessibilityAdjustableAction`. Drawing is not the bottleneck:
+expansion, `Tortoise.apply`, and `TortoiseCanvas` all stay near a
+millisecond at 1,000 commands (upstream batches committed strokes, and
+`ViewportMode` is not a performance lever), so "playback is slow" means a
+control redrawing with the playhead. One more platform trap: the centre
+button names its grey outright, because `Color.secondary` handed to a
+`borderedProminent` tint resolves near-black on macOS.
+
+**The document title appears once.** No column names itself (#23):
+`.navigationTitle` and the `.principal` / `.status` placements each collide
+with the `DocumentGroup` scene's own title chrome. On iPadOS that chrome
+goes to *both* ends of the split view, so a rotation can leave the document
+name and its rename chevron on screen twice; `CanvasPane` drops its copy
+with `.toolbar(removing: .title)` (#31). The back chevron beside it is not
+ours to remove — neither dropping that column's toolbar nor
+`navigationBarBackButtonHidden` touches it.
+
+**Drop model**: a `DropGap` between rows carries `(BodyAddress, index)`, so
+insertion semantics need no y-coordinate math and every mouth — an if's else
+included — is a target. Tap-to-add, with the "Add Here" toggle
+(`InsertionTargetButton`) on container headers and the else divider, is the
+accessibility alternative and must stay. A permanent trash circle rides a
+`safeAreaInset` at the bottom of the workspace (`WorkspaceTrashZone`, #30) —
+the way out of a drag you regret, since deleting a *placed* block was never
+the hidden part. It can't appear only mid-drag: SwiftUI has no
+cross-platform "a drag started" signal (`onDragSessionUpdated` is
+macOS-only), so a can that appeared on drag could never reliably learn the
+drag was cancelled. It replaced drop-on-the-palette deletion, which had no
+way to announce itself (`dropDestination`'s `isTargeted` gives only a `Bool`,
+so the palette couldn't highlight for workspace drags alone). Dropping a
+palette-origin block on it is a no-op — `BlockTree.removing` returns nil for
+an ID that isn't in the tree, which is exactly right.
 
 **Project file**: buildable folders (objectVersion 77) — files added under
 `App/` need no pbxproj edits. Custom Info.plist keys (exported UTTypes,
-document types) live in `Support/Info.plist`, merged via `INFOPLIST_FILE`.
+document types) live in `Support/Info.plist`, merged via `INFOPLIST_FILE`;
+the rest are `INFOPLIST_KEY_*` build settings, including the SDK-conditional
+`UISupportsDocumentBrowser` an iOS `DocumentGroup` target has to declare
+(`[sdk=iphoneos*]` / `[sdk=iphonesimulator*]` = YES, matching Xcode's own
+template, so the macOS build never sees it — #33).
 `TARGETED_DEVICE_FAMILY` is `"2"` — iPad and Mac, no iPhone (#29).
 
 **Compact width is not a design target** (#29). There is one layout,

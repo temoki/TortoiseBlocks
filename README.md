@@ -15,19 +15,26 @@ graphics engine written in Swift.
 
 ## Features
 
-- **Block editor** — tap or drag & drop blocks (motion / pen / fill /
-  repeat), nest repeats, edit arguments in place, reorder freely, undo
-- **Dice values 🎲** — any number slot can roll a random value on every run,
-  so the same program draws a different picture each time
-- **Live playback** — pause, single-step, seek with a scrubber, and change
-  speed mid-run; the executing block stays highlighted in the workspace so
-  kids can see exactly which block draws which line
-- **Blocks → Swift** — a code pane shows the equivalent
+- **Block editor** — tap or drag & drop blocks (movement / pen / fill /
+  control / boxes), nest them, edit arguments in place, reorder freely,
+  drop one on the trash to throw it away, undo everything
+- **Repeat, if, and boxes** — loop a body, branch on a comparison
+  (with an optional else), and keep a value in a named box 🌟 you can set
+  and do arithmetic on — enough to write a program that grows as it draws
+- **Dice 🎲** — any number *or color* slot can roll a random value on every
+  run, so the same program draws a different picture each time
+- **Live playback** — a video-style transport: play, pause, step one command
+  at a time, seek with a scrubber, change speed mid-run; the executing block
+  stays highlighted in the workspace so kids can see exactly which block
+  draws which line
+- **Blocks → Swift** — a syntax-colored code pane shows the equivalent
   [Tortoise API](https://github.com/temoki/TortoiseGraphics2) program, as a
   bridge from blocks to text programming
 - **Documents** — a standard document app: `.tortoiseblocks` files (JSON),
-  iCloud Drive / Files integration, autosave, system undo
-- **Export** — SVG (vector, straight from the library) and PNG
+  iCloud Drive / Files integration, autosave, system undo; a new document
+  can start from a sample program
+- **Export & share** — SVG (vector, straight from the library) and PNG at
+  1x / 2x / 3x, saved to a file or sent through the share sheet
 - **English / Japanese** — Japanese uses kid-friendly hiragana; adding a
   language is a single string-catalog edit
 
@@ -57,7 +64,7 @@ TortoiseBlocks/
 ├── TortoiseBlocksKit/   # UI-independent SwiftPM package (depends on TortoiseCore only)
 │   ├── Model/           #   Block tree, frozen JSON format, pure editing functions
 │   ├── Engine/          #   BlockExpander: block tree → command stream (+ blockID tags)
-│   └── CodeGen/         #   SwiftCodeGenerator: block tree → Swift source
+│   └── CodeGen/         #   SwiftCodeGenerator: block tree → Swift source (+ tokenizer)
 └── App/                 # SwiftUI document app (palette | workspace | canvas)
 ```
 
@@ -70,7 +77,9 @@ The runtime pipeline is one straight line:
 ```
 
 Randomness is resolved at expansion time and the evaluated command stream is
-kept, so exports always render exactly what is on screen.
+kept, so an export always renders the drawing that actually ran, dice and
+all. It is not a screenshot of the canvas pane, though: exports crop tight to
+the drawing and leave the tortoise cursor out.
 
 ## File Format
 
@@ -93,6 +102,13 @@ identifiers can never break saved files):
   ]
 }
 ```
+
+`schemaVersion` is the lowest version that can *read* the file, not the one
+that wrote it. A document is written as version 1 unless it uses a version-2
+feature (a box or an if block), so a simple program stays byte-identical to
+what the first release produced and keeps opening in older builds. A file
+that asks for a newer version than the app knows is turned away with a plain
+"made with a newer version" message instead of a decode error.
 
 Number slots are bounded, by the slot they sit in:
 

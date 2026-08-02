@@ -1,7 +1,10 @@
 import TortoiseCore
 
-/// Hardcoded command streams for the M0 walking skeleton.
-/// Replaced by `BlockExpander` output once the block model lands (M1).
+/// Hand-written command streams, from before `BlockExpander` existed. The app
+/// no longer runs them — `SampleBlocks` is the block-tree equivalent it
+/// offers — but they stay as the fixture for the `Tortoise.apply` round-trip
+/// test, which pins the index-for-index recording that block highlighting
+/// depends on.
 public enum SampleProgram {
     /// A 36-point orange star (the TortoiseGraphics2 README example).
     public static func star() -> [TortoiseCommand] {
