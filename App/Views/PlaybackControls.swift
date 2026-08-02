@@ -167,12 +167,32 @@ struct PlaybackScrubber: View {
     var body: some View {
         HStack(spacing: 8) {
             Text(verbatim: positionText)
-            Slider(value: position, in: -1...Double(max(runner.commandCount - 1, 0)), step: 1) {
+            // Continuous on purpose. A stepped Slider carries one tick mark
+            // per step, and the cost of a redraw grows with how many there
+            // are — worse than linearly. Measured at 420pt on macOS, one
+            // update of this row: 2.5ms at 200 commands, 25ms at 1,000,
+            // 86ms at 2,000, against a flat 0.35ms with no step at all. The
+            // scrubber redraws on *every* committed command, so a repeat of
+            // a few hundred spent the whole frame here and the drawing
+            // stuttered. The position is quantized either way — the binding
+            // below rounds before it seeks — so `step` bought nothing.
+            Slider(value: position, in: -1...Double(max(runner.commandCount - 1, 0))) {
                 Text("Position")
             }
             .labelsHidden()
             .disabled(runner.commandCount == 0)
             .accessibilityValue(Text(positionAccessibilityValue))
+            // A stepless slider adjusts by a fraction of its range, which for
+            // a long program is many commands at once. Say outright that one
+            // adjustment is one command — the same unit the step buttons and
+            // the Run menu move in.
+            .accessibilityAdjustableAction { direction in
+                switch direction {
+                case .increment: runner.seek(to: runner.player.currentCommandIndex + 1)
+                case .decrement: runner.seek(to: runner.player.currentCommandIndex - 1)
+                @unknown default: break
+                }
+            }
             Text(verbatim: totalText)
         }
         .font(.caption.monospacedDigit())
