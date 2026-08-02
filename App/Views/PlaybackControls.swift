@@ -145,7 +145,13 @@ private struct TransportCenterButton: View {
         }
         .buttonStyle(.borderedProminent)
         .buttonBorderShape(.circle)
-        .tint(action.runsProgram ? .accentColor : .secondary)
+        // `.gray`, not `.secondary`: the neutral state is a *fill*, and
+        // `Color.secondary` is a label style. Handed to `tint` it resolves per
+        // platform — iOS lands on a mid grey, macOS on something near black,
+        // so the primary control turned into the darkest thing in the row the
+        // moment a run finished. An explicit system grey reads the same on
+        // both.
+        .tint(action.runsProgram ? .accentColor : .gray)
         // The label changes with the action, so VoiceOver announces what
         // the press will do — which is also why this is a Button and not
         // a Toggle bound to `isPaused`.
