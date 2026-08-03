@@ -174,16 +174,6 @@
         }
       }
     },
-    "Clear" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "けす"
-          }
-        }
-      }
-    },
     "Code" : {
       "localizations" : {
         "ja" : {

@@ -39,8 +39,8 @@ final class RunnerModel {
 
     // Export renders are cached per run: `ShareLink(item:)` evaluates its
     // item eagerly whenever the Export menu is drawn, so without this an
-    // ImageRenderer pass would fire on every menu open. Cleared in `run()`
-    // and `clear()`, the only places `lastRunCommands` changes.
+    // ImageRenderer pass would fire on every menu open. Cleared in `run()`,
+    // the only place `lastRunCommands` changes.
     private var svgDataCache: Data?
     private var pngDataCache: [CGFloat: Data] = [:]
 
@@ -97,15 +97,6 @@ final class RunnerModel {
         catch {
             showsExpansionError = true
         }
-    }
-
-    func clear() {
-        expandedBlockIDs = []
-        lastRunCommands = []
-        lastRunTreeHash = nil
-        tortoise.reset()
-        svgDataCache = nil
-        pngDataCache = [:]
     }
 
     /// Moves the playhead without ever starting playback that wasn't already
