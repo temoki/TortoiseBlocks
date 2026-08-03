@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Merged with the generated Info.plist (GENERATE_INFOPLIST_FILE=YES).
-	     Holds only keys that have no INFOPLIST_KEY_ build setting. -->
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
@@ -22,15 +20,15 @@
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>space.hiraku.tortoiseblocks.project</string>
-			<key>UTTypeDescription</key>
-			<string>TortoiseBlocks Project</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.data</string>
 				<string>public.content</string>
 			</array>
+			<key>UTTypeDescription</key>
+			<string>TortoiseBlocks Project</string>
+			<key>UTTypeIdentifier</key>
+			<string>space.hiraku.tortoiseblocks.project</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>
@@ -40,14 +38,14 @@
 			</dict>
 		</dict>
 		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>space.hiraku.tortoiseblocks.block</string>
-			<key>UTTypeDescription</key>
-			<string>TortoiseBlocks Block</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.data</string>
 			</array>
+			<key>UTTypeDescription</key>
+			<string>TortoiseBlocks Block</string>
+			<key>UTTypeIdentifier</key>
+			<string>space.hiraku.tortoiseblocks.block</string>
 		</dict>
 	</array>
 </dict>
