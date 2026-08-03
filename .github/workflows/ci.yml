@@ -9,10 +9,15 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# macos-26 everywhere: the app deploys to macOS 26 / iOS 26, and compiling
+# the Icon Composer app icon for macOS needs the host's own icon rendering —
+# on the macOS 15 image actool's AssetCatalogAgent-AssetRuntime crashed on
+# the .icns variant while the iOS one built fine. It also puts CI on the same
+# Xcode 26.6 as local development.
 jobs:
   format-lint:
     name: Format Lint
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v7
 
@@ -27,7 +32,7 @@ jobs:
 
   kit-test:
     name: Kit Tests
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v7
 
@@ -47,7 +52,7 @@ jobs:
 
   app-build:
     name: App Build (${{ matrix.name }})
-    runs-on: macos-15
+    runs-on: macos-26
     strategy:
       fail-fast: false
       matrix:
