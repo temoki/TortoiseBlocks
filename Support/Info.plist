@@ -6,7 +6,7 @@
 	<array>
 		<dict>
 			<key>CFBundleTypeName</key>
-			<string>TortoiseBlocks Project</string>
+			<string>Tortoise Blocks Project</string>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>LSHandlerRank</key>
@@ -26,7 +26,7 @@
 				<string>public.content</string>
 			</array>
 			<key>UTTypeDescription</key>
-			<string>TortoiseBlocks Project</string>
+			<string>Tortoise Blocks Project</string>
 			<key>UTTypeIdentifier</key>
 			<string>space.hiraku.tortoiseblocks.project</string>
 			<key>UTTypeTagSpecification</key>
@@ -43,7 +43,7 @@
 				<string>public.data</string>
 			</array>
 			<key>UTTypeDescription</key>
-			<string>TortoiseBlocks Block</string>
+			<string>Tortoise Blocks Block</string>
 			<key>UTTypeIdentifier</key>
 			<string>space.hiraku.tortoiseblocks.block</string>
 		</dict>
