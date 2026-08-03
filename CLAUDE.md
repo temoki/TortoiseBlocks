@@ -183,7 +183,14 @@ shown — destroying `TortoiseCanvas` would reset playback identity.
 
 **The playback row is a video transport** (#28): a scrubber, then rewind /
 step back / centre / step forward / speed, all visible at once — no
-disclosure, no clear button. The centre button is one control with four
+disclosure, no clear button. The Run menu holds none either (#34): "Clear"
+and the canvas's "Roll Again" (⟳) both left an empty canvas and differed
+only in state no child tracks — a discarded command stream, exports switched
+back off — so the menu now carries "Roll Again" itself (⇧⌘R), calling the
+identical `run(_:startPaused: true)`. Same name, same result, wherever it is
+pressed; it is enabled by the blocks, not by `commandCount`, because rolling
+a *first* set of dice is exactly what it is for. "Empty the canvas" is
+"Back to Start". The centre button is one control with four
 meanings (`TransportAction`: run when the tree is stale, pause, play/resume,
 replay), so the same position always answers "what happens if I press this";
 `run` rolls fresh dice, `replay` redraws the identical stream. Two costs

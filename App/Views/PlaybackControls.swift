@@ -6,10 +6,10 @@ import TortoiseUI
 /// with the position at each end, then rewind / step back / centre / step
 /// forward / speed.
 ///
-/// There is no disclosure and no clear button. Everything that controls
-/// playback is visible at once, and "roll the dice again" lives on the canvas
-/// itself (`CanvasRollAgainButton`) because it re-runs the program rather
-/// than moving the playhead.
+/// There is no disclosure and no clear button — not here and not in the Run
+/// menu (#34). Everything that controls playback is visible at once, and
+/// "roll the dice again" lives on the canvas itself (`CanvasRollAgainButton`)
+/// because it re-runs the program rather than moving the playhead.
 struct PlaybackControls: View {
     let workspace: WorkspaceEditor
     @Bindable var runner: RunnerModel
@@ -206,9 +206,8 @@ struct PlaybackScrubber: View {
         )
     }
 
-    /// An idling scrubber (nothing run yet, or cleared) reads as a dash
-    /// rather than the otherwise-confusing "0" — `currentCommandIndex`
-    /// starts at -1.
+    /// An idling scrubber — nothing has run yet — reads as a dash rather
+    /// than the otherwise-confusing "0": `currentCommandIndex` starts at -1.
     private var positionText: String {
         runner.commandCount > 0 ? "\(runner.player.currentCommandIndex + 1)" : "–"
     }

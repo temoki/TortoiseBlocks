@@ -51,10 +51,17 @@ struct TortoiseBlocksCommands: Commands {
 
             Divider()
 
-            Button("Clear") {
-                runner?.clear()
+            // The same action as the canvas's ⟳, down to the argument (#34):
+            // same name, same result, wherever it is pressed. It replaced
+            // "Clear", which looked identical on screen — both leave an empty
+            // canvas — and differed only in state a child never sees.
+            // Enabled by the blocks, not by `commandCount`: rolling a first
+            // set of dice is exactly what this is for.
+            Button("Roll Again") {
+                runner?.run(workspaceBlocks ?? [], startPaused: true)
             }
-            .disabled(runner == nil || runner?.commandCount == 0)
+            .keyboardShortcut("r", modifiers: [.command, .shift])
+            .disabled(runner == nil || (workspaceBlocks ?? []).isEmpty)
 
             Button("Copy Code") {
                 copyCodeToPasteboard(SwiftCodeGenerator.code(for: workspaceBlocks ?? []))
