@@ -9,5 +9,13 @@ struct TortoiseBlocksApp: App {
         .commands {
             TortoiseBlocksCommands()
         }
+
+        // The custom launch screen (#32). `DocumentGroupLaunchScene` is
+        // unavailable on macOS and SwiftUI has no empty `Scene` to return in
+        // its place, so this `#if` can't hide inside a modifier the way the
+        // ones in `PlatformModifiers` do.
+        #if os(iOS)
+            LaunchScene()
+        #endif
     }
 }

@@ -524,6 +524,16 @@
         }
       }
     },
+    "New Drawing" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "あたらしく つくる"
+          }
+        }
+      }
+    },
     "New Name" : {
       "localizations" : {
         "ja" : {
