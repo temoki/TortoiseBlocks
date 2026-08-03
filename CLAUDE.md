@@ -236,6 +236,11 @@ the rest are `INFOPLIST_KEY_*` build settings, including the SDK-conditional
 (`[sdk=iphoneos*]` / `[sdk=iphonesimulator*]` = YES, matching Xcode's own
 template, so the macOS build never sees it — #33).
 `TARGETED_DEVICE_FAMILY` is `"2"` — iPad and Mac, no iPhone (#29).
+Don't explain anything *inside* `Support/Info.plist`: Xcode rewrites that
+file whenever the project changes, dropping comments and alphabetizing each
+dict's keys. A diff that is only that reshuffle is Xcode's, not an edit —
+check it parses the same (`plutil -convert json` on both revisions) and
+commit it rather than reverting it back and forth.
 
 **Compact width is not a design target** (#29). There is one layout,
 `RootView`'s three-column `NavigationSplitView`; the "つくる / うごかす" tab
