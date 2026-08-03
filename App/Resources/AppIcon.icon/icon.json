@@ -1,0 +1,67 @@
+{
+  "fill" : {
+    "linear-gradient" : [
+      "srgb:0.40784,0.80000,0.95294,1.00000",
+      "srgb:0.47059,0.95686,0.60784,1.00000"
+    ],
+    "orientation" : {
+      "start" : {
+        "x" : 0.5,
+        "y" : 1
+      },
+      "stop" : {
+        "x" : 0.5,
+        "y" : 0.3
+      }
+    }
+  },
+  "groups" : [
+    {
+      "blend-mode" : "normal",
+      "blur-material" : null,
+      "layers" : [
+        {
+          "glass" : true,
+          "image-name" : "Icon_FG_Tortoise.png",
+          "name" : "Icon_FG_Tortoise"
+        }
+      ],
+      "lighting" : "individual",
+      "name" : "Tortoise",
+      "shadow" : {
+        "kind" : "none",
+        "opacity" : 0
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0
+      }
+    },
+    {
+      "layers" : [
+        {
+          "glass" : false,
+          "image-name" : "Icon_FG_Decoration 2.png",
+          "name" : "Icon_FG_Decoration 2"
+        }
+      ],
+      "lighting" : "individual",
+      "name" : "Decoration",
+      "shadow" : {
+        "kind" : "none",
+        "opacity" : 0.5
+      },
+      "specular" : false,
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}
