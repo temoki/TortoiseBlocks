@@ -30,7 +30,7 @@ graphics engine written in Swift.
 - **Blocks → Swift** — a syntax-colored code pane shows the equivalent
   [Tortoise API](https://github.com/temoki/TortoiseGraphics2) program, as a
   bridge from blocks to text programming
-- **Documents** — a standard document app: `.tortoiseblocks` files (JSON),
+- **Documents** — a standard document app: `.tortoise` files (JSON),
   iCloud Drive / Files integration, autosave, system undo; a new document
   can start from a sample program
 - **Export & share** — SVG (vector, straight from the library) and PNG at
@@ -83,7 +83,7 @@ the drawing and leave the tortoise cursor out.
 
 ## File Format
 
-A `.tortoiseblocks` document is JSON with an explicit, frozen wire format
+A `.tortoise` document is JSON with an explicit, frozen wire format
 (hand-written coding keys, pinned by snapshot tests — renaming Swift
 identifiers can never break saved files):
 

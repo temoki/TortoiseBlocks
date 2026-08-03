@@ -2,7 +2,7 @@ import Foundation
 
 /// The document: a titled top-level block sequence.
 ///
-/// Serialized as JSON inside the `.tortoiseblocks` document.
+/// Serialized as JSON inside the `.tortoise` document.
 /// `schemaVersion` guards future migrations — decoding a newer version
 /// than ``BlocksProject/currentSchemaVersion`` should be surfaced to the
 /// user as "made with a newer version" rather than silently mangled.

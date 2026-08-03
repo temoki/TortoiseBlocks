@@ -1,6 +1,6 @@
 import Foundation
 
-/// JSON serialization for the block model — the `.tortoiseblocks` document
+/// JSON serialization for the block model — the `.tortoise` document
 /// format, so the wire format is a long-term contract.
 ///
 /// Same discipline as TortoiseGraphics2's command serialization: explicit

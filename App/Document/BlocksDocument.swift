@@ -3,8 +3,12 @@ import TortoiseBlocksKit
 import UniformTypeIdentifiers
 
 extension UTType {
-    /// The `.tortoiseblocks` document — a `BlocksProject` as JSON (the
-    /// frozen wire format pinned by `BlockCodableTests`).
+    /// The `.tortoise` document — a `BlocksProject` as JSON (the frozen wire
+    /// format pinned by `BlockCodableTests`).
+    ///
+    /// The identifier keeps the `tortoiseblocks` spelling the app has always
+    /// exported (and shares with the bundle ID); only the file extension is
+    /// `.tortoise`.
     static let tortoiseBlocksProject = UTType(exportedAs: "space.hiraku.tortoiseblocks.project")
 }
 

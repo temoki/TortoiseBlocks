@@ -9,7 +9,7 @@ struct BlockCodableTests {
 
     /// Every `BlockKind` case paired with its frozen wire format
     /// (keys sorted, as produced by `.sortedKeys`). These strings are the
-    /// `.tortoiseblocks` document contract — breaking one breaks users'
+    /// `.tortoise` document contract — breaking one breaks users'
     /// saved files and must not ship without a schema migration.
     private static let kindFixtures: [(kind: BlockKind, json: String)] = [
         (.forward(.literal(100)), #"{"forward":{"literal":100}}"#),

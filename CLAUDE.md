@@ -236,6 +236,11 @@ the rest are `INFOPLIST_KEY_*` build settings, including the SDK-conditional
 (`[sdk=iphoneos*]` / `[sdk=iphonesimulator*]` = YES, matching Xcode's own
 template, so the macOS build never sees it — #33).
 `TARGETED_DEVICE_FAMILY` is `"2"` — iPad and Mac, no iPhone (#29).
+Documents are `.tortoise` files, but the exported UTI keeps the
+`tortoiseblocks` spelling (`space.hiraku.tortoiseblocks.project`, and
+`.block` for the drag payload), which is also the bundle ID's — the
+extension is what users see, the identifiers are what the system matches on,
+and they differ on purpose. Don't "fix" one to look like the other.
 Don't explain anything *inside* `Support/Info.plist`: Xcode rewrites that
 file whenever the project changes, dropping comments and alphabetizing each
 dict's keys. A diff that is only that reshuffle is Xcode's, not an edit —
