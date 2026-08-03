@@ -41,8 +41,8 @@
       "layers" : [
         {
           "glass" : false,
-          "image-name" : "Icon_FG_Decoration 2.png",
-          "name" : "Icon_FG_Decoration 2"
+          "image-name" : "Icon_FG_Decoration.png",
+          "name" : "Icon_FG_Decoration"
         }
       ],
       "lighting" : "individual",
