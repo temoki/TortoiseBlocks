@@ -129,9 +129,11 @@ extension BlockCategory {
 struct PaletteView: View {
     let workspace: WorkspaceEditor
 
+    @ScaledMetric private var sectionGap: CGFloat = 16
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: sectionGap) {
                 ForEach(Palette.sections) { section in
                     PaletteSectionView(section: section, workspace: workspace)
                 }
@@ -145,11 +147,17 @@ struct PaletteSectionView: View {
     let section: PaletteSection
     let workspace: WorkspaceEditor
 
+    @ScaledMetric private var entryGap: CGFloat = 6
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: entryGap) {
             Text(section.title)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                // Lets VoiceOver's heading rotor jump section to section
+                // instead of swiping through every block to reach the next
+                // one — the palette is the longest list in the app.
+                .accessibilityAddTraits(.isHeader)
             ForEach(section.entries) { entry in
                 PaletteEntryButton(entry: entry, category: section.category, workspace: workspace)
             }

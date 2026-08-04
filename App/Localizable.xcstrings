@@ -434,6 +434,16 @@
         }
       }
     },
+    "item %lld" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld ばんめ"
+          }
+        }
+      }
+    },
     "less than" : {
       "localizations" : {
         "ja" : {
@@ -600,6 +610,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "オレンジ"
+          }
+        }
+      }
+    },
+    "Order" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "じゅんばん"
           }
         }
       }

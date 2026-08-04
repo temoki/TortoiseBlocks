@@ -443,6 +443,8 @@ struct VariableNamePicker: View {
     let onSelect: (String) -> Void
 
     @State private var customName = ""
+    /// Fits a few emoji box names; scaled, since what it holds is text.
+    @ScaledMetric private var nameFieldWidth: CGFloat = 120
 
     private let columns = [GridItem(.adaptive(minimum: 44), alignment: .leading)]
 
@@ -487,7 +489,7 @@ struct VariableNamePicker: View {
             HStack {
                 TextField("New Name", text: $customName)
                     .textFieldStyle(.roundedBorder)
-                    .frame(width: 120)
+                    .frame(width: nameFieldWidth)
                     .onSubmit(commitCustomName)
                 Button("Use", systemImage: "checkmark") {
                     commitCustomName()

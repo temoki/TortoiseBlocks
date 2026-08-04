@@ -268,6 +268,27 @@ with `.toolbar(removing: .title)` (#31). The back chevron beside it is not
 ours to remove — neither dropping that column's toolbar nor
 `navigationBarBackButtonHidden` touches it.
 
+**A block row is one VoiceOver element, a container header is not** (#1).
+Swiping a program should say "まえへ、かず 100、じっこうちゅう" once per block,
+not stop three times, so a simple row is `.accessibilityElement(children:
+.combine)`: the kind, its value chips and the running state fuse into one
+sentence while the chips keep their own actions, which is what leaves editing a
+value reachable. The ✕ is `accessibilityHidden` and comes back as a named
+action — as a child it would be both an extra stop and the word "けす" tacked
+onto every block's sentence. Container headers are deliberately left alone:
+combining them would fold in the "Add Here" toggle, and that toggle *is* the
+accessible alternative to dragging. Order matters twice here. Accessibility
+actions belong *after* the combine, where they attach to the element it built
+rather than to a child being merged. And a row's position comes from
+`accessibilityCustomContent` (`"Order"` / `"item %lld"`, importance `.high`),
+not from the label — the label is assembled by `.combine`, and an explicit one
+would replace the whole thing. Note `"Position"` was already taken, by the
+scrubber, and means さいせいいち. `DropGap` is `accessibilityHidden` in both
+its forms: the invisible one would be an empty stop between every pair of rows,
+and an empty mouth's "Drop Here" reads as something to do when it isn't.
+Icon-only row buttons wear `touchTarget()`, which is 44pt of hit area on iPadOS
+and nothing on macOS, where a pointer never needed it.
+
 **Drop model**: a `DropGap` between rows carries `(BodyAddress, index)`, so
 insertion semantics need no y-coordinate math and every mouth — an if's else
 included — is a target. Tap-to-add, with the "Add Here" toggle
