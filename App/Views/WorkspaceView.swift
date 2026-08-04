@@ -187,7 +187,11 @@ struct BlockListView: View {
                     block: block, workspace: workspace,
                     isHighlighted: block.id == highlightedID,
                     highlightedID: highlightedID,
-                    usedVariableNames: usedVariableNames
+                    usedVariableNames: usedVariableNames,
+                    // Only this list knows where the row sits, and a VoiceOver
+                    // user has no other way to tell. 1-based: it is spoken
+                    // to a child, not indexed by one.
+                    position: index + 1
                 )
                 .id(block.id)
             }
@@ -259,6 +263,12 @@ struct DropGap: View {
             isTargeted = $0
         }
         .animation(.easeOut(duration: 0.12), value: isTargeted)
+        // Drop-only, so VoiceOver can't operate it: the invisible variant would
+        // be an empty stop between every pair of rows, and the "Drop Here" of
+        // an empty mouth would be read as if it were something to do. The
+        // "Add Here" toggle on the container header is the accessible way in,
+        // the same trade the trash zone makes.
+        .accessibilityHidden(true)
     }
 }
 
@@ -272,6 +282,10 @@ struct BlockRowView: View {
     var isHighlighted = false
     var highlightedID: UUID?
     var usedVariableNames: [String] = []
+    /// Where this row sits among its siblings, 1-based, for VoiceOver.
+    var position: Int = 1
+
+    @ScaledMetric private var rowSpacing: CGFloat = 8
 
     var body: some View {
         switch block.kind {
@@ -319,22 +333,47 @@ struct BlockRowView: View {
                     .buttonStyle(.borderless)
                     .controlSize(.large)
                     .tint(.white)
+                    .touchTarget()
                     .accessibilityHint(
                         "Adds an otherwise mouth that runs when the condition fails")
                 }
             }
         default:
-            HStack(spacing: 8) {
+            HStack(spacing: rowSpacing) {
                 SimpleBlockLabel(kind: block.kind, usedVariableNames: usedVariableNames) { new in
                     workspace.updateKind(of: block.id, to: new)
                 }
                 Spacer(minLength: 0)
                 RowControls(blockID: block.id, workspace: workspace)
+                    // Promoted to the custom action below: as a child it
+                    // would be a second stop on every row, and its "Delete"
+                    // would be read as part of the block's own sentence.
+                    .accessibilityHidden(true)
             }
             .blockChrome(block.kind.category.color, isHighlighted: isHighlighted)
             .draggable(block)
+            // One stop per block instead of three: the kind, its value
+            // chips, and the running state read as a single sentence —
+            // "Forward, Number 100, Running" — rather than as separate
+            // elements a child has to swipe between. `.combine` keeps the
+            // chips' own actions, so editing a value stays reachable.
+            .accessibilityElement(children: .combine)
+            // *After* the combine, deliberately: these attach to the element it
+            // just built. Applied before, they would be properties of a child
+            // being merged, which is a subtler thing to depend on.
             .rowContextMenu(blockID: block.id, workspace: workspace)
             .accessibilityValue(isHighlighted ? "Running" : "")
+            // Where the row sits is context, not name: custom content carries
+            // it without displacing the label `.combine` just assembled.
+            // `.high` speaks it outright rather than burying it in the rotor.
+            // "Order", not "Position" — that key is the scrubber's playback
+            // position (さいせいいち) and would be read out here as one.
+            .accessibilityCustomContent(
+                Text("Order"), Text("item \(position)"), importance: .high
+            )
+            .accessibilityAction(named: Text("Delete")) {
+                workspace.delete(block.id)
+            }
         }
     }
 }
@@ -372,13 +411,15 @@ struct ContainerBlockRow<Header: View>: View {
     /// The bottom arm. Thinner than a row — it closes the shape, it isn't
     /// something to read — but thick enough not to look like a hairline.
     @ScaledMetric private var foot: CGFloat = 11
+    /// Gap between the header's own cells.
+    @ScaledMetric private var headerSpacing: CGFloat = 8
 
     var body: some View {
         // Spacing 0: the arms have to meet. What separates the header from the
         // first child is the mouth's own leading `DropGap`, which is also what
         // separates any two sibling rows.
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
+            HStack(spacing: headerSpacing) {
                 header
                 InsertionTargetButton(
                     address: BodyAddress(containerID: block.id), workspace: workspace)
@@ -453,12 +494,14 @@ struct ElseDividerRow: View {
 
     @State private var isDropTargeted = false
 
+    @ScaledMetric private var spacing: CGFloat = 8
+
     private var address: BodyAddress {
         BodyAddress(containerID: blockID, slot: .elseBody)
     }
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: spacing) {
             Label("Otherwise", systemImage: "arrow.triangle.branch")
                 .labelStyle(BlockLabelStyle())
             InsertionTargetButton(address: address, workspace: workspace)
@@ -473,6 +516,7 @@ struct ElseDividerRow: View {
             .labelStyle(.iconOnly)
             .buttonStyle(.borderless)
             .controlSize(.large)
+            .touchTarget()
         }
         .blockChrome(
             BlockCategory.control.color, corners: .containerDivider,
@@ -494,8 +538,11 @@ struct SimpleBlockLabel: View {
     var usedVariableNames: [String] = []
     let onChange: (BlockKind) -> Void
 
+    /// Between the title and the value chips that trail it.
+    @ScaledMetric private var spacing: CGFloat = 8
+
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: spacing) {
             switch kind {
             case .forward(let value):
                 Label("Forward", systemImage: "arrow.up")
@@ -623,6 +670,7 @@ struct RowControls: View {
         .labelStyle(.iconOnly)
         .buttonStyle(.borderless)
         .controlSize(.large)
+        .touchTarget()
     }
 }
 
@@ -733,11 +781,22 @@ extension View {
     /// 43pt for a container header — a program that steps unevenly down the
     /// page.
     fileprivate func rowShape() -> some View {
+        modifier(RowShape())
+    }
+}
+
+/// A modifier rather than a plain `View` extension so it can hold
+/// `@ScaledMetric`: at the largest Dynamic Type sizes the text grows but a
+/// hard-coded inset does not, and the words end up crowding the block's edge.
+private struct RowShape: ViewModifier {
+    @ScaledMetric private var inset: CGFloat = 8
+
+    func body(content: Content) -> some View {
         ZStack {
             RowHeightFloor()
-            self
+            content
         }
-        .padding(8)
+        .padding(inset)
     }
 }
 
