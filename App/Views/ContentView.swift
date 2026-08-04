@@ -71,12 +71,23 @@ struct CanvasPane: View {
     @State private var exportFile: ExportFile?
     @State private var exportType: UTType = .png
 
+    /// Our own tortoise instead of the library's green triangle. `size` is the
+    /// artwork's natural size — the @1x rendition is 23×32px — so at viewport
+    /// scale 1 it lands pixel-exact rather than resampled, and the library
+    /// scales it with the viewport from there (0.5×–2×), exactly as it scales
+    /// the triangle. The asset has to point *up*: `.image` rotates its top edge
+    /// toward the heading. Deliberately not applied to the PNG export's canvas
+    /// — see `RunnerModel.exportFrameSize`.
+    private static let sprite = TortoiseSprite.image(
+        Image(.tortoiseSprite), size: CGSize(width: 23, height: 32))
+
     var body: some View {
         VStack(spacing: 0) {
             // The canvas stays in the hierarchy while the code pane covers
             // it (opacity, not if/else) so playback identity is preserved.
             ZStack {
                 TortoiseCanvas(runner.tortoise, player: runner.player)
+                    .tortoiseSprite(Self.sprite)
                     .padding()
                     .opacity(showsCode ? 0 : 1)
                     .accessibilityHidden(showsCode)

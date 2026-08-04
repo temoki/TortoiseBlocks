@@ -178,10 +178,15 @@ final class RunnerModel {
         let square = CGSize(width: 512, height: 512)
         guard let bounds = DrawingBounds.compute(from: CommandPlayer.play(commands: commands))
         else { return square }
-        // Mirrors TortoiseUI's autoFit inset (sprite half-size, tortoiseBase
-        // × tortoiseScaleMax = 20) so the drawing fills the frame with a
-        // uniform margin instead of a lopsided one. If the library changes
-        // that inset this only shifts the margin slightly — never breaks.
+        // Mirrors TortoiseUI's autoFit inset — the tortoise sprite's
+        // half-extent × tortoiseScaleMax — so the drawing fills the frame with
+        // a uniform margin instead of a lopsided one. 20 is the *triangle's*
+        // (half-height 10 × 2), which is why the export canvas above is the one
+        // place that keeps the default sprite: `CanvasPane`'s 23×32 artwork
+        // insets by ~39 instead (its half-diagonal × 2), and the picture would
+        // sit in a wider border than the SVG's. It is hidden there anyway. If
+        // the library changes the inset this only shifts the margin slightly —
+        // never breaks.
         let inset = 20.0
         let w = bounds.width + 2 * inset
         let h = bounds.height + 2 * inset

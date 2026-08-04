@@ -174,6 +174,20 @@ one gap: `.autoFit` always adds a small sprite-size inset, so PNG carries a
 uniform safe margin where SVG is edge-to-edge — pixel parity would need an
 upstream tight-fit mode, deliberately out of scope.)
 
+**The tortoise on screen is our artwork, not the library's triangle.**
+`CanvasPane` sets `.tortoiseSprite(.image(...))` (TortoiseUI 2.0.0-beta11)
+with the `TortoiseSprite` asset at its natural size, 23×32pt, so the
+@1x/@2x/@3x renditions land pixel-exact at viewport scale 1; the library
+scales it with the viewport from there, exactly as it scaled the triangle.
+The asset must point **up** — `.image` rotates its top edge toward the
+heading. Two consequences. The modifier is deliberately *not* applied to
+the PNG export's throwaway canvas: `.autoFit` insets by the sprite's
+half-diagonal × 2, which the triangle makes 20 and this artwork ~39, and
+`RunnerModel.exportFrameSize` mirrors that constant to match SVG's framing
+(the sprite is hidden there in any case). And a mascot is opaque where the
+triangle was 70% — it covers the line it stands on while drawing, which is
+the price of the artwork, not a bug to fix in the renderer.
+
 **Presentation modifiers clobber each other.** Attaching two `fileExporter`s
 (or sheets/alerts of the same kind) to one view silently drops all but the
 last. There is exactly one `fileExporter` with a dynamic content type.
