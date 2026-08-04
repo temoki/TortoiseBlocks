@@ -93,6 +93,20 @@ struct WorkspaceEditor {
         return setBlocks(new)
     }
 
+    /// Stores the picture the file browser shows for this document (#15).
+    ///
+    /// The one mutation here that does *not* register an undo, on purpose:
+    /// running is not an edit, and ⌘Z has to keep stepping back through block
+    /// changes rather than through a program's runs. It still writes through
+    /// the binding, so the document goes dirty and autosave picks it up.
+    ///
+    /// A failed render (nil) leaves the previous thumbnail alone rather than
+    /// clearing it — a stale picture beats no picture in a folder.
+    func recordThumbnail(_ png: Data?) {
+        guard let png else { return }
+        document.wrappedValue.project.thumbnail = png
+    }
+
     // MARK: - Undo / Redo
 
     func undo() {

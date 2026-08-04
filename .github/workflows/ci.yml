@@ -27,7 +27,7 @@ jobs:
       - name: swift format lint
         run: |
           swift format lint --strict --parallel --recursive \
-            App TortoiseBlocksKit/Sources TortoiseBlocksKit/Tests
+            App ThumbnailExtension TortoiseBlocksKit/Sources TortoiseBlocksKit/Tests
           swift format lint --strict TortoiseBlocksKit/Package.swift
 
   kit-test:

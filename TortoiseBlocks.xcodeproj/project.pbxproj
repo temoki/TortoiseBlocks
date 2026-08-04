@@ -10,16 +10,23 @@
 		1A0000000000000000000040 /* TortoiseBlocksKit in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000000000000000000050 /* TortoiseBlocksKit */; };
 		1A0000000000000000000041 /* TortoiseUI in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000000000000000000051 /* TortoiseUI */; };
 		1A0000000000000000000042 /* TortoiseSVG in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000000000000000000052 /* TortoiseSVG */; };
+		1A0000000000000000000043 /* TortoiseBlocksThumbnail.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000011 /* TortoiseBlocksThumbnail.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		1A0000000000000000000010 /* TortoiseBlocks.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TortoiseBlocks.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1A0000000000000000000011 /* TortoiseBlocksThumbnail.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TortoiseBlocksThumbnail.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1A0000000000000000000002 /* App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = App;
+			sourceTree = "<group>";
+		};
+		1A0000000000000000000004 /* ThumbnailExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ThumbnailExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -35,13 +42,35 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		1A0000000000000000000034 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		1A0000000000000000000036 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				1A0000000000000000000043 /* TortoiseBlocksThumbnail.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXGroup section */
 		1A0000000000000000000001 = {
 			isa = PBXGroup;
 			children = (
 				1A0000000000000000000002 /* App */,
+				1A0000000000000000000004 /* ThumbnailExtension */,
 				1A0000000000000000000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -50,6 +79,7 @@
 			isa = PBXGroup;
 			children = (
 				1A0000000000000000000010 /* TortoiseBlocks.app */,
+				1A0000000000000000000011 /* TortoiseBlocksThumbnail.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -64,10 +94,12 @@
 				1A0000000000000000000030 /* Sources */,
 				1A0000000000000000000031 /* Frameworks */,
 				1A0000000000000000000032 /* Resources */,
+				1A0000000000000000000036 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				1A0000000000000000000071 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				1A0000000000000000000002 /* App */,
@@ -82,6 +114,28 @@
 			productReference = 1A0000000000000000000010 /* TortoiseBlocks.app */;
 			productType = "com.apple.product-type.application";
 		};
+		1A0000000000000000000021 /* TortoiseBlocksThumbnail */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1A0000000000000000000095 /* Build configuration list for PBXNativeTarget "TortoiseBlocksThumbnail" */;
+			buildPhases = (
+				1A0000000000000000000033 /* Sources */,
+				1A0000000000000000000034 /* Frameworks */,
+				1A0000000000000000000035 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				1A0000000000000000000004 /* ThumbnailExtension */,
+			);
+			name = TortoiseBlocksThumbnail;
+			packageProductDependencies = (
+			);
+			productName = TortoiseBlocksThumbnail;
+			productReference = 1A0000000000000000000011 /* TortoiseBlocksThumbnail.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -93,6 +147,9 @@
 				LastUpgradeCheck = 2660;
 				TargetAttributes = {
 					1A0000000000000000000020 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					1A0000000000000000000021 = {
 						CreatedOnToolsVersion = 26.0;
 					};
 				};
@@ -117,12 +174,20 @@
 			projectRoot = "";
 			targets = (
 				1A0000000000000000000020 /* TortoiseBlocks */,
+				1A0000000000000000000021 /* TortoiseBlocksThumbnail */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		1A0000000000000000000032 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1A0000000000000000000035 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -139,7 +204,32 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		1A0000000000000000000033 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		1A0000000000000000000071 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1A0000000000000000000021 /* TortoiseBlocksThumbnail */;
+			targetProxy = 1A0000000000000000000072 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXContainerItemProxy section */
+		1A0000000000000000000072 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1A0000000000000000000070 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1A0000000000000000000021;
+			remoteInfo = TortoiseBlocksThumbnail;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin XCBuildConfiguration section */
 		1A0000000000000000000081 /* Debug */ = {
@@ -317,6 +407,72 @@
 			};
 			name = Release;
 		};
+		1A0000000000000000000093 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "Support/ThumbnailExtension.entitlements";
+				CODE_SIGN_IDENTITY = "-";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Support/ThumbnailExtension-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Tortoise Blocks Thumbnail";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = space.hiraku.tortoiseblocks.thumbnail;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		1A0000000000000000000094 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "Support/ThumbnailExtension.entitlements";
+				CODE_SIGN_IDENTITY = "-";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Support/ThumbnailExtension-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Tortoise Blocks Thumbnail";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = space.hiraku.tortoiseblocks.thumbnail;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -334,6 +490,15 @@
 			buildConfigurations = (
 				1A0000000000000000000091 /* Debug */,
 				1A0000000000000000000092 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1A0000000000000000000095 /* Build configuration list for PBXNativeTarget "TortoiseBlocksThumbnail" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1A0000000000000000000093 /* Debug */,
+				1A0000000000000000000094 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -25,6 +25,15 @@ final class RunnerModel {
     /// Set when expansion fails (command limit); drives a kid-friendly alert.
     var showsExpansionError = false
 
+    /// Bumped by every successful run. `ContentView` watches this number and
+    /// stores a fresh thumbnail (#15) — one observer instead of a call at each
+    /// of the four places a run can start (the transport's centre button, the
+    /// canvas's ⟳, and both Run-menu items), which is a list that can be
+    /// forgotten. A counter rather than the command stream: comparing
+    /// thousands of commands on every change would cost more than the write it
+    /// guards.
+    private(set) var runGeneration = 0
+
     /// Identity of the block tree the current run was expanded from. Editing
     /// the workspace makes the drawing on screen stale, which is what turns
     /// the transport's centre button back into "run" (#28). A hash is enough:
@@ -93,6 +102,7 @@ final class RunnerModel {
             tortoise.apply(lastRunCommands)
             svgDataCache = nil
             pngDataCache = [:]
+            runGeneration += 1
         }
         catch {
             showsExpansionError = true
@@ -147,35 +157,67 @@ final class RunnerModel {
     func pngData(scale: CGFloat = 2) -> Data? {
         if let cached = pngDataCache[scale] { return cached }
         guard canExport else { return nil }
+        let data = Self.renderPNG(lastRunCommands, longSide: 512, scale: scale)
+        pngDataCache[scale] = data
+        return data
+    }
+
+    /// The picture stored in the document for the QuickLook thumbnail
+    /// extension (#15): the same render as the PNG export, at a long side of
+    /// 256pt and no pixel doubling.
+    ///
+    /// Not cached. It is asked for once per run, right after the render, and a
+    /// second copy of every drawing in memory buys nothing.
+    ///
+    /// 256 is a deliberate ceiling: measured across the sample programs a
+    /// thumbnail costs 3–51KB of base64 in the document, and the *size follows
+    /// the ink, not the command count* — the 10,000-command drawing is the
+    /// smallest of them. Doubling to 512 would quadruple that for a picture
+    /// mostly shown at icon size. QuickLook may ask for more on a Retina
+    /// display and upscale ours; that softness is the accepted trade.
+    func thumbnailData() -> Data? {
+        guard canExport else { return nil }
+        return Self.renderPNG(lastRunCommands, longSide: 256, scale: 1)
+    }
+
+    /// Renders a command stream to PNG, cropped tight to the drawing and
+    /// tortoise-free so it matches the SVG export (#25). The render frame takes
+    /// the drawing's bounding-box aspect ratio; `.autoFit` then fills it,
+    /// leaving only its own small uniform margin. The tortoise sprite is a
+    /// cursor, not part of the picture — the SVG export omits it, so this does
+    /// too (`hideTortoise`). `speed(0)` makes `CanvasModel` flush every frame at
+    /// init, so `ImageRenderer` sees the finished drawing without a running
+    /// timeline. `scale` is the pixel density applied on top.
+    private static func renderPNG(
+        _ commands: [TortoiseCommand], longSide: Double, scale: CGFloat
+    ) -> Data? {
         let export = Tortoise()
         export.speed = 0
-        export.apply(lastRunCommands)
+        export.apply(commands)
         export.hideTortoise()
-        let size = Self.exportFrameSize(for: lastRunCommands)
+        let size = exportFrameSize(for: commands, longSide: longSide)
         let renderer = ImageRenderer(
             content: TortoiseCanvas(export)
                 .frame(width: size.width, height: size.height)
         )
         renderer.scale = scale
         guard let cgImage = renderer.cgImage else { return nil }
-        let data: Data?
         #if os(macOS)
-            let rep = NSBitmapImageRep(cgImage: cgImage)
-            data = rep.representation(using: .png, properties: [:])
+            return NSBitmapImageRep(cgImage: cgImage).representation(using: .png, properties: [:])
         #else
-            data = UIImage(cgImage: cgImage).pngData()
+            return UIImage(cgImage: cgImage).pngData()
         #endif
-        pngDataCache[scale] = data
-        return data
     }
 
     /// Base render size (before `scale`) for the tight PNG: the drawing's
-    /// bounding-box aspect ratio with the long side at 512pt (#25). A near-
-    /// straight-line drawing is clamped to at most 3:1 so it can't produce an
-    /// unusable sliver; an empty drawing (no bounds) falls back to a 512×512
-    /// square, mirroring SVG's own "no visible output" fallback.
-    private static func exportFrameSize(for commands: [TortoiseCommand]) -> CGSize {
-        let square = CGSize(width: 512, height: 512)
+    /// bounding-box aspect ratio with the long side at `longSide` (#25). A
+    /// near-straight-line drawing is clamped to at most 3:1 so it can't produce
+    /// an unusable sliver; an empty drawing (no bounds) falls back to a square,
+    /// mirroring SVG's own "no visible output" fallback.
+    private static func exportFrameSize(
+        for commands: [TortoiseCommand], longSide long: Double
+    ) -> CGSize {
+        let square = CGSize(width: long, height: long)
         guard let bounds = DrawingBounds.compute(from: CommandPlayer.play(commands: commands))
         else { return square }
         // Mirrors TortoiseUI's autoFit inset — the tortoise sprite's
@@ -192,7 +234,6 @@ final class RunnerModel {
         let h = bounds.height + 2 * inset
         guard w > 0, h > 0 else { return square }
         let aspect = min(max(w / h, 1.0 / 3.0), 3.0)
-        let long = 512.0
         return aspect >= 1
             ? CGSize(width: long, height: long / aspect)
             : CGSize(width: long * aspect, height: long)

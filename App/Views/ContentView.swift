@@ -16,6 +16,13 @@ struct ContentView: View {
         RootView(workspace: workspace, runner: runner)
             .focusedSceneValue(\.runner, runner)
             .focusedSceneValue(\.workspaceBlocks, workspace.blocks)
+            // Every run path bumps the generation, so this is the single place
+            // the document's QuickLook thumbnail is refreshed (#15). It is
+            // stored, never read back onto the canvas — reopening a document
+            // starts empty and one press of the run button fills it.
+            .onChange(of: runner.runGeneration) {
+                workspace.recordThumbnail(runner.thumbnailData())
+            }
     }
 }
 
