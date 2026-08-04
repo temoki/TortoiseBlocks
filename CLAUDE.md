@@ -10,8 +10,8 @@ cd TortoiseBlocksKit && swift test        # Kit unit tests (fast, UI-independent
 # Format / lint (config: /.swift-format, upstream-mirrored; Xcode 26's `swift format`).
 # Note: `~/.swiftly/bin/swift-format` is a legacy binary that ignores the config —
 # always use the `swift format` subcommand.
-swift format --in-place --recursive App TortoiseBlocksKit/Sources TortoiseBlocksKit/Tests
-swift format lint --strict --recursive App TortoiseBlocksKit/Sources TortoiseBlocksKit/Tests   # CI gate
+swift format --in-place --recursive App ThumbnailExtension TortoiseBlocksKit/Sources TortoiseBlocksKit/Tests
+swift format lint --strict --recursive App ThumbnailExtension TortoiseBlocksKit/Sources TortoiseBlocksKit/Tests   # CI gate
 
 # App builds (both must stay green):
 xcodebuild -project TortoiseBlocks.xcodeproj -scheme TortoiseBlocks \
@@ -174,6 +174,41 @@ one gap: `.autoFit` always adds a small sprite-size inset, so PNG carries a
 uniform safe margin where SVG is edge-to-edge — pixel parity would need an
 upstream tight-fit mode, deliberately out of scope.)
 
+**The document carries its own thumbnail, and nothing else** (#15). The Files
+app's "Tortoise Blocks" folder *is* the gallery, so there is no in-app gallery
+screen; what the system browser can't do on its own is tell 「ほし」 from
+「うずまき」, hence `BlocksProject.thumbnail` — a PNG of the last run, long side
+256pt, refreshed on every run. `JSONEncoder` writes `Data` as base64, and the
+optional's *presence* is the compatibility story: nil writes no key, so a
+document that has never run stays byte-identical to what earlier apps wrote and
+this rides schema version 1. Do not confuse this with restoring the canvas
+(#10, closed): the picture is metadata for the file browser, it is never read
+back into the app, and reopening a document still starts empty. 256 is a
+ceiling, not a guess — a thumbnail costs 3–51KB of base64, *the size follows
+the ink rather than the command count* (the 10,000-command drawing is the
+smallest one), and doubling it would quadruple that for a picture usually shown
+at icon size. `RunnerModel.renderPNG` is shared with the PNG export, so a
+thumbnail is framed like the exported artifact: cropped tight, tortoise-free.
+Writing it skips `registerUndo` — running is not an edit — while still
+dirtying the document.
+
+**The thumbnail extension knows nothing about blocks.** `ThumbnailExtension`
+links no package at all: it decodes one `Data?` field out of the JSON with a
+bare probe struct and draws it. That is why an unknown block kind or a
+`schemaVersion` from a future release still gets a thumbnail, and why the
+original plan's risk — running `ImageRenderer` inside an extension, or writing
+a CoreGraphics renderer upstream — evaporated. Anything unreadable (no
+thumbnail, corrupt JSON, corrupt PNG) returns `(nil, nil)`, which hands the
+file back to the system's document icon; an extension must never be the reason
+a file fails to display. One trap, and it is invisible without an end-to-end
+check: `QLThumbnailReply(contextSize:drawing:)` documents its size in points
+but hands back a context measured in device pixels with an identity CTM, so
+drawing into a rect of `contextSize` fills a *quarter* of a 2× thumbnail and
+parks it in a corner. Ask the context for its own `width`/`height` and map that
+through `ctm.inverted()`. Verify with `QLThumbnailGenerator` against real files
+(`qlmanage -t` tends to hang) — it loads the installed extension for real, and
+it is what caught this.
+
 **The tortoise on screen is our artwork, not the library's triangle.**
 `CanvasPane` sets `.tortoiseSprite(.image(...))` (TortoiseUI 2.0.0-beta11)
 with the `TortoiseSprite` asset at its natural size, 23×32pt, so the
@@ -269,6 +304,19 @@ duplicate the UTType declarations, and macOS simply ignores an iOS key. It
 is what puts a "Tortoise Blocks" folder under On My iPad in the Files app —
 the app's own directory *is* the gallery, which is why no in-app gallery is
 planned (#15).
+The QuickLook extension is a second target in the same hand-written project
+(#15): its own buildable folder `ThumbnailExtension/`, `NSExtension` keys in
+`Support/ThumbnailExtension-Info.plist`, and a `dstSubfolderSpec = 13` copy
+phase on the app that embeds the `.appex`. Two things it needs that are easy to
+miss. Object IDs here are hand-assigned 24-character strings — a 25-character
+typo does not fail the parse, it silently unlinks the object, and the symptom
+is a target that builds with *default* settings ("Cannot code sign because the
+target does not have an Info.plist"; check with `xcodebuild -target … -showBuildSettings`).
+And a macOS QuickLook extension has to be sandboxed to be loaded, so it carries
+`Support/ThumbnailExtension.entitlements` (`com.apple.security.app-sandbox`)
+even though the app itself has none. `pluginkit -mAvvv | grep -i tortoise`
+confirms registration — the `-p com.apple.quicklook.thumbnail` filter does not
+match it and will make a working extension look missing.
 `TARGETED_DEVICE_FAMILY` is `"2"` — iPad and Mac, no iPhone (#29).
 Documents are `.tortoise` files, but the exported UTI keeps the
 `tortoiseblocks` spelling (`space.hiraku.tortoiseblocks.project`, and

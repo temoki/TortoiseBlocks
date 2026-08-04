@@ -184,6 +184,55 @@ struct BlockCodableTests {
         #expect(BlocksProject(title: "", blocks: ifOnly).requiredSchemaVersion == 2)
     }
 
+    @Test("a project that has never run writes no thumbnail key")
+    func thumbnailIsAbsentWhenNil() throws {
+        // The whole backward-compatibility claim in one string: a document
+        // without a thumbnail is byte-identical to what an app that had never
+        // heard of one wrote.
+        let project = BlocksProject(schemaVersion: 1, title: "ほし", blocks: [])
+        #expect(
+            try Self.sortedKeysJSON(project) == #"{"blocks":[],"schemaVersion":1,"title":"ほし"}"#)
+    }
+
+    @Test("a thumbnail rides schema version 1 as base64")
+    func thumbnailRoundTrips() throws {
+        // A PNG signature stands in for the real image; what matters here is
+        // that `Data` needs no encoding of its own.
+        let png = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
+        let project = BlocksProject(
+            schemaVersion: 1, title: "ほし", blocks: SampleBlocks.star(), thumbnail: png)
+        #expect(try Self.sortedKeysJSON(project).contains(#""thumbnail":"iVBORw0KGgo=""#))
+        let decoded = try JSONDecoder().decode(
+            BlocksProject.self, from: try JSONEncoder().encode(project))
+        #expect(decoded == project)
+        #expect(decoded.thumbnail == png)
+        // A picture of the drawing is not a feature of the *tree*, so it must
+        // not push the file out of reach of a version-1 app.
+        #expect(project.requiredSchemaVersion == 1)
+    }
+
+    @Test("a document written before thumbnails existed still decodes")
+    func thumbnailAbsentDecodes() throws {
+        let json =
+            #"{"schemaVersion":1,"title":"ほし","blocks":[{"kind":{"home":{}},"id":"\#(Self.childID)"}]}"#
+        let decoded = try JSONDecoder().decode(BlocksProject.self, from: Data(json.utf8))
+        #expect(decoded.thumbnail == nil)
+        #expect(decoded.blocks.count == 1)
+    }
+
+    /// What the QuickLook extension does — and the reason it can stay free of
+    /// this package: reading the picture needs neither the block format nor
+    /// the schema gate, so a newer document and an unknown block kind both
+    /// still produce a thumbnail.
+    @Test("a bare probe lifts the thumbnail out of any document")
+    func thumbnailProbeIgnoresEverythingElse() throws {
+        struct ThumbnailProbe: Decodable { let thumbnail: Data? }
+        let json =
+            #"{"blocks":[{"kind":{"teleport":{}},"id":"x"}],"schemaVersion":99,"thumbnail":"iVBORw0KGgo=","title":"t"}"#
+        let probe = try JSONDecoder().decode(ThumbnailProbe.self, from: Data(json.utf8))
+        #expect(probe.thumbnail == Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]))
+    }
+
     @Test("a newer schemaVersion still decodes, preserving the value")
     func newerSchemaVersionDecodes() throws {
         // The app decides how to surface this; the model layer just
