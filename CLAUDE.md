@@ -256,6 +256,19 @@ the rest are `INFOPLIST_KEY_*` build settings, including the SDK-conditional
 `UISupportsDocumentBrowser` an iOS `DocumentGroup` target has to declare
 (`[sdk=iphoneos*]` / `[sdk=iphonesimulator*]` = YES, matching Xcode's own
 template, so the macOS build never sees it — #33).
+**Only some keys have an `INFOPLIST_KEY_*` form**, and the ones that don't
+fail *silently*: `INFOPLIST_KEY_UIFileSharingEnabled = YES` resolves as a
+build setting and shows up in `xcodebuild -showBuildSettings`, but the
+generated-plist step honors a fixed set of names and drops it, so the key
+never reaches the bundle. Verify a new key in the *built* plist (`plutil -p`
+on the product, and in a clean build directory — the plist step won't rerun
+for a setting it doesn't consume). `UIFileSharingEnabled` therefore lives in
+`Support/Info.plist`, where it is shared by both platforms rather than
+SDK-conditional: `INFOPLIST_FILE` takes one path, splitting it would
+duplicate the UTType declarations, and macOS simply ignores an iOS key. It
+is what puts a "Tortoise Blocks" folder under On My iPad in the Files app —
+the app's own directory *is* the gallery, which is why no in-app gallery is
+planned (#15).
 `TARGETED_DEVICE_FAMILY` is `"2"` — iPad and Mac, no iPhone (#29).
 Documents are `.tortoise` files, but the exported UTI keeps the
 `tortoiseblocks` spelling (`space.hiraku.tortoiseblocks.project`, and
