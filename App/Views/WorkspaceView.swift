@@ -56,7 +56,7 @@ struct WorkspaceView: View {
                         // Ambient default for every value slot in the tree
                         // (NumberValueButton, ComparisonButton, etc.): the
                         // white "chip" look that reads on a solid,
-                        // category-colored block (§21). ConditionEditor's
+                        // category-colored block (#21). ConditionEditor's
                         // popover — the one place these slots sit on a
                         // light background instead — resets back to
                         // `.bordered` locally.
@@ -240,7 +240,7 @@ struct DropGap: View {
                     .frame(height: isTargeted ? 4 : 2)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 3)
-                    // Grows the drop-target hit area to roughly ±12pt (§21)
+                    // Grows the drop-target hit area to roughly ±12pt (#21)
                     // without widening the row-to-row margin: the negative
                     // padding shrinks what this view reports to the
                     // enclosing VStack back down near its original ~8–10pt
@@ -313,7 +313,7 @@ struct BlockRowView: View {
                 Label("If", systemImage: "questionmark.diamond")
                     .labelStyle(BlockLabelStyle())
                 // The three-slot condition collapses into one summary chip
-                // (§21) — this is what makes the header fit at 360pt.
+                // (#21) — this is what makes the header fit at 360pt.
                 ConditionButton(condition: condition, usedNames: usedVariableNames) { new in
                     workspace.updateKind(
                         of: block.id,
@@ -648,7 +648,7 @@ struct InsertionTargetButton: View {
         .toggleStyle(.button)
         .labelStyle(.iconOnly)
         .controlSize(.large)
-        // Every row this appears on (§21: container headers, the else
+        // Every row this appears on (#21: container headers, the else
         // divider) is now a solid `.control`-orange block, so white is the
         // one tint that's never fighting its own background.
         .tint(.white)
@@ -657,7 +657,7 @@ struct InsertionTargetButton: View {
 }
 
 /// Delete for one row — the only row operation that stays always visible
-/// (§21); move up/down live in the row's context menu instead (see
+/// (#21); move up/down live in the row's context menu instead (see
 /// `rowContextMenu`), with an explicit VoiceOver custom action alongside it.
 struct RowControls: View {
     let blockID: UUID
@@ -674,7 +674,7 @@ struct RowControls: View {
     }
 }
 
-/// Row reordering as a long-press / right-click menu (§21) — the primary
+/// Row reordering as a long-press / right-click menu (#21) — the primary
 /// path stays drag & drop, but this is the discoverable fallback. Reuses
 /// the same "Move Up" / "Move Down" / "Delete" strings the old
 /// always-visible buttons used, so no new localization keys are needed.
@@ -743,7 +743,7 @@ enum RowCorners {
     }
 }
 
-/// The shared "block" look for workspace rows (§21): a solid, saturated
+/// The shared "block" look for workspace rows (#21): a solid, saturated
 /// category color with white text, matching the palette's `.borderedProminent`
 /// buttons instead of the old pale tint. Opacity has no more room to signal
 /// state once the background is already opaque, so the execution highlight

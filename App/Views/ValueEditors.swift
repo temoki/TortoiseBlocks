@@ -11,7 +11,7 @@ let variableNamePresets = ["🌟", "💖", "🍀"]
 let variableNameMaxLength = 10
 
 /// A slot's "chip" look on the workspace's dark, category-colored block rows
-/// (§21): a white capsule with dark text, so it stays readable regardless of
+/// (#21): a white capsule with dark text, so it stays readable regardless of
 /// which category color it's sitting on — the same kind of fixed-color
 /// choice already made for `BlockCategory.color` itself, not a semantic one.
 ///

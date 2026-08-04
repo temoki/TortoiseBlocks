@@ -41,7 +41,7 @@ struct RootView: View {
     @ScaledMetric private var paletteWidth: CGFloat = 220
 
     var body: some View {
-        // No column carries a title of its own (§23). Columns used to name
+        // No column carries a title of its own (#23). Columns used to name
         // themselves with a plain inline Text; 0de22dd moved their controls
         // into native toolbars and dropped the headers, and nothing replaced
         // them, because a title per column is exactly what doesn't work here:
@@ -58,7 +58,7 @@ struct RootView: View {
             WorkspaceView(workspace: workspace, runner: runner)
                 .navigationSplitViewColumnWidth(min: 300, ideal: 360, max: 440)
         } detail: {
-            // 280pt keeps the canvas usable (§23) — narrower and its own
+            // 280pt keeps the canvas usable (#23) — narrower and its own
             // playback row starts contesting space with the drawing.
             CanvasPane(workspace: workspace, runner: runner)
                 .navigationSplitViewColumnWidth(min: 280, ideal: 420)
@@ -164,7 +164,7 @@ struct CanvasPane: View {
     }
 }
 
-/// The canvas/code segmented toggle, in `CanvasPane`'s toolbar (§23).
+/// The canvas/code segmented toggle, in `CanvasPane`'s toolbar (#23).
 struct CanvasViewToggle: View {
     @Binding var showsCode: Bool
 
@@ -180,7 +180,7 @@ struct CanvasViewToggle: View {
 }
 
 /// The export menu (SVG / PNG at three scales / ShareLink), in `CanvasPane`'s
-/// toolbar (§23). `onExport` keeps this view free of `CanvasPane`'s own
+/// toolbar (#23). `onExport` keeps this view free of `CanvasPane`'s own
 /// file-exporter state.
 struct CanvasExportMenu: View {
     @Bindable var runner: RunnerModel

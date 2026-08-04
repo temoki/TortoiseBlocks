@@ -108,7 +108,7 @@ enum Palette {
 }
 
 extension BlockCategory {
-    /// Category tint (§7): movement=blue, pen=purple, fill=green,
+    /// Category tint: movement=blue, pen=purple, fill=green,
     /// control=orange, variables=pink (the one hue kids won't confuse with
     /// any of the other four).
     var color: Color {
@@ -123,7 +123,7 @@ extension BlockCategory {
 }
 
 /// The tap-to-add palette — only ever the `NavigationSplitView` sidebar
-/// (§23), and untitled like the other two columns: the section headers name
+/// (#23), and untitled like the other two columns: the section headers name
 /// its contents, and the bar above it belongs to the document (see
 /// `RootView`).
 struct PaletteView: View {

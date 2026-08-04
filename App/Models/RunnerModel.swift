@@ -19,7 +19,7 @@ final class RunnerModel {
     private(set) var expandedBlockIDs: [UUID] = []
 
     /// The evaluated command stream of the last run (randomness resolved) —
-    /// exports render exactly what is on screen (§9).
+    /// exports render exactly what is on screen.
     private(set) var lastRunCommands: [TortoiseCommand] = []
 
     /// Set when expansion fails (command limit); drives a kid-friendly alert.

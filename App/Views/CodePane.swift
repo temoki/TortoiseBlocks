@@ -57,7 +57,7 @@ struct CodePane: View {
     }
 }
 
-/// Shared with the Run menu's "Copy Code" command (§23), so both paths to
+/// Shared with the Run menu's "Copy Code" command (#23), so both paths to
 /// copying the generated source go through the same platform pasteboard call.
 func copyCodeToPasteboard(_ string: String) {
     #if os(macOS)
