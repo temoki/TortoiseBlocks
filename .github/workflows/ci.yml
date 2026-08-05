@@ -15,6 +15,31 @@ concurrency:
 # the .icns variant while the iOS one built fine. It also puts CI on the same
 # Xcode 26.6 as local development.
 jobs:
+  # A signing team must never reach the repository. It is not a secret — a
+  # Team ID sits in every distributed app's provisioning profile — but a fork
+  # that inherits someone else's team meets signing errors it cannot fix.
+  # The team lives in the gitignored Support/Local.xcconfig instead (see
+  # Support/Signing.xcconfig). This is a grep rather than a build setting
+  # because Xcode writes DEVELOPMENT_TEAM straight into project.pbxproj the
+  # moment a team is picked in Signing & Capabilities, and no setting can
+  # enforce its own absence.
+  signing-hygiene:
+    name: Signing Hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: No development team in the project
+        run: |
+          if grep -n 'DEVELOPMENT_TEAM' TortoiseBlocks.xcodeproj/project.pbxproj; then
+            echo "::error::DEVELOPMENT_TEAM leaked into project.pbxproj — move it to Support/Local.xcconfig (gitignored)."
+            exit 1
+          fi
+          if [ -f Support/Local.xcconfig ]; then
+            echo "::error::Support/Local.xcconfig is committed — it is meant to stay local."
+            exit 1
+          fi
+
   format-lint:
     name: Format Lint
     runs-on: macos-26

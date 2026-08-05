@@ -4,3 +4,6 @@ xcuserdata/
 .build/
 .swiftpm/
 DerivedData/
+
+# The local signing team — see Support/Signing.xcconfig.
+Support/Local.xcconfig

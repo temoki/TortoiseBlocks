@@ -40,6 +40,11 @@
 /* Begin PBXFileReference section */
 		1A0000000000000000000010 /* TortoiseBlocks.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TortoiseBlocks.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A0000000000000000000011 /* TortoiseBlocksThumbnail.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TortoiseBlocksThumbnail.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		1A0000000000000000000012 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
+		1A0000000000000000000013 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		1A0000000000000000000014 /* TortoiseBlocks.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TortoiseBlocks.entitlements; sourceTree = "<group>"; };
+		1A0000000000000000000015 /* ThumbnailExtension-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "ThumbnailExtension-Info.plist"; sourceTree = "<group>"; };
+		1A0000000000000000000016 /* ThumbnailExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ThumbnailExtension.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -81,8 +86,21 @@
 			children = (
 				1A0000000000000000000002 /* App */,
 				1A0000000000000000000004 /* ThumbnailExtension */,
+				1A0000000000000000000005 /* Support */,
 				1A0000000000000000000003 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		1A0000000000000000000005 /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				1A0000000000000000000013 /* Info.plist */,
+				1A0000000000000000000012 /* Signing.xcconfig */,
+				1A0000000000000000000015 /* ThumbnailExtension-Info.plist */,
+				1A0000000000000000000016 /* ThumbnailExtension.entitlements */,
+				1A0000000000000000000014 /* TortoiseBlocks.entitlements */,
+			);
+			path = Support;
 			sourceTree = "<group>";
 		};
 		1A0000000000000000000003 /* Products */ = {
@@ -234,6 +252,7 @@
 /* Begin XCBuildConfiguration section */
 		1A0000000000000000000081 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 1A0000000000000000000012 /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -291,6 +310,7 @@
 		};
 		1A0000000000000000000082 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 1A0000000000000000000012 /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -345,6 +365,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = Support/TortoiseBlocks.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -380,7 +401,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_ENTITLEMENTS = Support/TortoiseBlocks.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
@@ -446,8 +467,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = Support/ThumbnailExtension.entitlements;
-				CODE_SIGN_IDENTITY = "-";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;

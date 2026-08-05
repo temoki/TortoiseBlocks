@@ -1,0 +1,28 @@
+// Where the signing team comes from — and the reason it is not in the
+// project file.
+//
+// A Team ID is not a secret (it sits in every distributed app's embedded
+// provisioning profile, readable with `codesign -dvv`). It is kept out of
+// the repository so that a fork does not inherit someone else's team and
+// meet signing errors it has no way to fix. Xcode writes DEVELOPMENT_TEAM
+// straight into project.pbxproj the moment a team is picked in Signing &
+// Capabilities, so leaving the setting only here — with nothing to override
+// it in the target's own build settings — is what keeps it out. CI greps for
+// it, because a build setting cannot enforce its own absence.
+//
+// To sign locally, create Support/Local.xcconfig (gitignored):
+//
+//     DEVELOPMENT_TEAM = ABCDE12345
+//
+// Without it, Debug builds still work — Release does not, and is not meant
+// to: Debug ad-hoc-signs on macOS (see the target settings) precisely so the
+// everyday loop needs no team, while Release is the distribution
+// configuration and asks for a real one.
+//
+// Xcode Cloud does its own cloud signing and may resolve the team from the
+// App Store Connect app record. If an archive there ever fails asking for a
+// development team, write this same file from ci_scripts/ci_post_clone.sh
+// using a workflow environment variable — that is the whole fix.
+DEVELOPMENT_TEAM =
+
+#include? "Local.xcconfig"

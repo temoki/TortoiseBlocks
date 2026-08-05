@@ -357,6 +357,42 @@ file whenever the project changes, dropping comments and alphabetizing each
 dict's keys. A diff that is only that reshuffle is Xcode's, not an edit —
 check it parses the same (`plutil -convert json` on both revisions) and
 commit it rather than reverting it back and forth.
+`Support/` is a plain group, deliberately **not** a buildable folder like
+`App/` and `ThumbnailExtension/`. Its files are wired by *build settings*
+(`INFOPLIST_FILE`, `CODE_SIGN_ENTITLEMENTS`, `baseConfigurationReference`),
+not by build-phase membership, so synchronizing it buys nothing — and costs
+something. `baseConfigurationReference` needs a real `PBXFileReference`,
+which a file inside a synchronized group does not have; the orphan reference
+you are then forced to keep loses its `Support/` prefix if it stays
+`<group>`-relative, and the xcconfig silently stops applying **while the
+build stays green** (the same failure shape as the 25-character object ID).
+Attaching the folder to a target would be worse still: Info.plist and the
+entitlements would be auto-added as bundle resources.
+
+**The signing team never enters the repository** (#4). A Team ID is not a
+secret — it sits in every distributed app's embedded provisioning profile —
+but a fork that inherits someone else's team meets signing errors it has no
+way to fix. `DEVELOPMENT_TEAM` therefore lives in `Support/Local.xcconfig`,
+gitignored, pulled in by an optional `#include?` from the committed
+`Support/Signing.xcconfig`, which is the *project-level*
+`baseConfigurationReference` and so reaches both targets from one place. CI
+greps `project.pbxproj` for the setting, because a build setting cannot
+enforce its own absence and Xcode writes one there the moment a team is
+picked in Signing & Capabilities.
+The everyday loop needs no team because **Debug ad-hoc-signs**
+(`CODE_SIGN_IDENTITY = "-"` on macOS for both targets). Release does not, and
+must not: those pins used to sit in Release too, which quietly made the
+distribution configuration unable to archive at all — an ad-hoc macOS app
+cannot go to App Store Connect. Release is left to automatic signing, which
+is what Xcode Cloud's cloud signing then takes over; that is the whole reason
+release builds go through Xcode Cloud rather than the GitHub Actions CI,
+which only ever builds Debug with `CODE_SIGNING_ALLOWED=NO`.
+**Both targets are sandboxed**, and the app's entitlements are not optional
+polish: macOS TestFlight ships through App Store Connect, so Mac App Store
+rules apply. The app takes `files.user-selected.read-write` for the
+`DocumentGroup`'s open/save panels and the exporter; the extension keeps
+`read-only` and is sandboxed for a different reason (a macOS QuickLook
+extension is not loaded otherwise).
 
 **Compact width is not a design target** (#29). There is one layout,
 `RootView`'s three-column `NavigationSplitView`; the "つくる / うごかす" tab
