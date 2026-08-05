@@ -96,6 +96,21 @@ struct CanvasPane: View {
                 TortoiseCanvas(runner.tortoise, player: runner.player)
                     .tortoiseSprite(Self.sprite)
                     .padding()
+                    // The canvas is paper, all the way to the pane's edges and
+                    // in both appearances — the default pen is black, and it
+                    // has to be on something.
+                    //
+                    // This is the *only* thing making it white. `TortoiseCanvas`
+                    // never paints a background of its own here: frames carry
+                    // the colour, `CommandPlayer` starts them at `.clear`
+                    // rather than at the `.white` a `Tortoise` itself begins
+                    // with, and only a `.backgroundColor` command moves it —
+                    // which no block emits. Light mode hid that behind a nearly
+                    // white system background; dark mode did not. Reported
+                    // upstream (TortoiseGraphics2 #44); keep this either way,
+                    // since "our canvas is paper" is a decision about this app
+                    // rather than a default the library owes us.
+                    .background(.white)
                     .opacity(showsCode ? 0 : 1)
                     .accessibilityHidden(showsCode)
                 if showsCode {
