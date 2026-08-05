@@ -332,7 +332,7 @@ struct BlockRowView: View {
                     .labelStyle(.iconOnly)
                     .buttonStyle(.borderless)
                     .controlSize(.large)
-                    .tint(.white)
+                    .tint(BlockCategory.ink)
                     .touchTarget()
                     .accessibilityHint(
                         "Adds an otherwise mouth that runs when the condition fails")
@@ -649,9 +649,10 @@ struct InsertionTargetButton: View {
         .labelStyle(.iconOnly)
         .controlSize(.large)
         // Every row this appears on (#21: container headers, the else
-        // divider) is now a solid `.control`-orange block, so white is the
-        // one tint that's never fighting its own background.
-        .tint(.white)
+        // divider) is a filled block, so the tint follows the label rather
+        // than the system accent — white against the pastel would be the
+        // control nobody can see (#41).
+        .tint(BlockCategory.ink)
         .accessibilityHint("When on, new palette blocks go inside this block")
     }
 }
@@ -743,26 +744,36 @@ enum RowCorners {
     }
 }
 
-/// The shared "block" look for workspace rows (#21): a solid, saturated
-/// category color with white text, matching the palette's `.borderedProminent`
-/// buttons instead of the old pale tint. Opacity has no more room to signal
-/// state once the background is already opaque, so the execution highlight
-/// and drop-target feedback are a white border plus a brightness bump.
+/// The shared "block" look for workspace rows (#21, recolored in #41): an
+/// opaque pastel category fill under fixed dark ink, matching the palette
+/// entries. Opacity has no room to signal state once the background is already
+/// opaque, so the execution highlight and drop-target feedback are a border —
+/// and only a border, since anything that touches the fill takes the label's
+/// contrast with it.
 private struct BlockChrome: ViewModifier {
     let color: Color
     var corners: RowCorners = .standalone
     var isHighlighted = false
     var isDropTargeted = false
 
+    @Environment(\.colorScheme) private var scheme
+
     private var shape: UnevenRoundedRectangle { .rect(cornerRadii: corners.radii) }
+
+    /// The ring *does* follow the appearance, where the fill and the label
+    /// don't. Its job is to stand out against two things at once — the pastel
+    /// inside it and the pane outside — and which of black or white manages
+    /// that is exactly what the appearance decides. White vanished into the
+    /// pastel in light mode; ink would read as a gap against a dark pane.
+    private var ring: Color { scheme == .dark ? .white : BlockCategory.ink }
 
     func body(content: Content) -> some View {
         content
-            .foregroundStyle(.white)
+            .foregroundStyle(BlockCategory.ink)
             .rowShape()
             .background(color, in: shape)
             .overlay {
-                shape.stroke(.white, lineWidth: isHighlighted ? 3 : (isDropTargeted ? 2 : 0))
+                shape.stroke(ring, lineWidth: isHighlighted ? 3 : (isDropTargeted ? 2 : 0))
             }
             // The ring is the whole of it, and the fill is left alone on
             // purpose. State used to add `.brightness`, which is a filter over
@@ -774,7 +785,7 @@ private struct BlockChrome: ViewModifier {
             // running. So the two channels are now separate: the fill says
             // which kind of block this is, the ring says what it is doing, and
             // the ring can never eat the label's contrast.
-            .shadow(color: .white.opacity(isHighlighted ? 0.5 : 0), radius: 6)
+            .shadow(color: ring.opacity(isHighlighted ? 0.5 : 0), radius: 6)
             .animation(.easeOut(duration: 0.15), value: isHighlighted)
             .animation(.easeOut(duration: 0.12), value: isDropTargeted)
     }

@@ -108,18 +108,38 @@ enum Palette {
 }
 
 extension BlockCategory {
-    /// Category tint: movement=blue, pen=purple, fill=green,
-    /// control=orange, variables=pink (the one hue kids won't confuse with
-    /// any of the other four).
+    /// Category tint: movement=sky, pen=wisteria, fill=mint, control=apricot,
+    /// variables=blush — five hues a child can still name apart, drawn from the
+    /// app's own artwork rather than from the system palette (#41). The app
+    /// icon's gradient is sky to mint and the tortoise sprite is lavender,
+    /// apricot and blush; against that, saturated system colors were the one
+    /// thing on screen that didn't belong.
+    ///
+    /// Pastels are also what makes the text legible. The blocks used to be
+    /// saturated fills under white text, which measured 1.9–3.3:1 — under AA
+    /// for every category, in both appearances. Keeping white would have meant
+    /// darkening the fills until orange came out brown (`#A76821`); this way
+    /// nothing has to be muddied and ``ink`` clears 9.8:1 everywhere.
+    ///
+    /// The same color in light and dark. A block's fill is its identity, not a
+    /// response to its surroundings — and since these are light in both, the
+    /// text must not follow the appearance either (see ``ink``).
     var color: Color {
         switch self {
-        case .movement: .blue
-        case .pen: .purple
-        case .fill: .green
-        case .control: .orange
-        case .variables: .pink
+        case .movement: Color(.sRGB, red: 0.557, green: 0.824, blue: 0.961)  // #8ED2F5
+        case .pen: Color(.sRGB, red: 0.839, green: 0.737, blue: 0.937)  // #D6BCEF
+        case .fill: Color(.sRGB, red: 0.647, green: 0.906, blue: 0.741)  // #A5E7BD
+        case .control: Color(.sRGB, red: 0.973, green: 0.808, blue: 0.584)  // #F8CE95
+        case .variables: Color(.sRGB, red: 0.969, green: 0.698, blue: 0.788)  // #F7B2C9
         }
     }
+
+    /// What is written on a block: a fixed near-black, on purpose.
+    ///
+    /// `Color.primary` would invert in dark mode and land white text back on a
+    /// pastel — 1.4:1, the very failure this replaced. The fill doesn't follow
+    /// the appearance, so neither can its label.
+    static let ink = Color(.sRGB, red: 0.110, green: 0.110, blue: 0.118)  // #1C1C1E
 }
 
 /// The tap-to-add palette — only ever the `NavigationSplitView` sidebar
@@ -165,6 +185,22 @@ struct PaletteSectionView: View {
     }
 }
 
+/// A palette entry's block look: the category fill, the shared ink, and a
+/// press state of its own since the plain style has none.
+private struct PaletteBlockButtonStyle: ButtonStyle {
+    let color: Color
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(BlockCategory.ink)
+            .padding(.vertical, 9)
+            .padding(.horizontal, 11)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(color, in: RoundedRectangle(cornerRadius: 8))
+            .opacity(configuration.isPressed ? 0.7 : 1)
+    }
+}
+
 struct PaletteEntryButton: View {
     let entry: PaletteEntry
     let category: BlockCategory
@@ -182,8 +218,11 @@ struct PaletteEntryButton: View {
             .labelStyle(BlockLabelStyle())
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .buttonStyle(.borderedProminent)
-        .tint(category.color)
+        // The same chrome a placed block wears, rather than
+        // `.borderedProminent` + `.tint` (#41): that style picks its own label
+        // color — white — which is the one thing a pastel fill can't carry. A
+        // palette entry and the row it becomes should look alike anyway.
+        .buttonStyle(PaletteBlockButtonStyle(color: category.color))
         .pointerHover()
         // Evaluated per drag, so every drag stamps a fresh Block (new ID).
         .draggable(Block(kind: entry.kind))

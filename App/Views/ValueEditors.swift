@@ -10,9 +10,9 @@ let variableNamePresets = ["🌟", "💖", "🍀"]
 /// Display-length cap for typed variable names.
 let variableNameMaxLength = 10
 
-/// A slot's "chip" look on the workspace's dark, category-colored block rows
-/// (#21): a white capsule with dark text, so it stays readable regardless of
-/// which category color it's sitting on — the same kind of fixed-color
+/// A slot's "chip" look on the workspace's category-colored block rows (#21):
+/// an outlined white capsule with dark text, so it stays readable regardless
+/// of which category color it's sitting on — the same kind of fixed-color
 /// choice already made for `BlockCategory.color` itself, not a semantic one.
 ///
 /// Applied ambiently to the whole block list (`WorkspaceView`), not to
@@ -24,21 +24,31 @@ let variableNameMaxLength = 10
 struct WorkspaceChipButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .foregroundStyle(.black)
+            .foregroundStyle(BlockCategory.ink)
             .padding(.vertical, 6)
             .padding(.horizontal, 10)
             .background(
                 Color.white.opacity(configuration.isPressed ? 0.75 : 0.92),
                 in: .capsule
             )
+            // The outline is what keeps it a control (#41). On the old
+            // saturated fills a white capsule stood out on its own; on a
+            // pastel it is barely 1.5:1 against what it sits on, so the edge
+            // that says "this is a thing you can press" has to be drawn, and
+            // WCAG puts the same 3:1 floor under it as under any other control
+            // boundary. 0.55 is measured, not picked: at 0.35 the edge came out
+            // around 2:1 on every fill, and 0.52 is where the worst of the five
+            // (wisteria and blush) crosses 3:1.
+            .overlay(Capsule().stroke(BlockCategory.ink.opacity(0.55), lineWidth: 1))
     }
 }
 
 extension View {
     /// Standard chrome for a slot editor's popover. Resets the foreground to
-    /// the adaptive label color (#24): the block row sets `.foregroundStyle
-    /// (.white)`, which otherwise leaks into the popover and leaves the label,
-    /// text field, and stepper invisible on the system background.
+    /// the adaptive label color (#24): the block row sets its own fixed ink,
+    /// which otherwise leaks into the popover and holds the label, text field
+    /// and stepper to a color chosen for a pastel block rather than for the
+    /// system background.
     ///
     /// `Color.primary` (the absolute label color), *not* the hierarchical
     /// `.primary` — the latter is the primary *level* of the inherited base
@@ -527,15 +537,19 @@ struct ColorValueButton: View {
         } label: {
             switch value {
             case .literal(let color):
-                // A white ring keeps the swatch legible against the row's
-                // own (now solid, saturated) category color.
+                // A ring keeps the swatch legible against the row's own
+                // category color — in the same ink as the label, since a white
+                // one would vanish into a pastel fill (#41). It matters most
+                // for the pen colors nearest the block they sit on: yellow on
+                // apricot, cyan on sky.
                 Circle()
                     .fill(Color(color.tortoiseColor))
-                    .stroke(.white, lineWidth: 1.5)
+                    .stroke(BlockCategory.ink, lineWidth: 1.5)
                     .frame(width: swatch, height: swatch)
             case .random:
                 Circle()
                     .fill(.white.opacity(0.92))
+                    .stroke(BlockCategory.ink.opacity(0.35), lineWidth: 1)
                     .frame(width: swatch, height: swatch)
                     .overlay { Text("🎲").font(.caption) }
             }

@@ -390,6 +390,42 @@ hard-coded, and correct only while nothing taller joins a row. Note the
 failure mode is silent in both cases: too small a floor leaves the tall rows
 tall, exactly as if the fix were missing.
 
+**Blocks are opaque pastels under fixed dark ink** (#41), drawn from the app's
+own artwork — the icon's sky-to-mint gradient, the mascot's lavender, apricot
+and blush — rather than from the system palette. They started as saturated
+system colors under white text, which measured 1.9–3.3:1 against white: under
+AA for every category, in both appearances, and the running-block highlight
+made it worse. Keeping white would have meant darkening the fills until orange
+came out brown (`#A76821` at 4.5:1, still `#D2832A` even at 3:1) — green and
+orange are intrinsically light hues, so a white-text rule drags them somewhere
+they can no longer be named. Ink on pastel clears 9.8:1 on all five instead,
+and no hue moves. This is *not* the pale tint #21 rejected: that was
+`opacity 0.15` over the pane, a see-through wash; these are opaque, and
+"blockiness" turns out to come from opacity and a defined edge rather than
+from saturation.
+
+Three rules follow from the fills being light in *both* appearances. The label
+color must **not** follow the appearance — `Color.primary` would invert and put
+white back on a pastel, at 1.4:1 — so `BlockCategory.ink` is a fixed
+`#1C1C1E`. The highlight ring must, because its job is to stand out against
+both the pastel inside it and the pane outside, and which of black or white
+does that is exactly what the appearance decides. And the white value chip
+needs a drawn outline: at 1.5:1 against a pastel it no longer reads as a
+control on its own, so `WorkspaceChipButtonStyle` strokes it at ink 0.55 —
+measured, since 0.35 came out around 2:1 and 0.52 is where the worst fill
+crosses WCAG's 3:1 floor for a control boundary.
+
+**The accent is the mascot's purple** (`#A659E6`, the weighted average of the
+saturated violets in the sprite — hat, shell, and the tail that *is* the pen).
+It shares a hue with the pen category's lavender on purpose: the pale purple is
+the pen blocks, the strong purple is the brush and the run button, and "purple
+means drawing" reads as one idea. It replaced a teal picked when the categories
+were saturated and purple would genuinely have collided; that teal also turned
+out to carry the run button's white glyph at only 2.16:1, under the 3:1 floor
+for non-text, where the mascot purple manages 4.04:1. Stored as a literal
+rather than a system reference, so it is the same in both appearances — like
+the fills, it is the app's identity and not a response to its surroundings.
+
 **A container is one C-shaped block, assembled from parts.** Indent plus a
 3pt guide bar left "what is inside this repeat, and where does it end?"
 to be inferred; `ContainerBlockRow` now draws the Scratch/Blockly C — header
