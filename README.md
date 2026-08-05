@@ -1,4 +1,6 @@
-# TortoiseBlocks
+  <img src="docs/Icon.png" width="120" alt="TortoiseBlocks Icon" />
+
+# Tortoise Blocks
 
 [![Swift](https://img.shields.io/badge/Swift-6.2-orange.svg)](https://swift.org)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -9,9 +11,7 @@ watch the tortoise draw. Powered by
 [TortoiseGraphics2](https://github.com/temoki/TortoiseGraphics2), a turtle
 graphics engine written in Swift.
 
-<p align="center">
-  <img src="docs/demo.gif" width="640" alt="TortoiseBlocks on iPad — running a block program that draws and fills a square" />
-</p>
+<img src="docs/Screenshot.png" width="640" alt="TortoiseBlocks on macOS" />
 
 ## Features
 
