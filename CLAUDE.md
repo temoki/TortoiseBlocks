@@ -415,14 +415,18 @@ control on its own, so `WorkspaceChipButtonStyle` strokes it at ink 0.55 —
 measured, since 0.35 came out around 2:1 and 0.52 is where the worst fill
 crosses WCAG's 3:1 floor for a control boundary.
 
-**The accent is the mascot's purple** (`#A659E6`, the weighted average of the
-saturated violets in the sprite — hat, shell, and the tail that *is* the pen).
-It shares a hue with the pen category's lavender on purpose: the pale purple is
-the pen blocks, the strong purple is the brush and the run button, and "purple
-means drawing" reads as one idea. It replaced a teal picked when the categories
-were saturated and purple would genuinely have collided; that teal also turned
-out to carry the run button's white glyph at only 2.16:1, under the 3:1 floor
-for non-text, where the mascot purple manages 4.04:1. Stored as a literal
+**The accent is the mascot's purple** (`#B64AE5`) — the sprite's own violet,
+held a little deeper. Its hat, shell and the tail that *is* the pen average
+`#C650F9`, which carries the run button's white glyph at 3.55:1: over the 3:1
+floor for non-text but without much room, so the accent takes that hue a shade
+darker and gets 4.12:1. It shares a hue with the pen category's lavender on
+purpose: the pale purple is the pen blocks, the strong purple is the brush and
+the run button, and "purple means drawing" reads as one idea. It replaced a
+teal picked when the categories were saturated and purple would genuinely have
+collided; that teal also carried the same glyph at only 2.16:1. **Re-sample the
+sprite when the artwork changes** — this pairing is the one place a redrawn
+mascot silently stops matching the app (it already happened once: the first
+version of this accent came from the previous sprite's `#A659E6`). Stored as a literal
 rather than a system reference, so it is the same in both appearances — like
 the fills, it is the app's identity and not a response to its surroundings.
 

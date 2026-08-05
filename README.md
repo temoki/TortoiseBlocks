@@ -33,6 +33,9 @@ graphics engine written in Swift.
 - **Documents** — a standard document app: `.tortoise` files (JSON),
   iCloud Drive / Files integration, autosave, system undo; a new document
   can start from a sample program
+- **Thumbnails in Finder & Files** — a QuickLook extension draws each
+  document's last picture, so the app's own folder reads as a gallery of
+  drawings instead of a row of identical icons
 - **Export & share** — SVG (vector, straight from the library) and PNG at
   1x / 2x / 3x, saved to a file or sent through the share sheet
 - **English / Japanese** — Japanese uses kid-friendly hiragana; adding a
@@ -102,6 +105,13 @@ identifiers can never break saved files):
   ]
 }
 ```
+
+A document also carries `thumbnail` when it has been run: the drawing as a
+small PNG, base64-encoded, which is what Finder and the Files app show. It is
+optional by *presence* — a document that has never run writes no such key and
+stays byte-identical to what an app that never heard of thumbnails produced —
+so it rides version 1 rather than forcing a bump. Nothing reads it back into
+the app; opening a document still starts with an empty canvas.
 
 `schemaVersion` is the lowest version that can *read* the file, not the one
 that wrote it. A document is written as version 1 unless it uses a version-2
