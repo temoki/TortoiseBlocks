@@ -88,6 +88,13 @@ struct CanvasPane: View {
     private static let sprite = TortoiseSprite.image(
         Image(.tortoiseSprite), size: CGSize(width: 23, height: 32))
 
+    /// The paper's outline: the same 8 a standalone block row rounds
+    /// (`RowCorners`), so the two panes agree rather than each softening by its
+    /// own amount. A wider radius was tried on the larger surface and judged
+    /// too much in the running app. Not scaled with Dynamic Type — it follows
+    /// the pane, not the text.
+    private static let sheet = RoundedRectangle(cornerRadius: 8)
+
     var body: some View {
         VStack(spacing: 0) {
             // The canvas stays in the hierarchy while the code pane covers
@@ -95,10 +102,8 @@ struct CanvasPane: View {
             ZStack {
                 TortoiseCanvas(runner.tortoise, player: runner.player)
                     .tortoiseSprite(Self.sprite)
-                    .padding()
-                    // The canvas is paper, all the way to the pane's edges and
-                    // in both appearances — the default pen is black, and it
-                    // has to be on something.
+                    // The canvas is paper, in both appearances — the default pen
+                    // is black, and it has to be on something.
                     //
                     // This is the *only* thing making it white. `TortoiseCanvas`
                     // never paints a background of its own here: frames carry
@@ -110,7 +115,19 @@ struct CanvasPane: View {
                     // upstream (TortoiseGraphics2 #44); keep this either way,
                     // since "our canvas is paper" is a decision about this app
                     // rather than a default the library owes us.
-                    .background(.white)
+                    //
+                    // Inside the padding, so the sheet is inset and the pane's
+                    // own colour frames it. Taking it to the pane's edges was
+                    // tried and judged worse in the running app.
+                    .background(.white, in: Self.sheet)
+                    // Clips the drawing to the same shape rather than only
+                    // painting under it: nothing reaches the corners today —
+                    // `.autoFit` insets by the sprite's half-diagonal — but if
+                    // the library starts painting the tortoise's own background
+                    // (TortoiseGraphics2#44) a square white would otherwise
+                    // land on top of this one and square the corners back off.
+                    .clipShape(Self.sheet)
+                    .padding()
                     .opacity(showsCode ? 0 : 1)
                     .accessibilityHidden(showsCode)
                 if showsCode {
