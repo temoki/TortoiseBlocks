@@ -99,8 +99,6 @@ identifiers can never break saved files):
 
 ```json
 {
-  "schemaVersion" : 1,
-  "title" : "Random Star",
   "blocks" : [
     { "id" : "…", "kind" : { "penColor" : "purple" } },
     { "id" : "…", "kind" : { "repeat" : {
@@ -109,12 +107,18 @@ identifiers can never break saved files):
           { "id" : "…", "kind" : { "forward" : { "random" : { "min" : 100, "max" : 200 } } } },
           { "id" : "…", "kind" : { "turnRight" : { "literal" : 170 } } }
         ] } } }
-  ]
+  ],
+  "schemaVersion" : 1,
+  "thumbnail" : "iVBORw0KGgoAAAANSUhEUgAAAOYAAAEACAYAA…",
+  "title" : "Random Star"
 }
 ```
 
-A document also carries `thumbnail` when it has been run: the drawing as a
-small PNG, base64-encoded, which is what Finder and the Files app show. It is
+Keys are written sorted, so that ordering is the file's, not a choice of this
+document's; the block bodies above are folded up to fit the page.
+
+That `thumbnail` is the drawing as a small PNG, base64-encoded, and it is what
+Finder and the Files app show. It appears once a document has been run, and is
 optional by *presence* — a document that has never run writes no such key and
 stays byte-identical to what an app that never heard of thumbnails produced —
 so it rides version 1 rather than forcing a bump. Nothing reads it back into
