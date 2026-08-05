@@ -764,7 +764,17 @@ private struct BlockChrome: ViewModifier {
             .overlay {
                 shape.stroke(.white, lineWidth: isHighlighted ? 3 : (isDropTargeted ? 2 : 0))
             }
-            .brightness(isHighlighted ? 0.2 : (isDropTargeted ? 0.12 : 0))
+            // The ring is the whole of it, and the fill is left alone on
+            // purpose. State used to add `.brightness`, which is a filter over
+            // the composited row: it moves the card *and* its label the same
+            // way, and the label is already white, so only the card travelled
+            // — toward the text. Highlighting made a row harder to read the
+            // more it was highlighted. Measured white-on-card in dark mode,
+            // the fill green went 1.92:1 to 1.24:1 the moment it started
+            // running. So the two channels are now separate: the fill says
+            // which kind of block this is, the ring says what it is doing, and
+            // the ring can never eat the label's contrast.
+            .shadow(color: .white.opacity(isHighlighted ? 0.5 : 0), radius: 6)
             .animation(.easeOut(duration: 0.15), value: isHighlighted)
             .animation(.easeOut(duration: 0.12), value: isDropTargeted)
     }
