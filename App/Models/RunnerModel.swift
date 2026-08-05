@@ -135,10 +135,16 @@ final class RunnerModel {
     /// SVG of the last run, straight from the library's exporter. `svg()`
     /// defaults to `fit: true` — cropped tight to the drawing, tortoise-free
     /// (#25); `pngData` deliberately mirrors that framing.
+    ///
+    /// The transparent ground is now asked for outright. Since 2.0.0-beta12 a
+    /// stream that never names a background renders on white, so leaving this
+    /// implicit would put a `<rect fill="#ffffff"/>` under every export — and
+    /// an export is a picture you place somewhere yourself.
     func svgData() -> Data? {
         if let svgDataCache { return svgDataCache }
         guard canExport else { return nil }
         let export = Tortoise()
+        export.backgroundColor = .clear
         export.apply(lastRunCommands)
         let data = Data(export.svg().utf8)
         svgDataCache = data
@@ -196,22 +202,24 @@ final class RunnerModel {
     /// init, so `ImageRenderer` sees the finished drawing without a running
     /// timeline. `scale` is the pixel density applied on top.
     ///
-    /// `onWhite` paints a background behind the drawing. It is off for the
-    /// exports on purpose — `TortoiseCanvas` paints no background of its own
-    /// (temoki/TortoiseGraphics2#44), so they come out transparent, which is
-    /// what you want in a picture you are going to place somewhere.
+    /// `onWhite` decides the ground, and says so outright rather than leaning
+    /// on a default: before 2.0.0-beta12 a stream that never named a background
+    /// rendered transparent, and since then it renders white. Neither default
+    /// is what both callers want, so both are asked for explicitly — the
+    /// exports transparent, because an export is a picture you place somewhere
+    /// yourself, and the thumbnail white, because Finder places that one.
     private static func renderPNG(
         _ commands: [TortoiseCommand], longSide: Double, scale: CGFloat, onWhite: Bool = false
     ) -> Data? {
         let export = Tortoise()
         export.speed = 0
+        export.backgroundColor = onWhite ? .white : .clear
         export.apply(commands)
         export.hideTortoise()
         let size = exportFrameSize(for: commands, longSide: longSide)
         let renderer = ImageRenderer(
             content: TortoiseCanvas(export)
                 .frame(width: size.width, height: size.height)
-                .background(onWhite ? Color.white : Color.clear)
         )
         renderer.scale = scale
         guard let cgImage = renderer.cgImage else { return nil }

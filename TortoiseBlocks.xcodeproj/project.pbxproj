@@ -520,7 +520,7 @@
 			repositoryURL = "https://github.com/temoki/TortoiseGraphics2";
 			requirement = {
 				kind = exactVersion;
-				version = "2.0.0-beta11";
+				version = "2.0.0-beta12";
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

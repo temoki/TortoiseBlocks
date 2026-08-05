@@ -105,27 +105,24 @@ struct CanvasPane: View {
                     // The canvas is paper, in both appearances — the default pen
                     // is black, and it has to be on something.
                     //
-                    // This is the *only* thing making it white. `TortoiseCanvas`
-                    // never paints a background of its own here: frames carry
-                    // the colour, `CommandPlayer` starts them at `.clear`
-                    // rather than at the `.white` a `Tortoise` itself begins
-                    // with, and only a `.backgroundColor` command moves it —
-                    // which no block emits. Light mode hid that behind a nearly
-                    // white system background; dark mode did not. Reported
-                    // upstream (TortoiseGraphics2 #44); keep this either way,
-                    // since "our canvas is paper" is a decision about this app
-                    // rather than a default the library owes us.
+                    // Since 2.0.0-beta12 the library paints that white itself
+                    // (TortoiseGraphics2#44 — before it, a stream that never
+                    // named a background rendered as nothing, which light mode
+                    // hid behind a nearly white system background and dark mode
+                    // did not). This stays anyway: "our canvas is paper" is a
+                    // decision about this app, and it should not quietly depend
+                    // on a library default that has already changed once.
                     //
                     // Inside the padding, so the sheet is inset and the pane's
                     // own colour frames it. Taking it to the pane's edges was
                     // tried and judged worse in the running app.
                     .background(.white, in: Self.sheet)
                     // Clips the drawing to the same shape rather than only
-                    // painting under it: nothing reaches the corners today —
-                    // `.autoFit` insets by the sprite's half-diagonal — but if
-                    // the library starts painting the tortoise's own background
-                    // (TortoiseGraphics2#44) a square white would otherwise
-                    // land on top of this one and square the corners back off.
+                    // painting under it, which is now load-bearing: the library
+                    // paints its own square white over this one, and without
+                    // the clip the rounded corners it was given would be
+                    // squared straight back off. (It was added a release early,
+                    // against exactly this happening.)
                     .clipShape(Self.sheet)
                     .padding()
                     .opacity(showsCode ? 0 : 1)
