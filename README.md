@@ -31,13 +31,14 @@ graphics engine written in Swift.
   [Tortoise API](https://github.com/temoki/TortoiseGraphics2) program, as a
   bridge from blocks to text programming
 - **Documents** — a standard document app: `.tortoise` files (JSON),
-  iCloud Drive / Files integration, autosave, system undo; a new document
-  can start from a sample program
+  iCloud Drive / Files integration, its own folder under On My iPad, autosave,
+  system undo; a new document can start from a sample program
 - **Thumbnails in Finder & Files** — a QuickLook extension draws each
   document's last picture, so the app's own folder reads as a gallery of
   drawings instead of a row of identical icons
 - **Export & share** — SVG (vector, straight from the library) and PNG at
-  1x / 2x / 3x, saved to a file or sent through the share sheet
+  1x / 2x / 3x, on a transparent ground so a drawing drops onto anything,
+  saved to a file or sent through the share sheet
 - **English / Japanese** — Japanese uses kid-friendly hiragana; adding a
   language is a single string-catalog edit
 
@@ -64,11 +65,12 @@ swift test
 
 ```
 TortoiseBlocks/
-├── TortoiseBlocksKit/   # UI-independent SwiftPM package (depends on TortoiseCore only)
-│   ├── Model/           #   Block tree, frozen JSON format, pure editing functions
-│   ├── Engine/          #   BlockExpander: block tree → command stream (+ blockID tags)
-│   └── CodeGen/         #   SwiftCodeGenerator: block tree → Swift source (+ tokenizer)
-└── App/                 # SwiftUI document app (palette | workspace | canvas)
+├── TortoiseBlocksKit/    # UI-independent SwiftPM package (depends on TortoiseCore only)
+│   ├── Model/            #   Block tree, frozen JSON format, pure editing functions
+│   ├── Engine/           #   BlockExpander: block tree → command stream (+ blockID tags)
+│   └── CodeGen/          #   SwiftCodeGenerator: block tree → Swift source (+ tokenizer)
+├── App/                  # SwiftUI document app (palette | workspace | canvas)
+└── ThumbnailExtension/   # QuickLook thumbnails — reads one field, links nothing
 ```
 
 The runtime pipeline is one straight line:
@@ -83,6 +85,11 @@ Randomness is resolved at expansion time and the evaluated command stream is
 kept, so an export always renders the drawing that actually ran, dice and
 all. It is not a screenshot of the canvas pane, though: exports crop tight to
 the drawing and leave the tortoise cursor out.
+
+The QuickLook extension sits outside that pipeline entirely. It links no
+package: it reads the document, lifts one base64 field out of the JSON, and
+draws it — which is why a file written by a future version, or one holding a
+block kind it has never heard of, still gets a thumbnail.
 
 ## File Format
 
