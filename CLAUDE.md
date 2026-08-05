@@ -358,16 +358,35 @@ dict's keys. A diff that is only that reshuffle is Xcode's, not an edit —
 check it parses the same (`plutil -convert json` on both revisions) and
 commit it rather than reverting it back and forth.
 `Support/` is a plain group, deliberately **not** a buildable folder like
-`App/` and `ThumbnailExtension/`. Its files are wired by *build settings*
+`App/` and `ThumbnailExtension/`, and converting it in Xcode (one click, and
+tempting for consistency) breaks two things at once — both silently, with the
+build still at `EXIT=0`. Its contents are the opposite kind of file: they
+never enter a build phase, they are *named by build settings*
 (`INFOPLIST_FILE`, `CODE_SIGN_ENTITLEMENTS`, `baseConfigurationReference`),
-not by build-phase membership, so synchronizing it buys nothing — and costs
-something. `baseConfigurationReference` needs a real `PBXFileReference`,
-which a file inside a synchronized group does not have; the orphan reference
-you are then forced to keep loses its `Support/` prefix if it stays
-`<group>`-relative, and the xcconfig silently stops applying **while the
-build stays green** (the same failure shape as the 25-character object ID).
-Attaching the folder to a target would be worse still: Info.plist and the
-entitlements would be auto-added as bundle resources.
+which is exactly what synchronization cannot express.
+
+*The xcconfig stops applying.* `baseConfigurationReference` has to point at a
+real `PBXFileReference`, and a file inside a synchronized group has none — so
+Xcode deletes `Signing.xcconfig`'s reference on conversion and takes the
+`baseConfigurationReference` with it. `DEVELOPMENT_TEAM` then resolves to
+nothing and signing quietly reverts, the same failure shape as the
+25-character object ID. Keeping an orphan reference to dodge this does not
+work either: `<group>`-relative, it loses the `Support/` prefix and points at
+the project root. (`sourceTree = SOURCE_ROOT` with a full path does resolve —
+and is exactly the kind of unparented object Xcode prunes on its next
+rewrite.)
+
+*And `Support/` ships inside the app.* Attached to a target, the folder's
+files are copied into the bundle as resources: measured on a clean build,
+`Contents/Resources/` came out holding `Signing.xcconfig`,
+**`Local.xcconfig` — the gitignored file, Team ID readable straight out of
+the product** — `ThumbnailExtension-Info.plist`, and a duplicate of
+`Info.plist`. Keeping the team out of the repository is pointless if the
+build puts it in the app. (`.entitlements` is excluded by file type;
+`.plist` and `.xcconfig` are not.) A
+`PBXFileSystemSynchronizedBuildFileExceptionSet` naming every file would stop
+the copying, but nothing fixes the first problem, so the exception machinery
+buys a folder that still cannot carry the xcconfig.
 
 **The signing team never enters the repository** (#4). A Team ID is not a
 secret — it sits in every distributed app's embedded provisioning profile —
