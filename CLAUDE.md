@@ -189,6 +189,14 @@ the ink rather than the command count* (the 10,000-command drawing is the
 smallest one), and doubling it would quadruple that for a picture usually shown
 at icon size. `RunnerModel.renderPNG` is shared with the PNG export, so a
 thumbnail is framed like the exported artifact: cropped tight, tortoise-free.
+It differs in exactly one way, and the difference is deliberate — **the
+thumbnail is opaque, the exports are transparent**. `TortoiseCanvas` paints no
+background of its own (temoki/TortoiseGraphics2#44), so a render comes out
+transparent unless something is put behind it. That is right for an export,
+which is a picture you place somewhere yourself, and wrong for a thumbnail,
+which Finder and the Files app composite onto *their* background — against a
+dark one a black-pen drawing on a transparent ground disappears, taking the
+whole point of putting the picture on the file with it. Hence `onWhite`.
 Writing it skips `registerUndo` — running is not an edit — while still
 dirtying the document.
 

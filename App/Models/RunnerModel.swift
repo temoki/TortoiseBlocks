@@ -175,9 +175,16 @@ final class RunnerModel {
     /// smallest of them. Doubling to 512 would quadruple that for a picture
     /// mostly shown at icon size. QuickLook may ask for more on a Retina
     /// display and upscale ours; that softness is the accepted trade.
+    ///
+    /// Opaque, unlike the exports: this one is drawn onto someone else's
+    /// background. An exported PNG is an artifact you place yourself, so
+    /// transparency is a feature there; a thumbnail is composited by Finder and
+    /// the Files app, and against their dark appearance a black-pen drawing on
+    /// a transparent ground all but disappears — which would undo the point of
+    /// putting the picture on the file in the first place.
     func thumbnailData() -> Data? {
         guard canExport else { return nil }
-        return Self.renderPNG(lastRunCommands, longSide: 256, scale: 1)
+        return Self.renderPNG(lastRunCommands, longSide: 256, scale: 1, onWhite: true)
     }
 
     /// Renders a command stream to PNG, cropped tight to the drawing and
@@ -188,8 +195,13 @@ final class RunnerModel {
     /// too (`hideTortoise`). `speed(0)` makes `CanvasModel` flush every frame at
     /// init, so `ImageRenderer` sees the finished drawing without a running
     /// timeline. `scale` is the pixel density applied on top.
+    ///
+    /// `onWhite` paints a background behind the drawing. It is off for the
+    /// exports on purpose — `TortoiseCanvas` paints no background of its own
+    /// (temoki/TortoiseGraphics2#44), so they come out transparent, which is
+    /// what you want in a picture you are going to place somewhere.
     private static func renderPNG(
-        _ commands: [TortoiseCommand], longSide: Double, scale: CGFloat
+        _ commands: [TortoiseCommand], longSide: Double, scale: CGFloat, onWhite: Bool = false
     ) -> Data? {
         let export = Tortoise()
         export.speed = 0
@@ -199,6 +211,7 @@ final class RunnerModel {
         let renderer = ImageRenderer(
             content: TortoiseCanvas(export)
                 .frame(width: size.width, height: size.height)
+                .background(onWhite ? Color.white : Color.clear)
         )
         renderer.scale = scale
         guard let cgImage = renderer.cgImage else { return nil }
