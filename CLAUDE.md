@@ -413,6 +413,31 @@ rules apply. The app takes `files.user-selected.read-write` for the
 `read-only` and is sandboxed for a different reason (a macOS QuickLook
 extension is not loaded otherwise).
 
+**A release is a `v*` tag** (#4). Xcode Cloud runs one `Release` workflow off
+it — two Archive actions, iOS and macOS, each with a TestFlight internal
+post-action bound to its own archive artifact. It carries no Build or Test
+action: GitHub Actions has already run the lint, the Kit tests and both
+platform builds on the way to main, and Xcode Cloud's 25 free compute
+hours/month are the scarce resource, not GitHub's. The two never overlap
+because `ci.yml` triggers on `branches`, which a tag ref does not match.
+`ci_scripts/` is deliberately absent. The one thing that looked like it
+needed a script does not: **Xcode Cloud sets the TestFlight build number from
+`CI_BUILD_NUMBER` and ignores `CFBundleVersion`**, so the static
+`CURRENT_PROJECT_VERSION = 1` never collides on a second upload the way it
+would from a local archive. The only script ever likely to be needed is a
+`ci_post_clone.sh` writing `Support/Local.xcconfig` from a workflow
+environment variable, and only if an archive there fails asking for a
+development team — leave it out until it does.
+What *is* unlinked is the tag and the version it ships: nothing makes
+`v0.2.0` and `MARKETING_VERSION` agree, and a mismatch uploads the old
+version silently. `release-tag.yml` compares them (and catches app/extension
+drift, since it requires one distinct value across all four configurations).
+It cannot block the release — Xcode Cloud is already archiving — it only
+makes the mistake loud while there is still a build to cancel. A suffix after
+`-` is stripped before comparing: a marketing version is dotted numbers, a
+tag has to be unique, and one version legitimately takes many TestFlight
+builds, so `v0.1.0-beta2` and `v0.1.0-2` both release 0.1.0.
+
 **Compact width is not a design target** (#29). There is one layout,
 `RootView`'s three-column `NavigationSplitView`; the "つくる / うごかす" tab
 pair and its bottom palette strip are gone, because three panes' worth of

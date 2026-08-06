@@ -1,0 +1,46 @@
+name: Release Tag
+
+# A tag is what starts an Xcode Cloud release, and nothing otherwise ties the
+# tag to the version the build will carry: push v0.2.0 while MARKETING_VERSION
+# still reads 0.1.0 and TestFlight quietly receives 0.1.0. Xcode Cloud has
+# already begun archiving by the time this runs, so this does not block the
+# release — it is here to make the mismatch loud instead of silent, while the
+# build is still in flight and can be cancelled.
+#
+# Deliberately a separate workflow rather than a tag trigger on ci.yml: that
+# would rerun the whole lint / test / build matrix on macOS runners for a tag
+# cut from an already-gated main.
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  version-matches-tag:
+    name: Tag matches MARKETING_VERSION
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Compare
+        run: |
+          # A marketing version is dotted numbers and nothing else, but a tag
+          # has to be unique — and TestFlight legitimately takes several builds
+          # of one version (the build number comes from Xcode Cloud, not from
+          # here). So v0.1.0-beta2 and v0.1.0-2 both release version 0.1.0.
+          tag="${GITHUB_REF_NAME#v}"
+          tag="${tag%%-*}"
+          # Every target and configuration, so app/extension drift is caught too.
+          versions=$(
+            grep -oE 'MARKETING_VERSION = [^;]+;' TortoiseBlocks.xcodeproj/project.pbxproj \
+              | sed -E 's/MARKETING_VERSION = (.*);/\1/' | sort -u
+          )
+          if [ "$(echo "$versions" | wc -l)" -ne 1 ]; then
+            echo "::error::MARKETING_VERSION is not the same everywhere: $(echo $versions)"
+            exit 1
+          fi
+          if [ "$versions" != "$tag" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match MARKETING_VERSION $versions — TestFlight would receive $versions."
+            exit 1
+          fi
+          echo "Tag $GITHUB_REF_NAME matches MARKETING_VERSION $versions."
