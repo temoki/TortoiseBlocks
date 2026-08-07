@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>プライバシーポリシー — Tortoise Blocks</title>
-<meta name="description" content="Tortoise Blocks は利用者の情報を一切収集せず、ネットワーク通信も行いません。Tortoise Blocks collects no data and makes no network connections.">
+<title>Privacy Policy — Tortoise Blocks</title>
+<meta name="description" content="Tortoise Blocks collects no data and makes no network connections. Tortoise Blocks は利用者の情報を一切収集せず、ネットワーク通信も行いません。">
 <link rel="icon" href="icon-176.png">
 <style>
   :root {
@@ -31,24 +31,22 @@
     padding: 2.5rem 1.25rem 4rem;
     background: var(--bg);
     color: var(--fg);
-    font: 16px/1.75 -apple-system, BlinkMacSystemFont, "Hiragino Sans",
-          "Helvetica Neue", Arial, sans-serif;
+    font: 16px/1.75 -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
     -webkit-text-size-adjust: 100%;
   }
   main { max-width: 44rem; margin: 0 auto; }
-  header { display: flex; align-items: center; gap: 1rem; margin-bottom: .5rem; }
+  header { display: flex; align-items: center; gap: 1rem; }
   header img { width: 72px; height: 72px; border-radius: 16px; flex: none; }
   h1 { font-size: 1.5rem; line-height: 1.3; margin: 0; }
-  header p { margin: .25rem 0 0; color: var(--muted); font-size: .9rem; }
   h2 {
     font-size: 1.15rem; margin: 2.75rem 0 .75rem;
     padding-top: 1.5rem; border-top: 1px solid var(--rule);
   }
-  h3 { font-size: 1rem; margin: 1.75rem 0 .5rem; }
   p, ul { margin: .75rem 0; }
   ul { padding-left: 1.35rem; }
   li { margin: .3rem 0; }
   a { color: var(--accent); }
+  code { font-size: .95em; }
   .lede {
     margin: 1.75rem 0 0;
     padding: 1.1rem 1.25rem;
@@ -58,14 +56,52 @@
   }
   .lede strong { color: var(--fg); }
   .meta { color: var(--muted); font-size: .875rem; }
-  .langbar { margin: 1.5rem 0 0; font-size: .9rem; }
   footer {
     margin-top: 3.5rem; padding-top: 1.5rem;
     border-top: 1px solid var(--rule);
     color: var(--muted); font-size: .875rem;
   }
-  :lang(en) { font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; }
+  :lang(ja) {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans",
+                 "Helvetica Neue", Arial, sans-serif;
+  }
+
+  /* Language switch */
+  .langswitch { margin: 1.25rem 0 0; display: flex; gap: .4rem; }
+  .langswitch button {
+    font: inherit; font-size: .875rem; line-height: 1;
+    padding: .5rem .85rem; border-radius: 999px;
+    border: 1px solid var(--rule); background: transparent;
+    color: var(--muted); cursor: pointer;
+  }
+  .langswitch button:hover { color: var(--fg); }
+  .langswitch button[aria-pressed="true"] {
+    background: var(--accent); border-color: var(--accent);
+    color: #fff; font-weight: 600;
+  }
+  .langswitch button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Without JavaScript there is no data-lang, so both languages stay visible —
+     a policy page must never hide itself behind a script. */
+  html[data-lang="en"] section[lang="ja"],
+  html[data-lang="ja"] section[lang="en"] { display: none; }
+  html:not([data-lang]) .langswitch { display: none; }
 </style>
+<script>
+  // Runs before the body renders, so the right language is the first thing
+  // painted rather than a flash of the other one.
+  (function () {
+    var q = new URLSearchParams(location.search).get("lang");
+    var lang = (q === "ja" || q === "en") ? q
+      : ((navigator.languages || [navigator.language || ""])
+          .some(function (l) { return /^ja\b/i.test(l); }) ? "ja" : "en");
+    var r = document.documentElement;
+    r.dataset.lang = lang;
+    r.lang = lang;
+    document.title = lang === "ja"
+      ? "プライバシーポリシー — Tortoise Blocks"
+      : "Privacy Policy — Tortoise Blocks";
+  })();
+</script>
 </head>
 <body>
 <main>
@@ -73,148 +109,177 @@
 <header>
   <img src="icon-176.png" alt="">
   <div>
-    <h1>Tortoise Blocks<br>プライバシーポリシー</h1>
-    <p>Privacy Policy · <a href="#en">English below</a></p>
+    <h1>Tortoise&nbsp;Blocks</h1>
+    <div class="langswitch">
+      <button type="button" data-set="en" aria-pressed="false" lang="en">English</button>
+      <button type="button" data-set="ja" aria-pressed="false" lang="ja">日本語</button>
+    </div>
   </div>
 </header>
 
-<p class="lede">
-  <strong>Tortoise Blocks は、利用者に関するいかなる情報も収集しません。</strong>
-  アプリはネットワーク通信を一切行わず、作った作品は利用者の端末と、
-  利用者自身が選んだ保存先にのみ保存されます。
-</p>
+<section lang="en">
 
-<p class="meta">最終更新日: 2026年8月7日</p>
+  <h2 style="border-top:0;padding-top:0;margin-top:2.5rem">Privacy Policy</h2>
 
-<h2>1. 収集する情報</h2>
-<p>ありません。本アプリには次のいずれもありません。</p>
-<ul>
-  <li>アカウント登録・ログイン</li>
-  <li>氏名・メールアドレス・年齢などの入力欄</li>
-  <li>利用状況の計測、分析、統計の送信</li>
-  <li>広告の表示、および広告・分析目的の第三者製 SDK</li>
-  <li>端末を横断して利用者を追跡する仕組み（App Tracking Transparency の対象となる行為）</li>
-  <li>位置情報、連絡先、写真、カメラ、マイクへのアクセス</li>
-</ul>
+  <p class="lede">
+    <strong>Tortoise Blocks collects no information about the people who use it.</strong>
+    The app makes no network connections, and the drawings you make stay on your
+    device and in whatever location you choose to save them.
+  </p>
 
-<h2>2. ネットワーク通信</h2>
-<p>
-  本アプリはネットワーク通信を行いません。アプリのソースコードには、
-  通信を行うためのコードが含まれていません。
-</p>
+  <p class="meta">Last updated: 7 August 2026</p>
 
-<h2>3. 作った作品の保存先</h2>
-<ul>
-  <li>
-    作品は <code>.tortoise</code> 形式のファイルとして、利用者が選んだ場所に保存されます。
-    保存先を決めるのは利用者であり、開発者がその内容にアクセスすることはできません。
-  </li>
-  <li>
-    保存先として iCloud Drive を選んだ場合、その同期は Apple の仕組みによって行われ、
-    Apple のプライバシーポリシーに従います。開発者はそこに関与しません。
-  </li>
-  <li>
-    画像（PNG / SVG）の書き出しや共有は、利用者が明示的に操作したときにだけ実行されます。
-    送信先を選ぶのは利用者です。
-  </li>
-</ul>
+  <h2>1. Information we collect</h2>
+  <p>None. The app has none of the following:</p>
+  <ul>
+    <li>Accounts or sign-in</li>
+    <li>Fields for a name, email address, age, or any other personal detail</li>
+    <li>Usage measurement, analytics, or statistics of any kind</li>
+    <li>Advertising, or any third-party advertising or analytics SDK</li>
+    <li>Any mechanism that tracks a person across apps or websites
+        (anything that would require App Tracking Transparency)</li>
+    <li>Access to location, contacts, photos, camera, or microphone</li>
+  </ul>
 
-<h2>4. 子どもの利用について</h2>
-<p>
-  本アプリは子どもが使うことを想定して作られています。
-  アカウントも個人情報の入力欄もなく、外部との通信も行わないため、
-  子どもに関する情報が収集されたり、どこかへ送信されたりすることはありません。
-</p>
+  <h2>2. Network connections</h2>
+  <p>The app makes none. Its source code contains no networking code at all.</p>
 
-<h2>5. 第三者への提供</h2>
-<p>収集している情報がないため、第三者に提供する情報もありません。</p>
+  <h2>3. Where your drawings go</h2>
+  <ul>
+    <li>
+      Drawings are saved as <code>.tortoise</code> files wherever you choose to put
+      them. You pick the location, and the developer cannot reach what is in it.
+    </li>
+    <li>
+      If you choose iCloud Drive, that syncing is performed by Apple under Apple's
+      privacy policy. The developer plays no part in it.
+    </li>
+    <li>
+      Exporting an image (PNG or SVG) or sharing one happens only when you ask for
+      it, and you choose where it goes.
+    </li>
+  </ul>
 
-<h2>6. 本ポリシーの変更</h2>
-<p>
-  内容を変更した場合は、このページを更新し、上記の最終更新日を改めます。
-</p>
+  <h2>4. Children</h2>
+  <p>
+    This app is made for children to use. There are no accounts, no fields for
+    personal information, and no connections to anywhere, so nothing about a child
+    is collected or transmitted.
+  </p>
 
-<h2>7. お問い合わせ</h2>
-<p>
-  本ポリシーや本アプリについてのご質問は、
-  <a href="https://github.com/temoki/TortoiseBlocks/issues">GitHub の Issues</a>
-  へお願いします。
-</p>
+  <h2>5. Sharing with third parties</h2>
+  <p>There is nothing to share, because nothing is collected.</p>
 
-<hr style="border:0;border-top:1px solid var(--rule);margin:4rem 0 0">
+  <h2>6. Changes to this policy</h2>
+  <p>If this policy changes, this page will be updated and the date above revised.</p>
 
-<div lang="en" id="en">
+  <h2>7. Contact</h2>
+  <p>
+    Questions about this policy or the app are welcome at
+    <a href="https://github.com/temoki/TortoiseBlocks/issues">GitHub Issues</a>.
+  </p>
 
-<h2 style="border-top:0;padding-top:0">Privacy Policy (English)</h2>
+</section>
 
-<p class="lede">
-  <strong>Tortoise Blocks collects no information about the people who use it.</strong>
-  The app makes no network connections, and the drawings you make stay on your
-  device and in whatever location you choose to save them.
-</p>
+<section lang="ja">
 
-<p class="meta">Last updated: 7 August 2026</p>
+  <h2 style="border-top:0;padding-top:0;margin-top:2.5rem">プライバシーポリシー</h2>
 
-<h3>1. Information we collect</h3>
-<p>None. The app has none of the following:</p>
-<ul>
-  <li>Accounts or sign-in</li>
-  <li>Fields for a name, email address, age, or any other personal detail</li>
-  <li>Usage measurement, analytics, or statistics of any kind</li>
-  <li>Advertising, or any third-party advertising or analytics SDK</li>
-  <li>Any mechanism that tracks a person across apps or websites
-      (anything that would require App Tracking Transparency)</li>
-  <li>Access to location, contacts, photos, camera, or microphone</li>
-</ul>
+  <p class="lede">
+    <strong>Tortoise Blocks は、利用者に関するいかなる情報も収集しません。</strong>
+    アプリはネットワーク通信を一切行わず、作った作品は利用者の端末と、
+    利用者自身が選んだ保存先にのみ保存されます。
+  </p>
 
-<h3>2. Network connections</h3>
-<p>
-  The app makes none. Its source code contains no networking code at all.
-</p>
+  <p class="meta">最終更新日: 2026年8月7日</p>
 
-<h3>3. Where your drawings go</h3>
-<ul>
-  <li>
-    Drawings are saved as <code>.tortoise</code> files wherever you choose to put
-    them. You pick the location, and the developer cannot reach what is in it.
-  </li>
-  <li>
-    If you choose iCloud Drive, that syncing is performed by Apple under Apple's
-    privacy policy. The developer plays no part in it.
-  </li>
-  <li>
-    Exporting an image (PNG or SVG) or sharing one happens only when you ask for
-    it, and you choose where it goes.
-  </li>
-</ul>
+  <h2>1. 収集する情報</h2>
+  <p>ありません。本アプリには次のいずれもありません。</p>
+  <ul>
+    <li>アカウント登録・ログイン</li>
+    <li>氏名・メールアドレス・年齢などの入力欄</li>
+    <li>利用状況の計測、分析、統計の送信</li>
+    <li>広告の表示、および広告・分析目的の第三者製 SDK</li>
+    <li>端末を横断して利用者を追跡する仕組み（App Tracking Transparency の対象となる行為）</li>
+    <li>位置情報、連絡先、写真、カメラ、マイクへのアクセス</li>
+  </ul>
 
-<h3>4. Children</h3>
-<p>
-  This app is made for children to use. There are no accounts, no fields for
-  personal information, and no connections to anywhere, so nothing about a child
-  is collected or transmitted.
-</p>
+  <h2>2. ネットワーク通信</h2>
+  <p>
+    本アプリはネットワーク通信を行いません。アプリのソースコードには、
+    通信を行うためのコードが含まれていません。
+  </p>
 
-<h3>5. Sharing with third parties</h3>
-<p>There is nothing to share, because nothing is collected.</p>
+  <h2>3. 作った作品の保存先</h2>
+  <ul>
+    <li>
+      作品は <code>.tortoise</code> 形式のファイルとして、利用者が選んだ場所に保存されます。
+      保存先を決めるのは利用者であり、開発者がその内容にアクセスすることはできません。
+    </li>
+    <li>
+      保存先として iCloud Drive を選んだ場合、その同期は Apple の仕組みによって行われ、
+      Apple のプライバシーポリシーに従います。開発者はそこに関与しません。
+    </li>
+    <li>
+      画像（PNG / SVG）の書き出しや共有は、利用者が明示的に操作したときにだけ実行されます。
+      送信先を選ぶのは利用者です。
+    </li>
+  </ul>
 
-<h3>6. Changes to this policy</h3>
-<p>
-  If this policy changes, this page will be updated and the date above revised.
-</p>
+  <h2>4. 子どもの利用について</h2>
+  <p>
+    本アプリは子どもが使うことを想定して作られています。
+    アカウントも個人情報の入力欄もなく、外部との通信も行わないため、
+    子どもに関する情報が収集されたり、どこかへ送信されたりすることはありません。
+  </p>
 
-<h3>7. Contact</h3>
-<p>
-  Questions about this policy or the app are welcome at
-  <a href="https://github.com/temoki/TortoiseBlocks/issues">GitHub Issues</a>.
-</p>
+  <h2>5. 第三者への提供</h2>
+  <p>収集している情報がないため、第三者に提供する情報もありません。</p>
 
-</div>
+  <h2>6. 本ポリシーの変更</h2>
+  <p>内容を変更した場合は、このページを更新し、上記の最終更新日を改めます。</p>
+
+  <h2>7. お問い合わせ</h2>
+  <p>
+    本ポリシーや本アプリについてのご質問は、
+    <a href="https://github.com/temoki/TortoiseBlocks/issues">GitHub の Issues</a>
+    へお願いします。
+  </p>
+
+</section>
 
 <footer>
   <a href="https://github.com/temoki/TortoiseBlocks">Tortoise Blocks on GitHub</a>
 </footer>
 
 </main>
+
+<script>
+  (function () {
+    var r = document.documentElement;
+    var buttons = document.querySelectorAll(".langswitch button");
+    function apply(lang, push) {
+      r.dataset.lang = lang;
+      r.lang = lang;
+      document.title = lang === "ja"
+        ? "プライバシーポリシー — Tortoise Blocks"
+        : "Privacy Policy — Tortoise Blocks";
+      buttons.forEach(function (b) {
+        b.setAttribute("aria-pressed", String(b.dataset.set === lang));
+      });
+      if (push) {
+        // Keep the choice in the URL so it can be linked and shared —
+        // App Store Connect takes a policy URL per localization.
+        var u = new URL(location.href);
+        u.searchParams.set("lang", lang);
+        history.replaceState(null, "", u);
+      }
+    }
+    buttons.forEach(function (b) {
+      b.addEventListener("click", function () { apply(b.dataset.set, true); });
+    });
+    apply(r.dataset.lang, false);
+  })();
+</script>
 </body>
 </html>
