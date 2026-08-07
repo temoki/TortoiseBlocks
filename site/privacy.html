@@ -35,7 +35,7 @@
     -webkit-text-size-adjust: 100%;
   }
   main { max-width: 44rem; margin: 0 auto; }
-  header { display: flex; align-items: center; gap: 1rem; }
+  header { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
   header img { width: 72px; height: 72px; border-radius: 16px; flex: none; }
   h1 { font-size: 1.5rem; line-height: 1.3; margin: 0; }
   h2 {
@@ -66,40 +66,59 @@
                  "Helvetica Neue", Arial, sans-serif;
   }
 
-  /* Language switch */
-  .langswitch { margin: 1.25rem 0 0; display: flex; gap: .4rem; }
-  .langswitch button {
-    font: inherit; font-size: .875rem; line-height: 1;
-    padding: .5rem .85rem; border-radius: 999px;
-    border: 1px solid var(--rule); background: transparent;
-    color: var(--muted); cursor: pointer;
+  /* Language picker. A select rather than a row of buttons, so a third and
+     fourth language cost one <option> and no layout thinking. */
+  .langpick { margin-left: auto; }
+  .langpick select {
+    font: inherit; font-size: .9rem;
+    padding: .45rem 2rem .45rem .75rem;
+    border: 1px solid var(--rule); border-radius: 8px;
+    background: var(--bg); color: var(--fg);
+    cursor: pointer; appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+                      linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: right 1rem center, right .7rem center;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
   }
-  .langswitch button:hover { color: var(--fg); }
-  .langswitch button[aria-pressed="true"] {
-    background: var(--accent); border-color: var(--accent);
-    color: #fff; font-weight: 600;
-  }
-  .langswitch button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  /* Without JavaScript there is no data-lang, so both languages stay visible —
-     a policy page must never hide itself behind a script. */
-  html[data-lang="en"] section[lang="ja"],
-  html[data-lang="ja"] section[lang="en"] { display: none; }
-  html:not([data-lang]) .langswitch { display: none; }
+  .langpick select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* The hiding rule keys on an attribute only the script sets, so with
+     JavaScript off every language renders in full and only the picker —
+     useless without it — goes away. A policy page must never hide itself
+     behind a script. */
+  html[data-lang] section[lang] { display: none; }
+  html[data-lang="en"] section[lang="en"],
+  html[data-lang="ja"] section[lang="ja"] { display: block; }
+  html:not([data-lang]) .langpick { display: none; }
 </style>
 <script>
+  /* Adding a language takes three edits: a code here, an <option> below, and
+     a <section lang="…"> of translated text. Everything else follows. The
+     first entry is the fallback when nothing else matches. */
+  var LANGS = ["en", "ja"];
+
   // Runs before the body renders, so the right language is the first thing
-  // painted rather than a flash of the other one.
+  // painted rather than a flash of another one.
   (function () {
     var q = new URLSearchParams(location.search).get("lang");
-    var lang = (q === "ja" || q === "en") ? q
-      : ((navigator.languages || [navigator.language || ""])
-          .some(function (l) { return /^ja\b/i.test(l); }) ? "ja" : "en");
-    var r = document.documentElement;
-    r.dataset.lang = lang;
-    r.lang = lang;
-    document.title = lang === "ja"
-      ? "プライバシーポリシー — Tortoise Blocks"
-      : "Privacy Policy — Tortoise Blocks";
+    var lang = LANGS.indexOf(q) >= 0 ? q : negotiate();
+    document.documentElement.dataset.lang = lang;
+    document.documentElement.lang = lang;
+
+    // navigator.languages is in the reader's own order of preference, so the
+    // first tag that matches something we have wins — "ja-JP" matches "ja",
+    // "java" matches nothing.
+    function negotiate() {
+      var tags = navigator.languages || [navigator.language || ""];
+      for (var i = 0; i < tags.length; i++) {
+        var tag = String(tags[i]).toLowerCase();
+        for (var j = 0; j < LANGS.length; j++) {
+          if (tag === LANGS[j] || tag.indexOf(LANGS[j] + "-") === 0) return LANGS[j];
+        }
+      }
+      return LANGS[0];
+    }
   })();
 </script>
 </head>
@@ -108,12 +127,12 @@
 
 <header>
   <img src="icon-176.png" alt="">
-  <div>
-    <h1>Tortoise&nbsp;Blocks</h1>
-    <div class="langswitch">
-      <button type="button" data-set="en" aria-pressed="false" lang="en">English</button>
-      <button type="button" data-set="ja" aria-pressed="false" lang="ja">日本語</button>
-    </div>
+  <h1>Tortoise&nbsp;Blocks</h1>
+  <div class="langpick">
+    <select id="lang" aria-label="Language / 言語">
+      <option value="en" lang="en">English</option>
+      <option value="ja" lang="ja">日本語</option>
+    </select>
   </div>
 </header>
 
@@ -256,29 +275,29 @@
 
 <script>
   (function () {
-    var r = document.documentElement;
-    var buttons = document.querySelectorAll(".langswitch button");
-    function apply(lang, push) {
-      r.dataset.lang = lang;
-      r.lang = lang;
-      document.title = lang === "ja"
-        ? "プライバシーポリシー — Tortoise Blocks"
-        : "Privacy Policy — Tortoise Blocks";
-      buttons.forEach(function (b) {
-        b.setAttribute("aria-pressed", String(b.dataset.set === lang));
-      });
-      if (push) {
-        // Keep the choice in the URL so it can be linked and shared —
-        // App Store Connect takes a policy URL per localization.
-        var u = new URL(location.href);
-        u.searchParams.set("lang", lang);
-        history.replaceState(null, "", u);
+    var root = document.documentElement;
+    var select = document.getElementById("lang");
+
+    function apply(lang, remember) {
+      root.dataset.lang = lang;
+      root.lang = lang;
+      select.value = lang;
+      // Taken from the page rather than a parallel list of titles, so a new
+      // language needs no edit here.
+      var heading = document.querySelector('section[lang="' + lang + '"] h2');
+      if (heading) document.title = heading.textContent.trim() + " — Tortoise Blocks";
+      if (remember) {
+        // The choice rides in the URL, not in storage: a page promising no
+        // data collection has no business writing localStorage, and this
+        // gives App Store Connect the per-localization URLs it asks for.
+        var url = new URL(location.href);
+        url.searchParams.set("lang", lang);
+        history.replaceState(null, "", url);
       }
     }
-    buttons.forEach(function (b) {
-      b.addEventListener("click", function () { apply(b.dataset.set, true); });
-    });
-    apply(r.dataset.lang, false);
+
+    select.addEventListener("change", function () { apply(select.value, true); });
+    apply(root.dataset.lang, false);
   })();
 </script>
 </body>

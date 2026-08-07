@@ -1,0 +1,49 @@
+name: Pages
+
+# Publishes site/ — the pages meant for the web, currently the privacy policy
+# App Review requires. It is a workflow rather than GitHub's classic Pages
+# builder for one reason: that builder only accepts the repository root or
+# /docs as its source, and docs/ belongs to the repository's own
+# documentation (README assets, architecture notes), not to the public site.
+#
+# The paths filter keeps ordinary code commits from redeploying a site they
+# did not touch.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never cancel a deploy midway: one in flight should finish before the next
+# starts, or the live site can be left as a half-written artifact.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/configure-pages@v6
+
+      - name: Upload site/
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+      - id: deployment
+        uses: actions/deploy-pages@v5
