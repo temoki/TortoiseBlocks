@@ -424,10 +424,25 @@ because `ci.yml` triggers on `branches`, which a tag ref does not match.
 needed a script does not: **Xcode Cloud sets the TestFlight build number from
 `CI_BUILD_NUMBER` and ignores `CFBundleVersion`**, so the static
 `CURRENT_PROJECT_VERSION = 1` never collides on a second upload the way it
-would from a local archive. The only script ever likely to be needed is a
-`ci_post_clone.sh` writing `Support/Local.xcconfig` from a workflow
-environment variable, and only if an archive there fails asking for a
-development team — leave it out until it does.
+would from a local archive. Nor does the team: the 0.1.0 release archived on
+Xcode Cloud with `DEVELOPMENT_TEAM` empty and never once asked for one, so
+the `ci_post_clone.sh` that would have written `Support/Local.xcconfig` from
+a workflow environment variable is not needed either. Keep it that way.
+
+**Every bundle identifier must exist in the Developer portal before Xcode
+Cloud can release.** Its automatic signing issues *profiles*; it cannot
+*register* an identifier the way `-allowProvisioningUpdates` does locally
+("Automatic signing cannot register bundle identifier …" / "No profiles for
+… were found"). This bit the extension on the first real release, and it
+lands in a confusing place: **the archive succeeds and the export fails**, so
+the log says `** ARCHIVE SUCCEEDED **` a few hundred lines above the error.
+A local archive is no evidence here — the one run before this used the
+wildcard `iOS Team Provisioning Profile: *`, which covers a bundle ID that
+was never registered. Neither is a green build on the other platform: macOS
+uploaded to TestFlight from the same commit that failed on iOS. So when a new
+extension or app-group identifier appears, register it at
+developer.apple.com first (Identifiers → App IDs → explicit), and expect only
+iOS to notice if you don't.
 What *is* unlinked is the tag and the version it ships: nothing makes
 `v0.2.0` and `MARKETING_VERSION` agree, and a mismatch uploads the old
 version silently. `release-tag.yml` compares them (and catches app/extension
