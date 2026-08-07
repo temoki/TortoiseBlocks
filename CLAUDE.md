@@ -413,6 +413,31 @@ rules apply. The app takes `files.user-selected.read-write` for the
 `read-only` and is sandboxed for a different reason (a macOS QuickLook
 extension is not loaded otherwise).
 
+**`site/` is the public website, `docs/` is the repository's own
+documentation.** Anything served at `temoki.github.io/TortoiseBlocks/` lives
+in `site/` — currently `privacy.html`, the policy App Review requires of
+every app, including one that collects nothing. `docs/` holds README assets
+and architecture notes and is *not* published. The split is the reason
+`pages.yml` exists at all: GitHub's classic Pages builder accepts no source
+but the repository root or `/docs`, so publishing any other directory takes a
+workflow. It carries a `paths:` filter, so a commit that touches no page
+never redeploys the site, and `cancel-in-progress: false`, because a deploy
+interrupted midway can leave the live site as a half-written artifact.
+The policy page states what was *measured* — no accounts, no analytics, no
+advertising or third-party SDK, no tracking, and no networking code anywhere
+in the app or in TortoiseGraphics2 — which is also why no
+`PrivacyInfo.xcprivacy` is needed: nothing here touches a required-reason
+API, not even `UserDefaults`. Re-check that if a dependency or an
+`@AppStorage` ever arrives. It reads in one language, chosen by `?lang=`
+first, then `navigator.languages` in the reader's own order, falling back to
+English; adding a language is a code in `LANGS`, an `<option>`, and a
+translated `<section>`. Two rules hold it together: it stores nothing (a page
+promising no data collection has no business writing `localStorage`, so the
+choice rides in the URL — which is also what gives App Store Connect its
+per-localization URLs), and it never hides behind a script (the hiding rule
+keys on an attribute only JavaScript sets, so with JavaScript off every
+language renders in full).
+
 **A release is a `v*` tag** (#4). Xcode Cloud runs one `Release` workflow off
 it — two Archive actions, iOS and macOS, each with a TestFlight internal
 post-action bound to its own archive artifact. It carries no Build or Test
