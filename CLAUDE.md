@@ -218,7 +218,7 @@ through `ctm.inverted()`. Verify with `QLThumbnailGenerator` against real files
 it is what caught this.
 
 **The tortoise on screen is our artwork, not the library's triangle.**
-`CanvasPane` sets `.tortoiseSprite(.image(...))` (TortoiseUI 2.0.0-beta11)
+`CanvasPane` sets `.tortoiseSprite(.image(...))` (TortoiseUI 2.0.0)
 with the `TortoiseSprite` asset at its natural size, 23×32pt, so the
 @1x/@2x/@3x renditions land pixel-exact at viewport scale 1; the library
 scales it with the viewport from there, exactly as it scaled the triangle.
