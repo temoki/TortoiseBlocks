@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tortoise Blocks — Snap blocks together, watch the tortoise draw</title>
+<meta name="description" content="Tortoise Blocks is a visual programming app for kids on iPad and Mac: snap blocks together, press play, and watch the tortoise draw. Tortoise Blocks は、ブロックをならべてカメに絵をかいてもらう、iPad と Mac のための子ども向けプログラミングアプリです。">
+<link rel="icon" href="icon-176.png">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Tortoise Blocks">
+<meta property="og:description" content="Snap blocks together, press play, and watch the tortoise draw. A visual programming app for kids on iPad and Mac.">
+<meta property="og:url" content="https://temoki.github.io/TortoiseBlocks/">
+<meta property="og:image" content="https://temoki.github.io/TortoiseBlocks/shots/ipad-en-1.png">
+<meta name="twitter:card" content="summary_large_image">
+
+<style>
+  /* The palette is the app's own: the accent is the mascot's purple, the same
+     literal both appearances use in the app. Kept in step with privacy.html. */
+  :root {
+    --bg: #ffffff;
+    --fg: #1c1c1e;
+    --muted: #5b5b60;
+    --rule: #e3e3e8;
+    --accent: #b64ae5;
+    --card: #f7f5fa;
+    --wash: #f2eefa;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 12px 32px rgba(0,0,0,.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #131316;
+      --fg: #ececf0;
+      --muted: #a0a0a8;
+      --rule: #2c2c31;
+      --accent: #cf7bf0;
+      --card: #1c1c21;
+      --wash: #1a1620;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.45);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.75 -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  main { max-width: 62rem; margin: 0 auto; }
+  a { color: var(--accent); }
+  img { max-width: 100%; height: auto; }
+  :lang(ja) {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans",
+                 "Helvetica Neue", Arial, sans-serif;
+    /* Keeps a line from starting on a small kana or a 長音符 — the default
+       lets "ブロック" break after "ブロ". Japanese paragraphs are also written
+       as one source line each: a newline between two CJK characters is not
+       reliably collapsed away, and shows up as a gap mid-sentence. */
+    line-break: strict;
+    /* Breaks at phrase boundaries where the browser knows them, and is
+       ignored where it doesn't — Japanese wraps acceptably either way. */
+    word-break: auto-phrase;
+  }
+
+  /* ---- Site header ------------------------------------------------- */
+  .site {
+    display: flex; align-items: center; gap: .85rem; flex-wrap: wrap;
+    max-width: 62rem; margin: 0 auto; padding: 1.5rem 0;
+  }
+  .site img { width: 40px; height: 40px; border-radius: 9px; flex: none; }
+  .site b { font-size: 1.05rem; font-weight: 600; }
+
+  /* Language picker. A select rather than a row of buttons, so a third and
+     fourth language cost one <option> and no layout thinking. */
+  .langpick { margin-left: auto; }
+  .langpick select {
+    font: inherit; font-size: .9rem;
+    padding: .45rem 2rem .45rem .75rem;
+    border: 1px solid var(--rule); border-radius: 8px;
+    background: var(--bg); color: var(--fg);
+    cursor: pointer; appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+                      linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: right 1rem center, right .7rem center;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+  }
+  .langpick select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---- Hero -------------------------------------------------------- */
+  .hero { text-align: center; padding: 2rem 0 0; }
+  .hero img.icon {
+    width: 112px; height: 112px; border-radius: 24px;
+    box-shadow: var(--shadow);
+  }
+  h1 {
+    font-size: clamp(1.85rem, 5vw, 2.9rem);
+    line-height: 1.25; letter-spacing: -.01em;
+    margin: 1.5rem auto 0; max-width: 20em;
+    text-wrap: balance;
+  }
+  .lede {
+    margin: 1.1rem auto 0; max-width: 34em;
+    font-size: 1.1rem; color: var(--muted);
+    text-wrap: pretty;
+  }
+
+  /* The badge is the one place the App Store URL appears. It links to the
+     repository until the app is published — swap the href, nothing else. */
+  .get { margin: 2rem 0 0; }
+  .get img { height: 48px; width: auto; }
+  .get a { display: inline-block; }
+  .get a:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 8px; }
+  .get p { margin: .85rem 0 0; color: var(--muted); font-size: .9rem; }
+
+  figure { margin: 2.5rem 0 0; }
+  figure img { border-radius: 14px; box-shadow: var(--shadow); }
+  figcaption { margin-top: .85rem; color: var(--muted); font-size: .9rem; }
+
+  /* ---- Features ---------------------------------------------------- */
+  h2 {
+    font-size: clamp(1.35rem, 3vw, 1.7rem); line-height: 1.35;
+    margin: 0 0 .6rem; letter-spacing: -.01em;
+    text-wrap: balance;
+  }
+  .band { margin-top: 4.5rem; }
+  .band > h2 { text-align: center; margin-bottom: 2rem; }
+
+  .cards {
+    display: grid; gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  }
+  .card {
+    background: var(--card); border-radius: 14px;
+    padding: 1.35rem 1.4rem 1.5rem;
+  }
+  .card h3 {
+    font-size: 1.05rem; margin: .6rem 0 .35rem;
+  }
+  .card p { margin: 0; color: var(--muted); font-size: .95rem; }
+  .card .glyph {
+    font-size: 1.6rem; line-height: 1;
+    display: block;
+  }
+
+  /* ---- Alternating screenshot rows --------------------------------- */
+  .showcase {
+    display: grid; gap: 2rem; align-items: center;
+    grid-template-columns: 1fr; margin-top: 4.5rem;
+  }
+  @media (min-width: 48rem) {
+    .showcase { grid-template-columns: 1fr 1.2fr; gap: 3rem; }
+    .showcase.flip .text { order: 2; }
+  }
+  .showcase figure { margin: 0; }
+  .showcase p { margin: 0; color: var(--muted); }
+
+  /* ---- Parents / privacy ------------------------------------------- */
+  .quiet {
+    margin-top: 4.5rem; background: var(--wash);
+    border-radius: 16px; padding: 2rem 1.75rem;
+  }
+  .quiet ul { margin: 1rem 0 0; padding-left: 1.35rem; color: var(--muted); }
+  .quiet li { margin: .3rem 0; }
+  .quiet .more { margin: 1.25rem 0 0; }
+
+  .specs {
+    margin-top: 4.5rem; padding-top: 1.5rem; border-top: 1px solid var(--rule);
+    display: grid; gap: 1rem 2.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+    color: var(--muted); font-size: .95rem;
+  }
+  .specs dt { font-weight: 600; color: var(--fg); }
+  .specs dd { margin: 0 0 .75rem; }
+
+  footer {
+    max-width: 62rem; margin: 3.5rem auto 0; padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+    color: var(--muted); font-size: .875rem;
+    display: flex; gap: 1.25rem; flex-wrap: wrap;
+  }
+
+  /* The hiding rule keys on an attribute only the script sets, so with
+     JavaScript off every language renders in full and only the picker —
+     useless without it — goes away. */
+  html[data-lang] section[lang] { display: none; }
+  html[data-lang="en"] section[lang="en"],
+  html[data-lang="ja"] section[lang="ja"] { display: block; }
+  html:not([data-lang]) .langpick { display: none; }
+</style>
+<script>
+  /* Adding a language takes three edits: a code here, an <option> below, and
+     a <section lang="…" data-title="…"> of translated content. */
+  var LANGS = ["en", "ja"];
+
+  // Runs before the body renders, so the right language is the first thing
+  // painted rather than a flash of another one.
+  (function () {
+    var q = new URLSearchParams(location.search).get("lang");
+    var lang = LANGS.indexOf(q) >= 0 ? q : negotiate();
+    document.documentElement.dataset.lang = lang;
+    document.documentElement.lang = lang;
+
+    // navigator.languages is in the reader's own order of preference, so the
+    // first tag that matches something we have wins — "ja-JP" matches "ja",
+    // "java" matches nothing.
+    function negotiate() {
+      var tags = navigator.languages || [navigator.language || ""];
+      for (var i = 0; i < tags.length; i++) {
+        var tag = String(tags[i]).toLowerCase();
+        for (var j = 0; j < LANGS.length; j++) {
+          if (tag === LANGS[j] || tag.indexOf(LANGS[j] + "-") === 0) return LANGS[j];
+        }
+      }
+      return LANGS[0];
+    }
+  })();
+</script>
+</head>
+<body>
+
+<header class="site">
+  <img src="icon-176.png" alt="">
+  <b>Tortoise&nbsp;Blocks</b>
+  <div class="langpick">
+    <select id="lang" aria-label="Language / 言語">
+      <option value="en" lang="en">English</option>
+      <option value="ja" lang="ja">日本語</option>
+    </select>
+  </div>
+</header>
+
+<main>
+
+<!-- ============================ English ============================= -->
+<section lang="en" data-title="Tortoise Blocks — Snap blocks together, watch the tortoise draw">
+
+  <div class="hero">
+    <img class="icon" src="icon-256.png" alt="" width="112" height="112">
+    <h1>Snap blocks together, and watch the tortoise draw.</h1>
+    <p class="lede">
+      A visual programming app for kids on iPad and Mac. Drag blocks into a
+      program, press ▶️, and a tortoise draws your picture line by line.
+    </p>
+
+    <div class="get">
+      <!-- TODO: point at the App Store listing once the app is published. -->
+      <a href="https://github.com/temoki/TortoiseBlocks">
+        <img src="appstore-badge-en.svg" alt="Download on the App Store" height="48">
+      </a>
+      <p>Coming soon · iPadOS&nbsp;26 or later · macOS&nbsp;26 or later</p>
+    </div>
+
+    <figure>
+      <img src="shots/ipad-en-1.png" loading="lazy"
+           alt="Tortoise Blocks on iPad: a palette of blocks on the left, a program
+                in the middle, and an orange star drawn by the tortoise on the right.">
+    </figure>
+  </div>
+
+  <div class="band">
+    <h2>Programming a child can read</h2>
+    <div class="cards">
+
+      <div class="card">
+        <span class="glyph" aria-hidden="true">🧩</span>
+        <h3>Blocks that snap together</h3>
+        <p>
+          Move, pen, fill, control and boxes. Tap a block to add it or drag it
+          into place, edit its numbers where they sit, reorder freely, drop one
+          on the trash to throw it away — and undo any of it.
+        </p>
+      </div>
+
+      <div class="card">
+        <span class="glyph" aria-hidden="true">🔁</span>
+        <h3>Repeat, if, and boxes</h3>
+        <p>
+          Loop a body, branch on a comparison, and keep a value in a box 🌟 you
+          can add to and multiply. Real programming ideas, in words a child
+          already knows.
+        </p>
+      </div>
+
+      <div class="card">
+        <span class="glyph" aria-hidden="true">🎲</span>
+        <h3>Roll the dice</h3>
+        <p>
+          Any number — and any color — can be a dice roll instead, so the same
+          program draws a different picture every single time you run it.
+        </p>
+      </div>
+
+      <div class="card">
+        <span class="glyph" aria-hidden="true">▶️</span>
+        <h3>Watch it draw</h3>
+        <p>
+          Play, pause, step one command at a time, scrub back and forth, change
+          the speed mid-run. The block being drawn stays highlighted, so it is
+          never a mystery which block made which line.
+        </p>
+      </div>
+
+      <div class="card">
+        <span class="glyph" aria-hidden="true">🐢</span>
+        <h3>Blocks become Swift</h3>
+        <p>
+          A code pane shows the very same program as real, syntax-colored Swift
+          — a bridge waiting for the day blocks stop being enough.
+        </p>
+      </div>
+
+      <div class="card">
+        <span class="glyph" aria-hidden="true">🖼️</span>
+        <h3>Keep it and share it</h3>
+        <p>
+          Drawings are ordinary documents in Files and Finder, each showing its
+          own picture as its icon. Export SVG or PNG, or send one through the
+          share sheet.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="showcase">
+    <div class="text">
+      <h2>A program that grows as it draws</h2>
+      <p>
+        A box holds a number, a repeat block runs the body again and again, and
+        a line that gets a little longer each time turns into a spiral. Nothing
+        here is a special effect — it is the same handful of blocks, arranged.
+      </p>
+    </div>
+    <figure>
+      <img src="shots/ipad-en-2.png" loading="lazy"
+           alt="A repeat block on iPad holding forward, turn right and add-to-box,
+                drawing a blue spiral.">
+    </figure>
+  </div>
+
+  <div class="showcase flip">
+    <div class="text">
+      <h2>From blocks to text</h2>
+      <p>
+        Every program is also a Swift program. Switch to the code pane to see
+        it, syntax-colored, and copy it out — the blocks a child drags and the
+        code a programmer writes turn out to say the same thing.
+      </p>
+    </div>
+    <figure>
+      <img src="shots/mac-en-3.png" loading="lazy"
+           alt="The code pane on a Mac showing the spiral program as Swift source.">
+    </figure>
+  </div>
+
+  <div class="showcase">
+    <div class="text">
+      <h2>iPad and Mac, one app</h2>
+      <p>
+        The same three panes on both, at home with each. It is an ordinary
+        document app: iCloud&nbsp;Drive and Files, autosave, system undo, and
+        its own folder full of drawings you can tell apart at a glance.
+      </p>
+    </div>
+    <figure>
+      <img src="shots/mac-en-1.png" loading="lazy"
+           alt="Tortoise Blocks running in a window on macOS, drawing an orange star.">
+    </figure>
+  </div>
+
+  <div class="quiet">
+    <h2>Quiet about the child using it</h2>
+    <p>
+      This app was built for children, and it asks them for nothing. There is
+      no sign-in, no name to type, no advertising, no analytics — and no
+      networking code anywhere in the app at all.
+    </p>
+    <ul>
+      <li>No accounts and no personal information</li>
+      <li>No ads, no analytics, no third-party SDKs, no tracking</li>
+      <li>No network connections of any kind</li>
+      <li>Drawings stay on the device, and wherever you choose to save them</li>
+    </ul>
+    <p class="more"><a href="privacy.html?lang=en">Read the privacy policy →</a></p>
+  </div>
+
+  <dl class="specs">
+    <div>
+      <dt>Requires</dt>
+      <dd>iPadOS 26 or later · macOS 26 or later</dd>
+    </div>
+    <div>
+      <dt>Languages</dt>
+      <dd>English and Japanese (in kid-friendly hiragana)</dd>
+    </div>
+    <div>
+      <dt>Price</dt>
+      <dd>Free, and open source under the MIT license</dd>
+    </div>
+    <div>
+      <dt>Built with</dt>
+      <dd>
+        Swift and SwiftUI, on
+        <a href="https://github.com/temoki/TortoiseGraphics2">TortoiseGraphics2</a>
+      </dd>
+    </div>
+  </dl>
+
+</section>
+
+<!-- ============================ 日本語 ============================== -->
+<section lang="ja" data-title="Tortoise Blocks — ブロックをならべて、カメに絵をかいてもらおう">
+
+  <div class="hero">
+    <img class="icon" src="icon-256.png" alt="" width="112" height="112">
+    <h1>ブロックをならべて、カメに絵をかいてもらおう！</h1>
+    <p class="lede">iPad と Mac のための、子ども向けビジュアルプログラミングアプリ。ブロックを並べて ▶️ を押すと、カメが1本ずつ線を描いていきます。</p>
+
+    <div class="get">
+      <!-- TODO: 公開後に App Store のリンクへ差し替える。 -->
+      <a href="https://github.com/temoki/TortoiseBlocks">
+        <img src="appstore-badge-ja.svg" alt="App Store でダウンロード" height="48">
+      </a>
+      <p>近日公開 · iPadOS&nbsp;26 以降 · macOS&nbsp;26 以降</p>
+    </div>
+
+    <figure>
+      <img src="shots/ipad-ja-1.png" loading="lazy"
+           alt="iPad の Tortoise Blocks。左にブロックのパレット、中央にプログラム、
+                右にカメが描いたオレンジ色の星形。">
+    </figure>
+  </div>
+
+  <div class="band">
+    <h2>子どもが読めるプログラミング</h2>
+    <div class="cards">
+
+      <div class="card">
+        <span class="glyph" aria-hidden="true">🧩</span>
+        <h3>ならべるだけのブロック</h3>
+        <p>うごき・ペン・ぬり・せいぎょ・はこ。タップで追加してもドラッグで置いてもかまいません。数字はその場で直せ、並べ替えも自由。いらないブロックはゴミ箱へ落とすだけ。ぜんぶ元に戻せます。</p>
+      </div>
+
+      <div class="card">
+        <span class="glyph" aria-hidden="true">🔁</span>
+        <h3>くりかえし・もし・はこ</h3>
+        <p>中身をくりかえし、条件で枝分かれし、値を「はこ」🌟 に入れて足したりかけたり。プログラミングの本物の考え方を、子どもが知っている言葉のまま扱えます。</p>
+      </div>
+
+      <div class="card">
+        <span class="glyph" aria-hidden="true">🎲</span>
+        <h3>サイコロをふる</h3>
+        <p>数字にも色にもサイコロを入れられます。同じプログラムなのに、▶️ を押すたびに違う絵ができあがります。</p>
+      </div>
+
+      <div class="card">
+        <span class="glyph" aria-hidden="true">▶️</span>
+        <h3>描かれていく様子が見える</h3>
+        <p>再生・一時停止、1コマずつ進める・戻す、シークバーで行き来、途中で速さを変える。いま動いているブロックは光ったままなので、どのブロックがどの線を描いたのかが必ずわかります。</p>
+      </div>
+
+      <div class="card">
+        <span class="glyph" aria-hidden="true">🐢</span>
+        <h3>ブロックは Swift になる</h3>
+        <p>同じプログラムを、色付きの本物の Swift コードとしても表示します。ブロックでは足りなくなったその日への、橋渡しです。</p>
+      </div>
+
+      <div class="card">
+        <span class="glyph" aria-hidden="true">🖼️</span>
+        <h3>のこす・わたす</h3>
+        <p>作品はふつうの書類として「ファイル」や Finder に並び、アイコンがその絵そのものになります。SVG や PNG で書き出したり、共有シートで送ったりもできます。</p>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="showcase">
+    <div class="text">
+      <h2>描きながら育っていくプログラム</h2>
+      <p>「はこ」に数を入れ、「くりかえす」で中身を何度も動かし、少しずつ長くなる線を引く。それだけで、うずまきになります。特別な仕掛けは何もなく、数個のブロックの並べ方だけです。</p>
+    </div>
+    <figure>
+      <img src="shots/ipad-ja-2.png" loading="lazy"
+           alt="iPad の「くりかえす」ブロックの中に、まえへ・みぎへまわる・はこにたす
+                が入り、青いうずまきを描いているところ。">
+    </figure>
+  </div>
+
+  <div class="showcase flip">
+    <div class="text">
+      <h2>ブロックから、文字のプログラムへ</h2>
+      <p>すべてのプログラムは Swift のプログラムでもあります。コード表示に切り替えれば、色付きのソースがそのまま見え、コピーもできます。子どもが並べたブロックと、プログラマが書くコードは、同じことを言っています。</p>
+    </div>
+    <figure>
+      <img src="shots/mac-ja-3.png" loading="lazy"
+           alt="Mac のコード表示ペイン。うずまきのプログラムが Swift のソースとして
+                表示されている。">
+    </figure>
+  </div>
+
+  <div class="showcase">
+    <div class="text">
+      <h2>iPad でも Mac でも、同じアプリ</h2>
+      <p>3つのペインの構成はどちらでも同じで、それぞれの操作にちゃんとなじみます。中身はふつうの書類アプリです。iCloud&nbsp;Drive と「ファイル」、自動保存、システムの取り消し、そして一目で見分けられる作品の並んだフォルダ。</p>
+    </div>
+    <figure>
+      <img src="shots/mac-ja-1.png" loading="lazy"
+           alt="macOS のウインドウで動く Tortoise Blocks。オレンジ色の星形を描いている。">
+    </figure>
+  </div>
+
+  <div class="quiet">
+    <h2>使う子どものことを、何も集めません</h2>
+    <p>このアプリは子どものために作られていて、子どもに何も求めません。ログインも、名前の入力欄も、広告も、利用状況の計測もありません。そもそもアプリの中に、通信を行うコードが1行もありません。</p>
+    <ul>
+      <li>アカウント登録も個人情報の入力もなし</li>
+      <li>広告・分析・第三者製 SDK・トラッキングなし</li>
+      <li>ネットワーク通信は一切なし</li>
+      <li>作品は端末と、保護者や子ども自身が選んだ保存先にだけ残ります</li>
+    </ul>
+    <p class="more"><a href="privacy.html?lang=ja">プライバシーポリシーを読む →</a></p>
+  </div>
+
+  <dl class="specs">
+    <div>
+      <dt>動作環境</dt>
+      <dd>iPadOS 26 以降 · macOS 26 以降</dd>
+    </div>
+    <div>
+      <dt>対応言語</dt>
+      <dd>日本語（ひらがな中心）・英語</dd>
+    </div>
+    <div>
+      <dt>価格</dt>
+      <dd>無料。MIT ライセンスのオープンソース</dd>
+    </div>
+    <div>
+      <dt>技術</dt>
+      <dd>Swift / SwiftUI と<a href="https://github.com/temoki/TortoiseGraphics2">TortoiseGraphics2</a></dd>
+    </div>
+  </dl>
+
+</section>
+
+</main>
+
+<footer>
+  <a href="https://github.com/temoki/TortoiseBlocks">GitHub</a>
+  <a href="privacy.html">Privacy / プライバシー</a>
+  <a href="https://github.com/temoki/TortoiseBlocks/issues">Issues</a>
+  <span>© temoki</span>
+</footer>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var select = document.getElementById("lang");
+
+    function apply(lang, remember) {
+      root.dataset.lang = lang;
+      root.lang = lang;
+      select.value = lang;
+      // Taken from the section itself rather than a parallel list of titles,
+      // so a new language needs no edit here.
+      var section = document.querySelector('section[lang="' + lang + '"]');
+      if (section && section.dataset.title) document.title = section.dataset.title;
+      if (remember) {
+        // The choice rides in the URL, not in storage: this site promises the
+        // app stores nothing, and the page has no business doing otherwise —
+        // which is also what gives App Store Connect per-localization URLs.
+        var url = new URL(location.href);
+        url.searchParams.set("lang", lang);
+        history.replaceState(null, "", url);
+      }
+    }
+
+    select.addEventListener("change", function () { apply(select.value, true); });
+    apply(root.dataset.lang, false);
+  })();
+</script>
+</body>
+</html>

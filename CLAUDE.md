@@ -415,10 +415,12 @@ extension is not loaded otherwise).
 
 **`site/` is the public website, `docs/` is the repository's own
 documentation.** Anything served at `temoki.github.io/TortoiseBlocks/` lives
-in `site/` — currently `privacy.html`, the policy App Review requires of
-every app, including one that collects nothing. `docs/` holds README assets
-and architecture notes and is *not* published. The split is the reason
-`pages.yml` exists at all: GitHub's classic Pages builder accepts no source
+in `site/`: `index.html`, the landing page, and `privacy.html`, the policy App
+Review requires of every app, including one that collects nothing. `docs/`
+holds README assets and architecture notes and is *not* published;
+`screenshots/` at the root holds the full-size App Store captures, and the
+site carries its own downscaled copies rather than linking those. The split
+is the reason `pages.yml` exists at all: GitHub's classic Pages builder accepts no source
 but the repository root or `/docs`, so publishing any other directory takes a
 workflow. It carries a `paths:` filter, so a commit that touches no page
 never redeploys the site, and `cancel-in-progress: false`, because a deploy
@@ -428,15 +430,37 @@ advertising or third-party SDK, no tracking, and no networking code anywhere
 in the app or in TortoiseGraphics2 — which is also why no
 `PrivacyInfo.xcprivacy` is needed: nothing here touches a required-reason
 API, not even `UserDefaults`. Re-check that if a dependency or an
-`@AppStorage` ever arrives. It reads in one language, chosen by `?lang=`
-first, then `navigator.languages` in the reader's own order, falling back to
-English; adding a language is a code in `LANGS`, an `<option>`, and a
-translated `<section>`. Two rules hold it together: it stores nothing (a page
-promising no data collection has no business writing `localStorage`, so the
-choice rides in the URL — which is also what gives App Store Connect its
+`@AppStorage` ever arrives. **Both pages read in one language**, chosen by
+`?lang=` first, then `navigator.languages` in the reader's own order, falling
+back to English; adding a language is a code in `LANGS`, an `<option>`, and a
+translated `<section>`. Two rules hold it together: the site stores nothing (a
+page promising no data collection has no business writing `localStorage`, so
+the choice rides in the URL — which is also what gives App Store Connect its
 per-localization URLs), and it never hides behind a script (the hiding rule
 keys on an attribute only JavaScript sets, so with JavaScript off every
-language renders in full).
+language renders in full). The landing page pays for that in bytes: each
+language is a full copy of the page, screenshots included, and **the hidden
+copy's images are fetched anyway** — an `<img>` with no layout box loads
+eagerly, `loading="lazy"` and all (measured against a logging local server,
+with and without a forced screenshot). So every visitor downloads both
+languages' screenshots, ~750KB, and quantization is what keeps that a
+non-issue. Only CSS `background-image` would actually skip them, and it is
+not worth trading `<img alt>` on the page's content images to save one
+language's worth of cached bytes.
+
+**The landing page is written for parents and teachers**, not for the kid and
+not for a developer — the technical account lives in the README. Three things
+about it are decisions rather than taste. The App Store badge is Apple's own
+artwork, served from `site/` rather than Apple's CDN (a site that promises no
+tracking should make no third-party request), and its `href` is *the* single
+place the store URL will land — it points at the repository until the app
+ships, marked with a TODO in both sections. Its screenshots are downscaled
+copies of `screenshots/`, quantized to 256 colors (`magick -dither None
+-colors 256`): flat app UI loses nothing visible and the page drops from 3.2MB
+to 750KB — but check a re-quantized shot by eye, since dithering *on* leaves
+visible speckle in the toolbar shadows. And each Japanese paragraph is one
+source line: a newline between two CJK characters is not reliably collapsed
+away, and shows up as a gap mid-sentence.
 
 **A release is a `v*` tag** (#4). Xcode Cloud runs one `Release` workflow off
 it — two Archive actions, iOS and macOS, each with a TestFlight internal
