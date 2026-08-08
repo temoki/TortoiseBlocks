@@ -418,8 +418,8 @@ documentation.** Anything served at `temoki.github.io/TortoiseBlocks/` lives
 in `site/`: `index.html`, the landing page, and `privacy.html`, the policy App
 Review requires of every app, including one that collects nothing. `docs/`
 holds README assets and architecture notes and is *not* published;
-`screenshots/` at the root holds the full-size App Store captures, and the
-site carries its own downscaled copies rather than linking those. The split
+`appstore/` holds the full-size App Store captures (see below), and the site
+carries its own downscaled copies rather than linking those. The split
 is the reason `pages.yml` exists at all: GitHub's classic Pages builder accepts no source
 but the repository root or `/docs`, so publishing any other directory takes a
 workflow. It carries a `paths:` filter, so a commit that touches no page
@@ -455,12 +455,28 @@ artwork, served from `site/` rather than Apple's CDN (a site that promises no
 tracking should make no third-party request), and its `href` is *the* single
 place the store URL will land — it points at the repository until the app
 ships, marked with a TODO in both sections. Its screenshots are downscaled
-copies of `screenshots/`, quantized to 256 colors (`magick -dither None
+copies of `appstore/screenshots/`, quantized to 256 colors (`magick -dither None
 -colors 256`): flat app UI loses nothing visible and the page drops from 3.2MB
 to 750KB — but check a re-quantized shot by eye, since dithering *on* leaves
 visible speckle in the toolbar shadows. And each Japanese paragraph is one
 source line: a newline between two CJK characters is not reliably collapsed
 away, and shows up as a gap mid-sentence.
+
+**`appstore/` is the store listing, named in App Store Connect's own
+vocabulary** (#42). Full-size captures live at
+`appstore/screenshots/<platform>/<locale>/`, and every path component is
+literally a value the API takes: `ios` / `macos` are the `Platform` enum —
+**there is no ipadOS**, iPad is a *display type* under iOS, resolved from the
+image size — and `en-US` / `ja` are ASC locale codes, not the app's `en` / `ja`
+string-catalog codes. That is the whole point of the naming: an uploader reads
+the directory names and needs no mapping table. Order comes from the leading
+number in the filename, and the sizes are the ones Apple accepts as-is (iPad
+13-inch landscape 2752×2064, Mac 2560×1600), so a reshoot has to keep the
+window sizes that produced them. The two documents the captures were shot from
+sit in `appstore/screenshot-sources/`, deliberately *outside* `screenshots/`,
+where anything present is scanned as a platform directory. The text metadata
+(`app/` for the name and subtitle, `version/` for description and keywords) and
+the uploader itself are designed in #42 and not written yet.
 
 **A release is a `v*` tag** (#4). Xcode Cloud runs one `Release` workflow off
 it — two Archive actions, iOS and macOS, each with a TestFlight internal
