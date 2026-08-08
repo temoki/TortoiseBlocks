@@ -91,6 +91,15 @@
 			);
 			sourceTree = "<group>";
 		};
+		1A0000000000000000000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1A0000000000000000000010 /* TortoiseBlocks.app */,
+				1A0000000000000000000011 /* TortoiseBlocksThumbnail.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		1A0000000000000000000005 /* Support */ = {
 			isa = PBXGroup;
 			children = (
@@ -101,15 +110,6 @@
 				1A0000000000000000000014 /* TortoiseBlocks.entitlements */,
 			);
 			path = Support;
-			sourceTree = "<group>";
-		};
-		1A0000000000000000000003 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				1A0000000000000000000010 /* TortoiseBlocks.app */,
-				1A0000000000000000000011 /* TortoiseBlocksThumbnail.appex */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
