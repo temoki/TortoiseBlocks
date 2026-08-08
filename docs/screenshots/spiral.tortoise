@@ -1,0 +1,70 @@
+{
+  "blocks" : [
+    {
+      "id" : "82DD6187-6A2B-4A39-9F35-AD86FCAA86D2",
+      "kind" : {
+        "penColor" : "blue"
+      }
+    },
+    {
+      "id" : "DB8B0A73-4E8E-42BD-B674-079304869DF6",
+      "kind" : {
+        "penWidth" : {
+          "literal" : 2
+        }
+      }
+    },
+    {
+      "id" : "9477B61C-C3DE-48E7-A642-5BA3DC373F57",
+      "kind" : {
+        "setVariable" : {
+          "name" : "🌟",
+          "value" : {
+            "literal" : 5
+          }
+        }
+      }
+    },
+    {
+      "id" : "BA66D1B6-5803-4FBD-9AD3-E642C784EF1D",
+      "kind" : {
+        "repeat" : {
+          "body" : [
+            {
+              "id" : "BD6FA8BE-DD2A-4E15-8A69-89F2D6ACF036",
+              "kind" : {
+                "forward" : {
+                  "variable" : "🌟"
+                }
+              }
+            },
+            {
+              "id" : "89544A7A-AD72-4536-A080-13CA263D611F",
+              "kind" : {
+                "turnRight" : {
+                  "literal" : 92
+                }
+              }
+            },
+            {
+              "id" : "B7B78D6A-3D50-4292-9800-D060BB90CA06",
+              "kind" : {
+                "addVariable" : {
+                  "name" : "🌟",
+                  "value" : {
+                    "literal" : 5
+                  }
+                }
+              }
+            }
+          ],
+          "count" : {
+            "literal" : 40
+          }
+        }
+      }
+    }
+  ],
+  "schemaVersion" : 2,
+  "title" : "Spiral"
+}

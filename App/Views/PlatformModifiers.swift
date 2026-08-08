@@ -44,3 +44,24 @@ extension View {
         #endif
     }
 }
+
+extension Scene {
+    /// The size a Mac window opens at. Nothing on iPadOS, where the system
+    /// decides.
+    ///
+    /// 1280×800pt is a working default for three panes, and doubles as the
+    /// App Store's macOS screenshot size: at a Retina backing scale of 2 a
+    /// window this size captures as exactly 2560×1600px, so a screenshot of
+    /// an untouched window needs no crop and no resampling.
+    ///
+    /// `defaultSize` is a default in the strict sense — macOS restores a
+    /// window's saved frame ahead of it, so a repeatable capture has to clear
+    /// that saved state first.
+    func defaultWindowSize() -> some Scene {
+        #if os(macOS)
+            defaultSize(width: 1280, height: 800)
+        #else
+            self
+        #endif
+    }
+}

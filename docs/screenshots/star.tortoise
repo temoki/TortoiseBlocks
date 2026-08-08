@@ -1,0 +1,48 @@
+{
+  "blocks" : [
+    {
+      "id" : "FA66206E-AD2F-43F1-97DE-9290F7634657",
+      "kind" : {
+        "penColor" : "orange"
+      }
+    },
+    {
+      "id" : "64569D81-16D0-41CE-87F2-08B117C2C63A",
+      "kind" : {
+        "penWidth" : {
+          "literal" : 2
+        }
+      }
+    },
+    {
+      "id" : "2D37C101-22ED-4452-A94B-5F7573375C3C",
+      "kind" : {
+        "repeat" : {
+          "body" : [
+            {
+              "id" : "7A1EF96C-17FF-4566-BE60-5B8F8ECED221",
+              "kind" : {
+                "forward" : {
+                  "literal" : 200
+                }
+              }
+            },
+            {
+              "id" : "1841307B-3169-453A-A3CB-98C96C626DB8",
+              "kind" : {
+                "turnRight" : {
+                  "literal" : 170
+                }
+              }
+            }
+          ],
+          "count" : {
+            "literal" : 36
+          }
+        }
+      }
+    }
+  ],
+  "schemaVersion" : 1,
+  "title" : "Star"
+}
