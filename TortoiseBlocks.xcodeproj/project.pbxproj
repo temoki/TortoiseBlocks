@@ -47,9 +47,22 @@
 		1A0000000000000000000016 /* ThumbnailExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ThumbnailExtension.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		1A0000000000000000000096 /* Exceptions for "App" folder in "TortoiseBlocks" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Views/CLAUDE.md,
+			);
+			target = 1A0000000000000000000020 /* TortoiseBlocks */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1A0000000000000000000002 /* App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				1A0000000000000000000096 /* Exceptions for "App" folder in "TortoiseBlocks" target */,
+			);
 			path = App;
 			sourceTree = "<group>";
 		};
@@ -539,7 +552,7 @@
 			repositoryURL = "https://github.com/temoki/TortoiseGraphics2";
 			requirement = {
 				kind = exactVersion;
-				version = "2.0.0";
+				version = 2.0.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
