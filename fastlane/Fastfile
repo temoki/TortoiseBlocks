@@ -97,6 +97,71 @@ private_lane :push_metadata do |options|
     run_precheck_before_submit: false,
     force: true
   )
+
+  reconcile_screenshots(platform: options[:platform], screenshots: options[:screenshots])
+end
+
+# deliver leaves duplicate screenshots behind, reproducibly, on a first upload.
+# It matches what is local against what is live by MD5, and Apple has not
+# computed that checksum yet when deliver checks seven seconds after the PUT —
+# so every image looks missing, deliver retries, and the set ends up with each
+# picture twice. Its own upload step skips duplicates by the same checksum, and
+# cannot, for the same reason.
+#
+# So the run does not end with deliver. This waits for the checksums to appear,
+# drops the extra copies, puts the set in filename order, and fails if what is
+# live still does not match what is on disk. It is the "check the listing, not
+# the log" rule made into a step, after a push that reported success and had
+# written nothing at all.
+private_lane :reconcile_screenshots do |options|
+  Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(**asc_api_key)
+  app = Spaceship::ConnectAPI::App.find(APP_IDENTIFIER)
+  version = app.get_edit_app_store_version(platform: CONNECT_PLATFORM.fetch(options[:platform]))
+
+  version.get_app_store_version_localizations.each do |localization|
+    local = Dir.glob(File.join(SCREENSHOTS_ROOT, options[:screenshots], localization.locale, "*.png")).sort
+    next if local.empty?
+
+    wanted = local.map { |path| [Digest::MD5.hexdigest(File.binread(path)), File.basename(path)] }
+
+    localization.get_app_screenshot_sets.each do |set|
+      # Apple fills sourceFileChecksum during processing; without it there is
+      # nothing to compare and no way to tell a duplicate from an original.
+      shots = nil
+      120.times do
+        shots = set.app_screenshots
+        break if shots.all? { |shot| !shot.source_file_checksum.to_s.empty? }
+
+        sleep(5)
+        set = localization.get_app_screenshot_sets.find { |s| s.id == set.id }
+      end
+
+      seen = {}
+      keep = []
+      shots.each do |shot|
+        checksum = shot.source_file_checksum
+        if seen[checksum]
+          UI.important("Removing duplicate #{shot.file_name}")
+          shot.delete!
+        else
+          seen[checksum] = true
+          keep << shot
+        end
+      end
+
+      live = keep.map { |shot| [shot.source_file_checksum, shot.file_name] }
+      unless live.sort == wanted.sort
+        UI.user_error!(
+          "#{localization.locale} #{set.screenshot_display_type}: App Store Connect has " \
+          "#{live.map(&:last).sort.join(', ')} but appstore/ has #{wanted.map(&:last).sort.join(', ')}"
+        )
+      end
+
+      ordered = wanted.map { |checksum, _| keep.find { |shot| shot.source_file_checksum == checksum } }
+      set.reorder_screenshots(app_screenshot_ids: ordered.map(&:id))
+      UI.success("#{localization.locale} #{set.screenshot_display_type}: #{ordered.count} screenshot(s), in order")
+    end
+  end
 end
 
 # deliver has no dry run for metadata: it either uploads, or shows an HTML page
