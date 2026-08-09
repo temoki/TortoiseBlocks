@@ -6,10 +6,14 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-iPadOS%2026%2B%20%7C%20macOS%2026%2B-lightgrey.svg)]()
 
-A visual programming app for kids — snap blocks together, press Run, and
+A visual programming app for kids — snap blocks together, press play, and
 watch the tortoise draw. Powered by
 [TortoiseGraphics2](https://github.com/temoki/TortoiseGraphics2), a turtle
 graphics engine written in Swift.
+
+[**Website**](https://temoki.github.io/TortoiseBlocks/) ·
+[**App Store**](https://apps.apple.com/app/id6798677334) ·
+[Privacy](https://temoki.github.io/TortoiseBlocks/privacy.html)
 
 <img src="docs/Screenshot.png" width="640" alt="TortoiseBlocks on macOS" />
 
@@ -70,7 +74,10 @@ TortoiseBlocks/
 │   ├── Engine/           #   BlockExpander: block tree → command stream (+ blockID tags)
 │   └── CodeGen/          #   SwiftCodeGenerator: block tree → Swift source (+ tokenizer)
 ├── App/                  # SwiftUI document app (palette | workspace | canvas)
-└── ThumbnailExtension/   # QuickLook thumbnails — reads one field, links nothing
+├── ThumbnailExtension/   # QuickLook thumbnails — reads one field, links nothing
+├── appstore/             # The store listing: text per locale, screenshots per platform
+├── fastlane/             # Pushes appstore/ to App Store Connect. The only Ruby here
+└── site/                 # The published website (GitHub Pages); docs/ is not published
 ```
 
 The runtime pipeline is one straight line:
@@ -145,6 +152,24 @@ The editor refuses out-of-range input, but **reading a document never
 validates or rewrites it**: a value outside these ranges loads exactly as
 saved and is saturated to the nearest bound when the program runs. Box
 arithmetic saturates the same way, so a value can never run off to infinity.
+
+## Releasing
+
+A `v*` tag is the release. Pushing one starts an Xcode Cloud workflow that
+archives both platforms and sends them to TestFlight, while GitHub Actions
+checks that the tag matches `MARKETING_VERSION` in every configuration — the
+two are otherwise unconnected, and a mismatch would ship the wrong version
+silently. The same tag drafts a GitHub release, with notes split by whether a
+commit reached the app or only the site, the listing, CI or the docs.
+
+The store listing is not part of that. It lives in [appstore/](appstore/) and
+goes up on demand, by hand:
+
+```bash
+bundle exec fastlane metadata_check     # the files alone, no network, no key
+bundle exec fastlane ios metadata_diff  # live listing against what is written
+bundle exec fastlane ios metadata_push  # upload (mac for the other listing)
+```
 
 ## License
 

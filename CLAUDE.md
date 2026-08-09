@@ -21,6 +21,12 @@ xcodebuild -project TortoiseBlocks.xcodeproj -scheme TortoiseBlocks \
 
 # Manual verification loop (macOS):
 pkill -x TortoiseBlocks; open ~/Library/Developer/Xcode/DerivedData/TortoiseBlocks-*/Build/Products/Debug/TortoiseBlocks.app
+
+# The App Store listing (appstore/). The check needs no key and no bundle;
+# the other two need ASC_ISSUER_ID / ASC_KEY_ID / ASC_PRIVATE_KEY_PATH.
+ruby fastlane/metadata_check.rb            # what CI runs on every pull request
+bundle exec fastlane ios metadata_diff     # live listing vs what is written
+bundle exec fastlane ios metadata_push     # upload (mac for the other listing)
 ```
 
 ## Issue Workflow
@@ -534,6 +540,30 @@ Xcode Cloud with `DEVELOPMENT_TEAM` empty and never once asked for one, so
 the `ci_post_clone.sh` that would have written `Support/Local.xcconfig` from
 a workflow environment variable is not needed either. Keep it that way.
 
+**An Archive action's distribution audience decides whether the build can ever
+be released.** Xcode Cloud's Archive actions carry `buildDistributionAudience`,
+and while it says internal testing the build arrives as
+`buildAudienceType: INTERNAL_ONLY` — which **cannot be added to an App Store
+version**. Nothing says so usefully: App Store Connect lists the build in "Add
+Build" and greys the row, and the API refuses with "The specified pre-release
+build could not be added" and no reason. The diagnosis is
+`GET /v1/builds/{id}` and reading `buildAudienceType`; the fix is
+`APP_STORE_ELIGIBLE` on both Archive actions (readable back from
+`GET /v1/ciProducts/{id}/workflows`). Existing builds can be flipped with a
+PATCH, but re-cutting the tag is what makes the *next* one right — which is why
+1.0.0 was tagged twice for the same commit tree, and only the second build
+could be submitted.
+
+**Accessibility Nutrition Labels stay drafts until the app ships.** Apple:
+"You can only publish support for devices that have a live version on the App
+Store." So the declaration is saved and stuck at `state: DRAFT` — visible
+through `GET /v1/apps/{id}/accessibilityDeclarations` — and publishing it is a
+step *after* the first release, not before. This app declares VoiceOver,
+Larger Text (iPad only; the field is nil for Mac), Dark Interface,
+Differentiate Without Color and Sufficient Contrast, and declines Reduced
+Motion (`accessibilityReduceMotion` is read nowhere), Voice Control (untested)
+and captions/audio descriptions (there is no media).
+
 **Every bundle identifier must exist in the Developer portal before Xcode
 Cloud can release.** Its automatic signing issues *profiles*; it cannot
 *register* an identifier the way `-allowProvisioningUpdates` does locally
@@ -556,7 +586,14 @@ It cannot block the release — Xcode Cloud is already archiving — it only
 makes the mistake loud while there is still a build to cancel. A suffix after
 `-` is stripped before comparing: a marketing version is dotted numbers, a
 tag has to be unique, and one version legitimately takes many TestFlight
-builds, so `v0.1.0-beta2` and `v0.1.0-2` both release 0.1.0.
+builds, so `v0.1.0-beta2` and `v0.1.0-2` both release 0.1.0. The same workflow
+then drafts a GitHub release, and only after that check passes — a tag whose
+version does not match should not become one. `.github/scripts/release-notes`
+composes the notes and is a script rather than inline YAML so it can be run
+against any tag locally. It splits commits by whether they touched the app:
+between 0.1.0 and 1.0.0, three of nineteen did, and a flat list buries them. A
+release with no predecessor lists nothing — the first had 120 commits behind
+it, which is a history, not a change log.
 
 **Compact width is not a design target** (#29). There is one layout,
 `RootView`'s three-column `NavigationSplitView`; the "つくる / うごかす" tab
