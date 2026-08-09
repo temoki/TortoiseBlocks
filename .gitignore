@@ -7,3 +7,17 @@ DerivedData/
 
 # The local signing team — see Support/Signing.xcconfig.
 Support/Local.xcconfig
+
+# The App Store Connect API key. Like Support/Local.xcconfig, it stays local —
+# CI reads it from a secret instead (see fastlane/Fastfile).
+*.p8
+
+# fastlane's leavings. Gemfile.lock is deliberately absent: it would be
+# resolved here on Ruby 2.7 and used on CI's Ruby 3, and the Gemfile pins
+# fastlane itself.
+Gemfile.lock
+vendor/bundle/
+fastlane/report.xml
+fastlane/Preview.html
+# Lane docs fastlane regenerates on every run; appstore/README.md is the real one.
+fastlane/README.md

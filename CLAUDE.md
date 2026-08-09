@@ -471,12 +471,33 @@ image size — and `en-US` / `ja` are ASC locale codes, not the app's `en` / `ja
 string-catalog codes. That is the whole point of the naming: an uploader reads
 the directory names and needs no mapping table. Order comes from the leading
 number in the filename, and the sizes are the ones Apple accepts as-is (iPad
-13-inch landscape 2752×2064, Mac 2560×1600), so a reshoot has to keep the
+13-inch landscape 2752×2064, Mac 2880×1800), so a reshoot has to keep the
 window sizes that produced them. The two documents the captures were shot from
-sit in `appstore/screenshot-sources/`, deliberately *outside* `screenshots/`,
-where anything present is scanned as a platform directory. The text metadata
-(`app/` for the name and subtitle, `version/` for description and keywords) and
-the uploader itself are designed in #42 and not written yet.
+sit in `appstore/screenshot-sources/`, deliberately *outside* `screenshots/`.
+The text is `appstore/metadata/<locale>/`, one file per field.
+
+**fastlane pushes it, and a self-written tool did not.** The uploader was
+designed as a zero-dependency Swift executable (#42) and abandoned about 900
+lines in, before it compiled: what remained was the authentication, the resource
+graph, and the screenshot reserve/chunk/commit dance — all of it unverifiable
+without a live API key, and all of it already in `deliver`. The cost of
+switching turned out to be one directory move, because the field names here
+were fastlane's from the start. So the repository now has exactly one Ruby
+dependency (`Gemfile`, `fastlane/Fastfile`), and it builds nothing, signs
+nothing and submits nothing — two lanes per platform, `metadata_diff` and
+`metadata_push`, with the helpers as `private_lane`s so `fastlane lanes` lists
+only what is meant to be run. Note **deliver has no dry run for metadata**: it uploads, or
+it renders an HTML page for a human. `metadata_diff` therefore runs the other
+way, downloading the live text into a temporary directory and diffing it. The
+one thing kept from the abandoned tool is the part that never needed the
+network: `fastlane/metadata_check.rb` measures character limits and the three
+things a screenshot must be, because deliver finds those only mid-upload during
+a run nobody does often. It sits in `fastlane/` and `metadata_push` calls it
+through a private lane, so a hand-run upload cannot skip it — but it is plain
+Ruby that requires nothing from fastlane, and CI runs it as
+`ruby fastlane/metadata_check.rb` on a bare checkout. That is the constraint
+that shaped it: making a pull request wait for `bundle install` to read nine
+text files would cost more than the check saves.
 
 **A release is a `v*` tag** (#4). Xcode Cloud runs one `Release` workflow off
 it — two Archive actions, iOS and macOS, each with a TestFlight internal

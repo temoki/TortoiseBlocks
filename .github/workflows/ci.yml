@@ -40,6 +40,19 @@ jobs:
             exit 1
           fi
 
+  # What App Store Connect refuses that is knowable from the files alone.
+  # deliver finds it mid-upload, and only when someone runs it by hand — too
+  # late and too rare to be the first check. Plain Ruby, so no bundle install:
+  # the job is a checkout and a second.
+  appstore-metadata:
+    name: App Store Metadata
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check appstore/
+        run: ruby fastlane/metadata_check.rb --github
+
   format-lint:
     name: Format Lint
     runs-on: macos-26

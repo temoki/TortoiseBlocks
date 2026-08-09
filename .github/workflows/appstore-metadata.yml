@@ -1,0 +1,59 @@
+# Pushes appstore/ to App Store Connect (#42). Manual only, and never on a
+# push: the listing is not something a merge should rewrite, and the person
+# running it should have just read the diff.
+#
+# The default is the diff — it pulls what is live and compares. Uploading takes
+# ticking "apply", which is the one place this workflow writes to Apple.
+
+name: App Store Metadata
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Which listing
+        type: choice
+        options: [both, ios, macos]
+        default: both
+      apply:
+        description: Upload (unticked, only the diff is shown)
+        type: boolean
+        default: false
+
+concurrency:
+  group: appstore-metadata
+  cancel-in-progress: false
+
+jobs:
+  metadata:
+    name: ${{ inputs.apply && 'Push' || 'Diff' }} (${{ inputs.platform }})
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+
+      # Pinned rather than inherited: no Gemfile.lock is committed (it would
+      # be resolved on a different Ruby than this one), so the Ruby is what
+      # makes a run reproducible.
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Run
+        env:
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          FASTLANE_SKIP_UPDATE_CHECK: "1"
+        run: |
+          lane='${{ inputs.apply && 'metadata_push' || 'metadata_diff' }}'
+          case '${{ inputs.platform }}' in
+            ios)   platforms="ios" ;;
+            macos) platforms="mac" ;;
+            *)     platforms="ios mac" ;;
+          esac
+          for p in $platforms; do
+            echo "::group::$p $lane"
+            bundle exec fastlane "$p" "$lane"
+            echo "::endgroup::"
+          done

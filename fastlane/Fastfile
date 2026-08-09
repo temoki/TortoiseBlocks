@@ -1,0 +1,109 @@
+# Pushes the App Store listing that lives in appstore/ (#42).
+#
+# That is fastlane's whole job here: no building, no signing, no submitting.
+# Builds reach TestFlight from Xcode Cloud on a v* tag, and these lanes never
+# upload a binary — skip_binary_upload is on.
+#
+# iOS and macOS are separate versions in App Store Connect, so each takes its
+# own run against its own screenshots directory. The text is shared: one
+# directory of files per locale, which is deliver's own layout.
+
+require_relative "metadata_check"
+
+APP_IDENTIFIER = "space.hiraku.tortoiseblocks"
+METADATA_PATH = "../appstore/metadata"
+
+platform :ios do
+  desc "Diff the live iOS listing against appstore/metadata"
+  lane :metadata_diff do
+    diff_metadata(platform: "ios")
+  end
+
+  desc "Push appstore/ to the iOS listing"
+  lane :metadata_push do
+    push_metadata(platform: "ios", screenshots: "ios")
+  end
+end
+
+platform :mac do
+  desc "Diff the live macOS listing against appstore/metadata"
+  lane :metadata_diff do
+    diff_metadata(platform: "osx")
+  end
+
+  desc "Push appstore/ to the macOS listing"
+  lane :metadata_push do
+    push_metadata(platform: "osx", screenshots: "macos")
+  end
+end
+
+desc "Check appstore/ without touching the network"
+lane :metadata_check do
+  check_metadata
+end
+
+# Credentials never live in the repository — the rule DEVELOPMENT_TEAM
+# follows. Locally, a path to the .p8; in CI, its base64 in a secret, because
+# a GitHub secret is one line and a PEM is not.
+private_lane :asc_api_key do
+  app_store_connect_api_key(
+    key_id: ENV.fetch("ASC_KEY_ID"),
+    issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+    key_filepath: ENV["ASC_PRIVATE_KEY_PATH"],
+    key_content: ENV["ASC_PRIVATE_KEY"],
+    is_key_content_base64: !ENV["ASC_PRIVATE_KEY"].nil?
+  )
+end
+
+# The same check CI runs on every pull request, so a push made by hand cannot
+# skip it. deliver would catch a too-long subtitle as well, but only partway
+# through the upload.
+private_lane :check_metadata do
+  UI.user_error!("appstore/ has problems — see above.") unless MetadataCheck.report
+end
+
+# force: true skips the HTML preview, which wants a human at a browser and so
+# can never run unattended. What the preview would have shown is the diff of
+# appstore/ — which is the reason the text is in the repository at all.
+private_lane :push_metadata do |options|
+  check_metadata
+
+  deliver(
+    api_key: asc_api_key,
+    app_identifier: APP_IDENTIFIER,
+    platform: options[:platform],
+    metadata_path: METADATA_PATH,
+    screenshots_path: "../appstore/screenshots/#{options[:screenshots]}",
+    skip_binary_upload: true,
+    skip_app_version_update: true,
+    overwrite_screenshots: true,
+    submit_for_review: false,
+    automatic_release: false,
+    run_precheck_before_submit: false,
+    force: true
+  )
+end
+
+# deliver has no dry run for metadata: it either uploads, or shows an HTML page
+# to a human. So the preview goes the other way — pull what is live into a
+# temporary directory and diff it against what is written. Screenshots are not
+# part of this; their diff is `git status` on appstore/screenshots.
+private_lane :diff_metadata do |options|
+  temporary = File.join(Dir.tmpdir, "asc-metadata-#{options[:platform]}")
+  FileUtils.rm_rf(temporary)
+  FileUtils.mkdir_p(temporary)
+
+  Dir.chdir("..") do
+    sh(
+      "bundle", "exec", "fastlane", "deliver", "download_metadata",
+      "--app_identifier", APP_IDENTIFIER,
+      "--platform", options[:platform],
+      "--metadata_path", temporary,
+      "--use_live_version", "false"
+    )
+  end
+
+  UI.message("Live on the left, appstore/metadata on the right:")
+  # diff exits 1 when the two differ, which is information, not a failure.
+  sh("diff", "-ru", temporary, File.expand_path(METADATA_PATH, __dir__), error_callback: ->(_) {})
+end

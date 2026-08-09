@@ -1,47 +1,76 @@
 # appstore/
 
-The source of truth for the App Store listing. App Store Connect is updated
-from here (#42).
-
-Every directory and file name is **App Store Connect's own vocabulary**, so
-nothing needs a mapping table. `ios` / `macos` are `Platform` values — there is
-no ipadOS, iPad is a display type *under* iOS, resolved from the image size —
-and `en-US` / `ja` are ASC locale codes, not the app's `en` / `ja`
-string-catalog codes.
+The source of truth for the App Store listing. `fastlane deliver` pushes it to
+App Store Connect (#42).
 
 ```
-app/<locale>/          appInfoLocalizations   — shared across versions
-version/<locale>/      appStoreVersionLocalizations — per version
-screenshots/<platform>/<locale>/
-screenshot-sources/    the documents the captures were shot from
+metadata/<locale>/*.txt            the text, one file per field
+screenshots/<platform>/<locale>/   ios/ and macos/, one directory per locale
+screenshot-sources/                the documents the captures were shot from
 ```
+
+`<locale>` is an App Store Connect locale code (`en-US`, `ja`), not the app's
+`en` / `ja` string-catalog code. `ios` and `macos` name the two listings: there
+is no ipadOS — iPad is a display type under iOS, and deliver files a screenshot
+by its pixel size.
+
+## Running it
+
+The key never lives in the repository. Locally:
+
+```sh
+export ASC_ISSUER_ID=…            # App Store Connect → Users and Access → Integrations
+export ASC_KEY_ID=…
+export ASC_PRIVATE_KEY_PATH=~/…/AuthKey_XXXXXXXXXX.p8
+
+bundle install
+bundle exec fastlane metadata_check      # the files alone, no network, no key
+bundle exec fastlane ios metadata_diff   # what is live, against what is written
+bundle exec fastlane ios metadata_push   # upload (mac for the other listing)
+```
+
+In CI it is the **App Store Metadata** workflow, run by hand from the Actions
+tab: pick a platform, and tick *apply* to upload rather than diff. It reads the
+same three values from secrets, with the .p8 base64-encoded into
+`ASC_PRIVATE_KEY` because a GitHub secret is one line and a PEM is not.
+
+`metadata_diff` exists because **deliver has no dry run for metadata** — it
+either uploads, or renders an HTML page for a human to approve. So the diff
+goes the other way: it downloads what is live into a temporary directory and
+compares. Screenshots are not part of it; their diff is `git status`.
+
+Neither lane uploads a binary or submits for review. Builds reach TestFlight
+from Xcode Cloud on a `v*` tag, and the last step in front of App Review stays
+a human clicking it.
 
 ## Files and limits
 
-Limits are in **characters**, not bytes. Trailing whitespace and the final
-newline are stripped before upload.
+Limits are in **characters**, not bytes, and `fastlane/metadata_check.rb`
+enforces them: on every pull request, and again from `metadata_push`, so a
+hand-run upload cannot skip it. It is plain Ruby with no gems, so CI runs it as
+`ruby fastlane/metadata_check.rb` without waiting for `bundle install`.
 
 | File | App Store Connect field | Limit |
 | --- | --- | --- |
-| `app/<locale>/name.txt` | Name | 30 |
-| `app/<locale>/subtitle.txt` | Subtitle | 30 |
-| `app/<locale>/privacy_url.txt` | Privacy Policy URL | — |
-| `version/<locale>/description.txt` | Description | 4000 |
-| `version/<locale>/keywords.txt` | Keywords | 100 |
-| `version/<locale>/promotional_text.txt` | Promotional Text | 170 |
-| `version/<locale>/release_notes.txt` | What's New in This Version | 4000 |
-| `version/<locale>/support_url.txt` | Support URL | — |
-| `version/<locale>/marketing_url.txt` | Marketing URL | — |
+| `name.txt` | Name | 30 |
+| `subtitle.txt` | Subtitle | 30 |
+| `description.txt` | Description | 4000 |
+| `keywords.txt` | Keywords | 100 |
+| `promotional_text.txt` | Promotional Text | 170 |
+| `release_notes.txt` | What's New in This Version | 4000 |
+| `privacy_url.txt` | Privacy Policy URL | — |
+| `support_url.txt` | Support URL | — |
+| `marketing_url.txt` | Marketing URL | — |
 
 - **Keywords are comma-separated with no spaces** — a space counts against the
   100. Words already in the name or subtitle are indexed anyway, so don't
-  repeat them here
+  repeat them
 - **Promotional text is the only field that can be replaced without review.**
-  Changing the description, by contrast, takes a new version
+  Changing the description takes a new version
 - **What's New is not shown for a first release.** The first
   `release_notes.txt` is a placeholder for the second version onward
-- Adding `version/ios/<locale>/` or `version/macos/<locale>/` overrides
-  `version/<locale>/` for that platform. Nothing needs it yet
+- The name and subtitle belong to the app and the rest to one version of one
+  platform. deliver knows which is which, so they share a directory here
 
 ## Screenshots
 
@@ -60,5 +89,4 @@ newline are stripped before upload.
 ## Not managed here
 
 Price and availability, App Privacy (the data-collection declaration), age
-rating, category, submitting for review, and uploading the build (that stays
-with Xcode Cloud).
+rating, category, submitting for review, and uploading the build.
