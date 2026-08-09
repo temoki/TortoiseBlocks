@@ -44,3 +44,41 @@ jobs:
             exit 1
           fi
           echo "Tag $GITHUB_REF_NAME matches MARKETING_VERSION $versions."
+
+  # The tag is the release, so it should leave one behind. A draft rather than
+  # a published release: the same tag has already started Xcode Cloud and, for
+  # a version that goes to review, the outward-facing text is worth one look
+  # before it is outward-facing.
+  #
+  # It runs only once the version check has passed — a tag whose version does
+  # not match should not become a release at all.
+  draft-release:
+    name: Draft the release
+    needs: version-matches-tag
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The notes are a diff against the previous tag, so the whole history
+          # and every tag have to be here.
+          fetch-depth: 0
+
+      - name: Compose the notes
+        run: .github/scripts/release-notes "$GITHUB_REF_NAME" > /tmp/notes.md
+
+      - name: Draft it
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Tortoise Blocks ${GITHUB_REF_NAME#v}"
+          # A re-cut tag is a real thing here — 1.0.0 was tagged three times —
+          # so update the draft rather than failing on a release that exists.
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --title "$title" --notes-file /tmp/notes.md
+            echo "Updated the existing release for $GITHUB_REF_NAME."
+          else
+            gh release create "$GITHUB_REF_NAME" --draft --title "$title" --notes-file /tmp/notes.md
+            echo "Drafted $GITHUB_REF_NAME."
+          fi

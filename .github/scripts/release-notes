@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# Composes the notes for a GitHub release from the commits since the previous
+# v* tag.
+#
+# The split is by what a commit touched, because in this repository most of
+# them touch nothing a user could notice: of the nineteen between 0.1.0 and
+# 1.0.0, three reached the app and the rest were the website, the store
+# listing, CI and these notes. A flat list buries the three.
+#
+# A release with no predecessor lists nothing at all — the first one had a
+# hundred and twenty commits behind it, which is a history, not a change log.
+#
+# Usage: .github/scripts/release-notes v1.2.0 [previous-ref]
+set -euo pipefail
+
+tag="${1:?usage: release-notes <tag> [previous-ref]}"
+
+# Everything that ends up in the built app. Anything else — site/, appstore/,
+# fastlane/, docs, workflows — is real work, but not a change to the product.
+app_paths=(App ThumbnailExtension TortoiseBlocksKit Support TortoiseBlocks.xcodeproj)
+
+previous="${2:-}"
+if [ -z "$previous" ]; then
+  previous=$(git describe --tags --abbrev=0 --match 'v*' "${tag}^" 2>/dev/null || true)
+fi
+
+if [ -z "$previous" ]; then
+  echo "First release."
+  echo
+  echo "What the app does is described in the [README](https://github.com/temoki/TortoiseBlocks#readme)."
+  exit 0
+fi
+
+range="${previous}..${tag}"
+app_commits=$(git log --format='%H' "$range" -- "${app_paths[@]}")
+
+app_section=""
+other_section=""
+while IFS='|' read -r full short subject; do
+  [ -n "$full" ] || continue
+  line="- ${subject} (${short})"
+  if grep -qx "$full" <<<"$app_commits"; then
+    app_section+="${line}"$'\n'
+  else
+    other_section+="${line}"$'\n'
+  fi
+done < <(git log --format='%H|%h|%s' "$range")
+
+if [ -n "$app_section" ]; then
+  echo "## The app"
+  echo
+  printf '%s' "$app_section"
+  echo
+fi
+
+if [ -n "$other_section" ]; then
+  echo "## Everything else — the site, the store listing, CI, the notes"
+  echo
+  printf '%s' "$other_section"
+  echo
+fi
+
+echo "**Full changelog**: https://github.com/temoki/TortoiseBlocks/compare/${previous}...${tag}"
