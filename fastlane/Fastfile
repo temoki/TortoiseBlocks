@@ -11,7 +11,13 @@
 require_relative "metadata_check"
 
 APP_IDENTIFIER = "space.hiraku.tortoiseblocks"
-METADATA_PATH = "../appstore/metadata"
+
+# Absolute, and deliberately so. deliver resolves a relative path against the
+# repository root — its working directory — not against this file, so
+# "../appstore/metadata" pointed one level above the checkout. It did not fail:
+# it found no locales there, uploaded nothing, and reported success.
+METADATA_PATH = File.expand_path("../appstore/metadata", __dir__)
+SCREENSHOTS_ROOT = File.expand_path("../appstore/screenshots", __dir__)
 
 platform :ios do
   desc "Diff the live iOS listing against appstore/metadata"
@@ -68,12 +74,21 @@ end
 private_lane :push_metadata do |options|
   check_metadata
 
+  # An empty or missing directory is the one failure deliver does not report:
+  # it uploads nothing and says it succeeded. Refuse to run instead.
+  screenshots_path = File.join(SCREENSHOTS_ROOT, options[:screenshots])
+  [METADATA_PATH, screenshots_path].each do |path|
+    locales = Dir.glob(File.join(path, "*")).select { |entry| File.directory?(entry) }
+    UI.user_error!("No locale directories under #{path}") if locales.empty?
+    UI.message("#{path}: #{locales.map { |l| File.basename(l) }.sort.join(', ')}")
+  end
+
   deliver(
     api_key: asc_api_key,
     app_identifier: APP_IDENTIFIER,
     platform: options[:platform],
     metadata_path: METADATA_PATH,
-    screenshots_path: "../appstore/screenshots/#{options[:screenshots]}",
+    screenshots_path: screenshots_path,
     skip_binary_upload: true,
     skip_app_version_update: true,
     overwrite_screenshots: true,
@@ -130,7 +145,7 @@ private_lane :diff_metadata do |options|
   end
 
   changes = 0
-  Dir.glob(File.expand_path("#{METADATA_PATH}/*", __dir__)).sort.each do |directory|
+  Dir.glob(File.join(METADATA_PATH, "*")).sort.each do |directory|
     next unless File.directory?(directory)
 
     locale = File.basename(directory)
