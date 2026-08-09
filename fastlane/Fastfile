@@ -85,25 +85,61 @@ private_lane :push_metadata do |options|
 end
 
 # deliver has no dry run for metadata: it either uploads, or shows an HTML page
-# to a human. So the preview goes the other way — pull what is live into a
-# temporary directory and diff it against what is written. Screenshots are not
-# part of this; their diff is `git status` on appstore/screenshots.
-private_lane :diff_metadata do |options|
-  temporary = File.join(Dir.tmpdir, "asc-metadata-#{options[:platform]}")
-  FileUtils.rm_rf(temporary)
-  FileUtils.mkdir_p(temporary)
+# to a human. So the preview reads the listing itself, through the spaceship
+# that fastlane already loads — field by field, which `deliver
+# download_metadata` cannot do (it writes nothing at all for an empty listing,
+# so a directory diff shows nothing to compare). Screenshots are not part of
+# this; their diff is `git status` on appstore/screenshots.
+VERSION_FIELDS = {
+  "description.txt" => :description,
+  "keywords.txt" => :keywords,
+  "promotional_text.txt" => :promotional_text,
+  "release_notes.txt" => :whats_new,
+  "support_url.txt" => :support_url,
+  "marketing_url.txt" => :marketing_url
+}.freeze
+APP_FIELDS = {
+  "name.txt" => :name,
+  "subtitle.txt" => :subtitle,
+  "privacy_url.txt" => :privacy_policy_url
+}.freeze
 
-  Dir.chdir("..") do
-    sh(
-      "bundle", "exec", "fastlane", "deliver", "download_metadata",
-      "--app_identifier", APP_IDENTIFIER,
-      "--platform", options[:platform],
-      "--metadata_path", temporary,
-      "--use_live_version", "false"
-    )
+private_lane :diff_metadata do |options|
+  Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(**asc_api_key)
+
+  app = Spaceship::ConnectAPI::App.find(APP_IDENTIFIER)
+  UI.user_error!("No app for #{APP_IDENTIFIER}") if app.nil?
+  version = app.get_edit_app_store_version(platform: options[:platform])
+  UI.user_error!("No editable #{options[:platform]} version — create one first") if version.nil?
+  UI.message("#{options[:platform]} #{version.version_string} (#{version.app_store_state})")
+
+  live = {}
+  version.get_app_store_version_localizations.each do |localization|
+    VERSION_FIELDS.each { |file, attribute| live[[localization.locale, file]] = localization.public_send(attribute).to_s }
+  end
+  app.fetch_edit_app_info&.get_app_info_localizations&.each do |localization|
+    APP_FIELDS.each { |file, attribute| live[[localization.locale, file]] = localization.public_send(attribute).to_s }
   end
 
-  UI.message("Live on the left, appstore/metadata on the right:")
-  # diff exits 1 when the two differ, which is information, not a failure.
-  sh("diff", "-ru", temporary, File.expand_path(METADATA_PATH, __dir__), error_callback: ->(_) {})
+  changes = 0
+  Dir.glob(File.expand_path("#{METADATA_PATH}/*", __dir__)).sort.each do |directory|
+    next unless File.directory?(directory)
+
+    locale = File.basename(directory)
+    (VERSION_FIELDS.keys + APP_FIELDS.keys).sort.each do |file|
+      path = File.join(directory, file)
+      next unless File.exist?(path)
+
+      local = File.read(path).strip
+      remote = live[[locale, file]]
+      next if remote == local
+
+      changes += 1
+      shown = ->(value) { value.nil? ? "(locale not on App Store Connect)" : (value.empty? ? "(empty)" : "#{value.lines.first.strip[0, 60]} [#{value.length}]") }
+      UI.message("#{locale}/#{file}")
+      UI.message("  - #{shown.call(remote)}")
+      UI.message("  + #{shown.call(local)}")
+    end
+  end
+  UI.success(changes.zero? ? "Nothing to change." : "#{changes} field(s) would change.")
 end
