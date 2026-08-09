@@ -43,6 +43,17 @@ Neither lane uploads a binary or submits for review. Builds reach TestFlight
 from Xcode Cloud on a `v*` tag, and the last step in front of App Review stays
 a human clicking it.
 
+Two things a first push runs into, both learned the hard way:
+
+- **App Review Information must exist before deliver will run at all.** deliver
+  reads it without a rescue, and an app that has never had it gets `No data`
+  from the API and a stack trace. Fill in the contact details in App Store
+  Connect once — it is required for submission anyway
+- **`metadata_diff` reports What's New as a difference until the second
+  release**, because App Store Connect does not take it for a first version and
+  deliver correctly skips it. Two fields, one per locale, and they are noise
+  rather than a problem
+
 ## Files and limits
 
 Limits are in **characters**, not bytes, and `fastlane/metadata_check.rb`
@@ -85,6 +96,12 @@ hand-run upload cannot skip it. It is plain Ruby with no gems, so CI runs it as
   transparent rounded corners and shadow. Set the *system* language to the
   locale being shot, too — switching only the app's language leaves the menu
   bar in the other language
+- **deliver uploads every screenshot twice on a first upload**, reproducibly.
+  It matches local against live by MD5, and Apple has not computed that
+  checksum seven seconds after the PUT, so each image looks missing and the
+  whole set is retried. `metadata_push` therefore does not end with deliver:
+  it waits for the checksums, deletes the duplicates, sorts the set by
+  filename, and fails if what is live still does not match what is on disk
 
 ## Not managed here
 

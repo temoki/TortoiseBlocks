@@ -499,6 +499,25 @@ Ruby that requires nothing from fastlane, and CI runs it as
 that shaped it: making a pull request wait for `bundle install` to read nine
 text files would cost more than the check saves.
 
+**Trust the listing, not deliver's log.** Pushing 1.0.0 for real produced two
+successes that were not: one run reported "Successfully uploaded screenshots"
+having written *nothing* (a relative `metadata_path` resolves against the
+repository root, not the Fastfile, so it read a directory above the checkout
+and found no locales), and the next wrote *everything twice* (deliver matches
+local against live by MD5, Apple has not computed that checksum seconds after
+the PUT, so every image looks missing and the set is retried). Both were found
+by reading the listing back through spaceship. Hence two permanent guards in
+`push_metadata`: it refuses to start unless both directories hold locale
+subdirectories, and it ends by reconciling the screenshots — wait for the
+checksums, delete duplicates, sort by filename, fail if live still differs from
+disk. Two more traps sit outside our code: **App Review Information must exist
+before deliver will run at all** (it reads it without a rescue and an app that
+has never had it gets `No data`), and **What's New shows as a difference until
+the second release**, because App Store Connect refuses it for a first version.
+One more vocabulary mismatch to remember: deliver says `osx`, the Connect API
+says `MAC_OS`, and passing the former to spaceship reports a missing version
+that plainly exists.
+
 **A release is a `v*` tag** (#4). Xcode Cloud runs one `Release` workflow off
 it — two Archive actions, iOS and macOS, each with a TestFlight internal
 post-action bound to its own archive artifact. It carries no Build or Test
