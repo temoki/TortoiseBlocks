@@ -107,8 +107,7 @@
     text-wrap: pretty;
   }
 
-  /* The badge is the one place the App Store URL appears. It links to the
-     repository until the app is published — swap the href, nothing else. */
+  /* The badge is the one place the App Store URL appears, in both languages. */
   .get { margin: 2rem 0 0; }
   .get img { height: 48px; width: auto; }
   .get a { display: inline-block; }
@@ -246,11 +245,11 @@
     </p>
 
     <div class="get">
-      <!-- TODO: point at the App Store listing once the app is published. -->
-      <a href="https://github.com/temoki/TortoiseBlocks">
+      <!-- No country code: Apple sends each visitor to their own storefront. -->
+      <a href="https://apps.apple.com/app/id6798677334">
         <img src="appstore-badge-en.svg" alt="Download on the App Store" height="48">
       </a>
-      <p>Coming soon · iPadOS&nbsp;26 or later · macOS&nbsp;26 or later</p>
+      <p>iPadOS&nbsp;26 or later · macOS&nbsp;26 or later</p>
     </div>
 
     <figure>
@@ -420,11 +419,11 @@
     <p class="lede">iPad と Mac のための、子ども向けビジュアルプログラミングアプリ。ブロックを並べて ▶️ を押すと、カメが1本ずつ線を描いていきます。</p>
 
     <div class="get">
-      <!-- TODO: 公開後に App Store のリンクへ差し替える。 -->
-      <a href="https://github.com/temoki/TortoiseBlocks">
+      <!-- 国コードなし。Apple が閲覧者のストアへ振り分ける。 -->
+      <a href="https://apps.apple.com/app/id6798677334">
         <img src="appstore-badge-ja.svg" alt="App Store でダウンロード" height="48">
       </a>
-      <p>近日公開 · iPadOS&nbsp;26 以降 · macOS&nbsp;26 以降</p>
+      <p>iPadOS&nbsp;26 以降 · macOS&nbsp;26 以降</p>
     </div>
 
     <figure>
@@ -551,7 +550,7 @@
   <a href="https://github.com/temoki/TortoiseBlocks">GitHub</a>
   <a href="privacy.html">Privacy / プライバシー</a>
   <a href="https://github.com/temoki/TortoiseBlocks/issues">Issues</a>
-  <span>© temoki</span>
+  <span>© hiraku.space</span>
 </footer>
 
 <script>

@@ -453,8 +453,8 @@ not for a developer — the technical account lives in the README. Three things
 about it are decisions rather than taste. The App Store badge is Apple's own
 artwork, served from `site/` rather than Apple's CDN (a site that promises no
 tracking should make no third-party request), and its `href` is *the* single
-place the store URL will land — it points at the repository until the app
-ships, marked with a TODO in both sections. Its screenshots are downscaled
+place the store URL lands: `apps.apple.com/app/id6798677334`, with no country
+code, so Apple sends each visitor to their own storefront. Its screenshots are downscaled
 copies of `appstore/screenshots/`, quantized to 256 colors (`magick -dither None
 -colors 256`): flat app UI loses nothing visible and the page drops from 3.2MB
 to 750KB — but check a re-quantized shot by eye, since dithering *on* leaves
