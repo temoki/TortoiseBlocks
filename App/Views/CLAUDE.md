@@ -120,6 +120,12 @@ hard-coded, so it stays right across the macOS body size (13pt), the iOS one
 (17pt), and every Dynamic Type step. A *wider* symbol isn't clipped; it pushes
 its own title right and the ragged edge is back, so a new block kind's icon
 has to be no wider than `house` (or that constant moves to the new widest).
+This is not theoretical: #14's obvious pick, `puzzlepiece`, measures 22pt
+against `house`'s 19 at 13pt and would have done exactly that — the blocks use
+`puzzlepiece.extension` / `.extension.fill`, which are joint-widest with
+`house` at every size and never over. Measure rather than eyeball; a few lines
+of AppKit (`NSImage(systemSymbolName:)` + `.withSymbolConfiguration`) settles
+it in seconds.
 The style is on the palette entries and every workspace block row, but not on
 `PaletteEntryChip`, whose icon sits above a centered title.
 
@@ -134,6 +140,27 @@ the same part as the gap between rows). The floor is measured rather than
 hard-coded, and correct only while nothing taller joins a row. Note the
 failure mode is silent in both cases: too small a floor leaves the tall rows
 tall, exactly as if the fix were missing.
+
+**The sixth category is coral, and a definition wears a hat** (#14). The hues
+were 200° sky / 270° wisteria / 140° mint / 33° apricot / 340° blush, leaving
+gaps at yellow (~55°) and teal (~180°) with red squeezed between the last two.
+Judged in a prototype against the other five, yellow sat too close to apricot —
+and a definition wrapping an if puts those two side by side by construction —
+while teal read as a shade of the sky blocks; coral is the narrow gap and holds
+because its *saturation* differs from blush as well as its hue. It is `#F8B4A8`
+rather than the prototyped `#F5A79B` so ink clears the same ~9.8:1 as the other
+five (that one measured 8.8): a fill's lightness is what carries the label, and
+one darker block reads as the odd one out long before anyone measures it.
+`RowCorners.definitionHeader` then rounds the top corners to 20 against a
+container header's 10. That hat is the only thing saying a block is *not part
+of the sequence it sits in* — the program is one column, so a definition
+dropped into it otherwise reads as something that happens at that point, which
+is precisely what a definition doesn't do. Scratch can say this by putting
+definitions elsewhere on a 2-D canvas; a column has only the silhouette. The
+alternative — rendering definitions in a section of their own below the program,
+which the execution's hoisting would have justified — was prototyped and turned
+down: the highlight jumping out of the program into a separate list during
+playback is worse than a shape you learn once.
 
 **Blocks are opaque pastels under fixed dark ink** (#41), drawn from the app's
 own artwork — the icon's sky-to-mint gradient, the mascot's lavender, apricot

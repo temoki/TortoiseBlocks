@@ -238,11 +238,102 @@ public enum BlockTree {
                     visit(condition.rhs)
                     walk(body)
                     if let elseBody { walk(elseBody) }
+                case .defineBlock(_, let body):
+                    // A definition's *own* name is a function name, not a
+                    // box name — but its body reads and writes the same
+                    // single global environment as everything else.
+                    walk(body)
+                case .callBlock:
+                    break
                 }
             }
         }
         walk(blocks)
         return names
+    }
+
+    /// Block ("じぶんのブロック") names mentioned anywhere in the tree —
+    /// definitions and calls alike — in first-appearance order, without
+    /// duplicates. Exactly like ``usedVariableNames(in:)``, this *is* the set
+    /// of names in play: there is no registry, and a name exists as long as
+    /// something mentions it.
+    ///
+    /// A call to a name nothing defines still counts. It runs as a no-op, and
+    /// the editor offers the name as a choice, so a half-built program reads
+    /// the way it was typed rather than losing the name the moment its
+    /// definition is deleted.
+    public static func usedFunctionNames(in blocks: [Block]) -> [String] {
+        var names: [String] = []
+        var seen: Set<String> = []
+        func walk(_ blocks: [Block]) {
+            for block in blocks {
+                switch block.kind {
+                case .defineBlock(let name, _), .callBlock(let name):
+                    if seen.insert(name).inserted { names.append(name) }
+                default:
+                    break
+                }
+                for (_, body) in block.kind.containerBodies { walk(body) }
+            }
+        }
+        walk(blocks)
+        return names
+    }
+
+    /// Every definition in the tree, nested ones included, in first-appearance
+    /// order — and, for a name defined more than once, the *first* one only.
+    ///
+    /// The single answer to "what does this name mean?", shared by
+    /// `BlockExpander` (which runs it) and `SwiftCodeGenerator` (which prints
+    /// it), so the code pane can never describe a program that doesn't run.
+    public static func functionDefinitions(
+        in blocks: [Block]
+    ) -> [(name: String, body: [Block])] {
+        var definitions: [(name: String, body: [Block])] = []
+        var seen: Set<String> = []
+        func walk(_ blocks: [Block]) {
+            for block in blocks {
+                if case .defineBlock(let name, let body) = block.kind,
+                    seen.insert(name).inserted
+                {
+                    definitions.append((name, body))
+                }
+                for (_, body) in block.kind.containerBodies { walk(body) }
+            }
+        }
+        walk(blocks)
+        return definitions
+    }
+
+    /// Renames a block across the whole tree — the definition and every call
+    /// to it. Returns `nil` when nothing mentioned `oldName` or the names are
+    /// equal, the same no-op contract as every other edit here.
+    public static func renamingFunction(
+        _ oldName: String, to newName: String, in blocks: [Block]
+    ) -> [Block]? {
+        guard oldName != newName else { return nil }
+        var changed = false
+        func walk(_ blocks: [Block]) -> [Block] {
+            blocks.map { block in
+                var block = block
+                switch block.kind {
+                case .defineBlock(let name, let body):
+                    if name == oldName { changed = true }
+                    block.kind = .defineBlock(
+                        name: name == oldName ? newName : name, body: walk(body))
+                case .callBlock(let name) where name == oldName:
+                    changed = true
+                    block.kind = .callBlock(name: newName)
+                default:
+                    for (slot, body) in block.kind.containerBodies {
+                        block.kind = block.kind.replacingBody(slot, with: walk(body))
+                    }
+                }
+                return block
+            }
+        }
+        let new = walk(blocks)
+        return changed ? new : nil
     }
 
     /// Renames a variable across the whole tree (set/add targets and value
@@ -292,6 +383,12 @@ public enum BlockTree {
                     condition.rhs = renamed(condition.rhs)
                     block.kind = .ifBlock(
                         condition: condition, body: walk(body), elseBody: elseBody.map(walk))
+                case .defineBlock(let name, let body):
+                    // The definition's own name is a block name, never a box
+                    // name (see `renamingFunction`); only its body renames.
+                    block.kind = .defineBlock(name: name, body: walk(body))
+                case .callBlock:
+                    break
                 }
                 return block
             }

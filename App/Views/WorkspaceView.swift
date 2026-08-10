@@ -51,7 +51,8 @@ struct WorkspaceView: View {
                             highlightedID: runner.currentBlockID,
                             // Computed once per render and passed as plain
                             // data — rows only need the list, not the tree.
-                            usedVariableNames: BlockTree.usedVariableNames(in: workspace.blocks)
+                            usedVariableNames: BlockTree.usedVariableNames(in: workspace.blocks),
+                            usedFunctionNames: BlockTree.usedFunctionNames(in: workspace.blocks)
                         )
                         // Ambient default for every value slot in the tree
                         // (NumberValueButton, ComparisonButton, etc.): the
@@ -178,6 +179,8 @@ struct BlockListView: View {
     /// Variable names in use anywhere in the program — quick choices for
     /// the name/number editors.
     var usedVariableNames: [String] = []
+    /// Block names in use anywhere in the program (#14), likewise.
+    var usedFunctionNames: [String] = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -188,6 +191,7 @@ struct BlockListView: View {
                     isHighlighted: block.id == highlightedID,
                     highlightedID: highlightedID,
                     usedVariableNames: usedVariableNames,
+                    usedFunctionNames: usedFunctionNames,
                     // Only this list knows where the row sits, and a VoiceOver
                     // user has no other way to tell. 1-based: it is spoken
                     // to a child, not indexed by one.
@@ -282,6 +286,7 @@ struct BlockRowView: View {
     var isHighlighted = false
     var highlightedID: UUID?
     var usedVariableNames: [String] = []
+    var usedFunctionNames: [String] = []
     /// Where this row sits among its siblings, 1-based, for VoiceOver.
     var position: Int = 1
 
@@ -292,7 +297,8 @@ struct BlockRowView: View {
         case .repeatBlock(let count, let body):
             ContainerBlockRow(
                 block: block, childBlocks: body, workspace: workspace,
-                highlightedID: highlightedID, usedVariableNames: usedVariableNames
+                highlightedID: highlightedID, usedVariableNames: usedVariableNames,
+                usedFunctionNames: usedFunctionNames
             ) {
                 Label("Repeat", systemImage: "repeat")
                     .labelStyle(BlockLabelStyle())
@@ -308,6 +314,7 @@ struct BlockRowView: View {
             ContainerBlockRow(
                 block: block, childBlocks: body, workspace: workspace,
                 highlightedID: highlightedID, usedVariableNames: usedVariableNames,
+                usedFunctionNames: usedFunctionNames,
                 elseBlocks: elseBody
             ) {
                 Label("If", systemImage: "questionmark.diamond")
@@ -338,9 +345,31 @@ struct BlockRowView: View {
                         "Adds an otherwise mouth that runs when the condition fails")
                 }
             }
+        case .defineBlock(let name, let body):
+            ContainerBlockRow(
+                block: block, childBlocks: body, workspace: workspace,
+                highlightedID: highlightedID, usedVariableNames: usedVariableNames,
+                usedFunctionNames: usedFunctionNames,
+                headerCorners: .definitionHeader
+            ) {
+                Label("Make Block", systemImage: "puzzlepiece.extension")
+                    .labelStyle(BlockLabelStyle())
+                // Renaming the definition renames every call to it — the one
+                // edit on a row that deliberately reaches outside its own
+                // block, since the alternative is silently unhooking every
+                // call from the block it names.
+                NameButton(
+                    name: name, kind: .block, usedNames: usedFunctionNames
+                ) { new in
+                    workspace.renameFunction(name, to: new)
+                }
+            }
         default:
             HStack(spacing: rowSpacing) {
-                SimpleBlockLabel(kind: block.kind, usedVariableNames: usedVariableNames) { new in
+                SimpleBlockLabel(
+                    kind: block.kind, usedVariableNames: usedVariableNames,
+                    usedFunctionNames: usedFunctionNames
+                ) { new in
                     workspace.updateKind(of: block.id, to: new)
                 }
                 Spacer(minLength: 0)
@@ -396,9 +425,14 @@ struct ContainerBlockRow<Header: View>: View {
     let workspace: WorkspaceEditor
     var highlightedID: UUID?
     var usedVariableNames: [String] = []
+    var usedFunctionNames: [String] = []
     /// The if block's else mouth; nil for every other container (and for an
     /// if without else). Rendered as a divider row plus a second body list.
     var elseBlocks: [Block]? = nil
+    /// The shape of the C's top arm. A definition takes `.definitionHeader`
+    /// instead, which is the whole visual difference between "this runs here"
+    /// and "this is a block being named" (#14).
+    var headerCorners: RowCorners = .containerHeader
     @ViewBuilder let header: Header
 
     @State private var isDropTargeted = false
@@ -427,7 +461,7 @@ struct ContainerBlockRow<Header: View>: View {
                 RowControls(blockID: block.id, workspace: workspace)
             }
             .blockChrome(
-                block.kind.category.color, corners: .containerHeader,
+                block.kind.category.color, corners: headerCorners,
                 isDropTargeted: isDropTargeted
             )
             .draggable(block)
@@ -448,7 +482,8 @@ struct ContainerBlockRow<Header: View>: View {
                     address: BodyAddress(containerID: block.id),
                     workspace: workspace,
                     highlightedID: highlightedID,
-                    usedVariableNames: usedVariableNames
+                    usedVariableNames: usedVariableNames,
+                    usedFunctionNames: usedFunctionNames
                 ))
 
             if let elseBlocks {
@@ -459,7 +494,8 @@ struct ContainerBlockRow<Header: View>: View {
                         address: BodyAddress(containerID: block.id, slot: .elseBody),
                         workspace: workspace,
                         highlightedID: highlightedID,
-                        usedVariableNames: usedVariableNames
+                        usedVariableNames: usedVariableNames,
+                        usedFunctionNames: usedFunctionNames
                     ))
             }
 
@@ -536,6 +572,7 @@ struct ElseDividerRow: View {
 struct SimpleBlockLabel: View {
     let kind: BlockKind
     var usedVariableNames: [String] = []
+    var usedFunctionNames: [String] = []
     let onChange: (BlockKind) -> Void
 
     /// Between the title and the value chips that trail it.
@@ -577,35 +614,43 @@ struct SimpleBlockLabel: View {
                 Label("End Fill", systemImage: "paintbrush")
             case .setVariable(let name, let value):
                 Label("Put in Box", systemImage: "tray.and.arrow.down")
-                VariableNameButton(name: name, usedNames: usedVariableNames) {
+                NameButton(name: name, kind: .box, usedNames: usedVariableNames) {
                     onChange(.setVariable(name: $0, value: value))
                 }
                 numberButton(value) { onChange(.setVariable(name: name, value: $0)) }
             case .addVariable(let name, let value):
                 Label("Add to Box", systemImage: "plus.square")
-                VariableNameButton(name: name, usedNames: usedVariableNames) {
+                NameButton(name: name, kind: .box, usedNames: usedVariableNames) {
                     onChange(.addVariable(name: $0, value: value))
                 }
                 numberButton(value) { onChange(.addVariable(name: name, value: $0)) }
             case .subtractVariable(let name, let value):
                 Label("Subtract from Box", systemImage: "minus.square")
-                VariableNameButton(name: name, usedNames: usedVariableNames) {
+                NameButton(name: name, kind: .box, usedNames: usedVariableNames) {
                     onChange(.subtractVariable(name: $0, value: value))
                 }
                 numberButton(value) { onChange(.subtractVariable(name: name, value: $0)) }
             case .multiplyVariable(let name, let value):
                 Label("Multiply Box", systemImage: "multiply.square")
-                VariableNameButton(name: name, usedNames: usedVariableNames) {
+                NameButton(name: name, kind: .box, usedNames: usedVariableNames) {
                     onChange(.multiplyVariable(name: $0, value: value))
                 }
                 numberButton(value) { onChange(.multiplyVariable(name: name, value: $0)) }
             case .divideVariable(let name, let value):
                 Label("Divide Box", systemImage: "divide.square")
-                VariableNameButton(name: name, usedNames: usedVariableNames) {
+                NameButton(name: name, kind: .box, usedNames: usedVariableNames) {
                     onChange(.divideVariable(name: $0, value: value))
                 }
                 numberButton(value) { onChange(.divideVariable(name: name, value: $0)) }
-            case .repeatBlock, .ifBlock:
+            case .callBlock(let name):
+                Label("Call Block", systemImage: "puzzlepiece.extension.fill")
+                // Changes *this* call only — retargeting one call is a
+                // different operation from renaming the block itself, which
+                // is the definition header's chip (`renameFunction`).
+                NameButton(name: name, kind: .block, usedNames: usedFunctionNames) {
+                    onChange(.callBlock(name: $0))
+                }
+            case .repeatBlock, .ifBlock, .defineBlock:
                 // Containers are rendered by BlockRowView, never here.
                 EmptyView()
             }
@@ -722,6 +767,16 @@ enum RowCorners {
     /// A container header — the C's top arm, with the spine leaving its
     /// bottom-left.
     case containerHeader
+    /// A definition's header (#14) — the same arm, but with the top corners
+    /// rounded twice as wide, into a hat.
+    ///
+    /// It is the one thing on screen that says a block is *not part of the
+    /// sequence it sits in*: the program is a single column, so a definition
+    /// dropped into it otherwise reads as something that happens at that
+    /// point, which is precisely what a definition doesn't do. Scratch says
+    /// this with a hat block on a 2-D canvas; a column has only the silhouette
+    /// to say it with.
+    case definitionHeader
     /// The if block's else divider — an arm with spine both above and below,
     /// so neither leading corner rounds.
     case containerDivider
@@ -735,6 +790,9 @@ enum RowCorners {
         case .containerHeader:
             RectangleCornerRadii(
                 topLeading: 10, bottomLeading: 0, bottomTrailing: 8, topTrailing: 10)
+        case .definitionHeader:
+            RectangleCornerRadii(
+                topLeading: 20, bottomLeading: 0, bottomTrailing: 8, topTrailing: 20)
         case .containerDivider:
             RectangleCornerRadii(topLeading: 0, bottomLeading: 0, bottomTrailing: 8, topTrailing: 8)
         case .containerFoot:

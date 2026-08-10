@@ -78,6 +78,13 @@ struct BlockCodableTests {
             .divideVariable(name: "🌟", value: .literal(2)),
             #"{"divideVariable":{"name":"🌟","value":{"literal":2}}}"#
         ),
+        // Schema version 3 (blocks the child defines): name + body for the
+        // definition, and a name payload — not a bare string — for the call.
+        (
+            .defineBlock(name: "き", body: [Block(id: childID, kind: .forward(.literal(10)))]),
+            #"{"define":{"body":[{"id":"00000000-0000-0000-0000-000000000001","kind":{"forward":{"literal":10}}}],"name":"き"}}"#
+        ),
+        (.callBlock(name: "き"), #"{"call":{"name":"き"}}"#),
     ]
 
     private static func sortedKeysJSON(_ value: some Encodable) throws -> String {
@@ -165,6 +172,25 @@ struct BlockCodableTests {
         )
         let decoded = try JSONDecoder().decode(BlockKind.self, from: Data(json.utf8))
         #expect(decoded == kind)
+    }
+
+    @Test("requiredSchemaVersion is 3 exactly when a defined block appears")
+    func requiredSchemaVersionForFunctions() {
+        let define = [
+            Block(kind: .defineBlock(name: "き", body: [Block(kind: .home)]))
+        ]
+        #expect(BlocksProject(title: "", blocks: define).requiredSchemaVersion == 3)
+        // A call on its own counts too — it is just as unreadable to an app
+        // that has never heard of the key.
+        let callOnly = [Block(kind: .callBlock(name: "き"))]
+        #expect(BlocksProject(title: "", blocks: callOnly).requiredSchemaVersion == 3)
+        // And nested, where `contains` has to descend to find it.
+        let nested = [
+            Block(kind: .repeatBlock(count: .literal(2), body: callOnly))
+        ]
+        #expect(BlocksProject(title: "", blocks: nested).requiredSchemaVersion == 3)
+        // Version 2 documents are untouched by any of this.
+        #expect(BlocksProject(title: "", blocks: SampleBlocks.spiral()).requiredSchemaVersion == 2)
     }
 
     @Test("requiredSchemaVersion is 2 exactly when variables appear")

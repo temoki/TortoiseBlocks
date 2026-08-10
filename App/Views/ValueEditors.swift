@@ -7,6 +7,14 @@ import TortoiseUI
 /// code; BMP lookalikes such as ⭐ (U+2B50) or ❤️ (U+2764) are not.
 let variableNamePresets = ["🌟", "💖", "🍀"]
 
+/// The same idea for the blocks a child defines (#14), and a different set so
+/// a name says which kind of thing it names at a glance.
+///
+/// 🐢 is deliberately *not* among them, tempting as it is: the generated code
+/// opens with `let 🐢 = Tortoise()`, and a block by that name would shadow the
+/// turtle every line of the program is drawn with.
+let functionNamePresets = ["🌸", "🌈", "🎈"]
+
 /// Display-length cap for typed variable names.
 let variableNameMaxLength = 10
 
@@ -17,7 +25,7 @@ let variableNameMaxLength = 10
 ///
 /// Applied ambiently to the whole block list (`WorkspaceView`), not to
 /// individual buttons here — these same slot views (`NumberValueButton`,
-/// `ComparisonButton`, `VariableNameButton`, `ConditionButton`) are also
+/// `ComparisonButton`, `NameButton`, `ConditionButton`) are also
 /// reused inside `ConditionEditor`'s popover, which sits on the system's
 /// light popover background rather than a block, and resets back to
 /// `.bordered` for that subtree.
@@ -169,7 +177,7 @@ struct NumberValueEditor: View {
                 }
                 NumberRangeHint(domain: domain)
             case .variable(let name):
-                VariableNamePicker(selected: name, usedNames: usedNames) {
+                NamePicker(kind: .box, selected: name, usedNames: usedNames) {
                     onChange(.variable($0))
                 }
             }
@@ -415,10 +423,45 @@ func comparisonName(_ comparison: Comparison) -> String {
     }
 }
 
-/// Argument slot for a variable name: shows the current name and edits in a
-/// popover.
-struct VariableNameButton: View {
+/// What a name names. The two namespaces are separate — a box 🌟 and a block
+/// 🌟 are different things — so the presets, the wording VoiceOver reads, and
+/// the list of names already in play all follow from this.
+enum NameKind {
+    /// はこ — a variable.
+    case box
+    /// じぶんのブロック — a block the child defined (#14).
+    case block
+
+    var presets: [String] {
+        switch self {
+        case .box: variableNamePresets
+        case .block: functionNamePresets
+        }
+    }
+
+    /// How VoiceOver reads one name of this kind.
+    func label(_ name: String) -> Text {
+        switch self {
+        case .box: Text("Box \(name)")
+        case .block: Text("Block \(name)")
+        }
+    }
+
+    var pickerHint: LocalizedStringResource {
+        switch self {
+        case .box: "Tap to choose a box"
+        case .block: "Tap to choose a block"
+        }
+    }
+}
+
+/// Argument slot for a name: shows the current one and edits in a popover.
+/// Carries a box name on the variable blocks and a block name on define /
+/// call (#14) — the same control either way, which is what makes "a name is
+/// just a name" true in the interface as well as in the model.
+struct NameButton: View {
     let name: String
+    let kind: NameKind
     let usedNames: [String]
     let onChange: (String) -> Void
 
@@ -432,22 +475,23 @@ struct VariableNameButton: View {
         }
         .pointerHover()
         .popover(isPresented: $showsEditor) {
-            VariableNamePicker(selected: name, usedNames: usedNames) { new in
+            NamePicker(kind: kind, selected: name, usedNames: usedNames) { new in
                 onChange(new)
                 showsEditor = false
             }
             .buttonStyle(.bordered)
             .slotPopoverContent()
         }
-        .accessibilityLabel(Text("Box \(name)"))
-        .accessibilityHint("Tap to choose a box")
+        .accessibilityLabel(kind.label(name))
+        .accessibilityHint(Text(kind.pickerHint))
     }
 }
 
-/// Name chooser shared by `VariableNameButton` and the number editor's box
-/// form: preset emoji + every name the program already uses, plus a free
-/// text field for a brand-new name.
-struct VariableNamePicker: View {
+/// Name chooser shared by `NameButton` and the number editor's box form:
+/// preset emoji + every name the program already uses, plus a free text field
+/// for a brand-new name.
+struct NamePicker: View {
+    let kind: NameKind
     let selected: String
     let usedNames: [String]
     let onSelect: (String) -> Void
@@ -459,7 +503,7 @@ struct VariableNamePicker: View {
     private let columns = [GridItem(.adaptive(minimum: 44), alignment: .leading)]
 
     private var choices: [String] {
-        var choices = variableNamePresets
+        var choices = kind.presets
         for name in usedNames where !choices.contains(name) {
             choices.append(name)
         }
@@ -493,7 +537,7 @@ struct VariableNamePicker: View {
                             }
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(Text("Box \(name)"))
+                    .accessibilityLabel(kind.label(name))
                 }
             }
             HStack {

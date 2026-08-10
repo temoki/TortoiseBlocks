@@ -5,6 +5,7 @@ public enum BlockCategory: Hashable, CaseIterable, Sendable {
     case fill
     case control
     case variables
+    case functions
 }
 
 extension BlockKind {
@@ -20,6 +21,8 @@ extension BlockKind {
             .control
         case .setVariable, .addVariable, .subtractVariable, .multiplyVariable, .divideVariable:
             .variables
+        case .defineBlock, .callBlock:
+            .functions
         }
     }
 }
