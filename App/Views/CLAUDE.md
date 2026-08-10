@@ -71,9 +71,9 @@ Swiping a program should say "まえへ、かず 100、じっこうちゅう" on
 not stop three times, so a simple row is `.accessibilityElement(children:
 .combine)`: the kind, its value chips and the running state fuse into one
 sentence while the chips keep their own actions, which is what leaves editing a
-value reachable. The ✕ is `accessibilityHidden` and comes back as a named
-action — as a child it would be both an extra stop and the word "けす" tacked
-onto every block's sentence. Container headers are deliberately left alone:
+value reachable. The ⋯ is `accessibilityHidden` and its entries come back as
+named actions — as a child it would be both an extra stop and the word
+"メニュー" tacked onto every block's sentence. Container headers are deliberately left alone:
 combining them would fold in the "Add Here" toggle, and that toggle *is* the
 accessible alternative to dragging. Order matters twice here. Accessibility
 actions belong *after* the combine, where they attach to the element it built
@@ -86,6 +86,35 @@ its forms: the invisible one would be an empty stop between every pair of rows,
 and an empty mouth's "Drop Here" reads as something to do when it isn't.
 Icon-only row buttons wear `touchTarget()`, which is 44pt of hit area on iPadOS
 and nothing on macOS, where a pointer never needed it.
+
+**One visible control per row, and it is the menu** (#44). The ⋯ replaced the
+always-visible ✕ that #21 had put there, and it holds うえへ / したへ / けす plus
+whatever the row adds — the if block's そうでなければ, the else divider's own
+"remove". Deleting had three ways in and this was the redundant one; moving a
+row had *none* a child would find, because the menu it lived in only opens on
+long-press. A visible ⋯ costs けす one tap and buys the reorder commands their
+first real affordance: children press what looks pressable, and nobody presses a
+block hoping for a hidden menu. Long-press still opens the same menu, so the
+macOS right-click keeps working. Note the icon is `ellipsis`, not
+`ellipsis.circle` — the row already carries two circled glyphs (the chips and
+the ⊕), and a third circle read as another control of the same kind.
+
+**A row compresses in a fixed order: the spacer, then the label, never a chip.**
+Getting there took two modifiers, and neither is the one the symptom suggests.
+An if header nested one level deep broke its label onto two lines — 「も」/「し」 —
+on iPad, and *widening the column did nothing*, because the row was not short of
+width: 60pt of empty space sat beside the label waiting for the menu button. An
+`HStack` hands space to its flexible children together, and a wrapping `Text`
+and a growing `Spacer` are both flexible, so the label lost to the gap.
+`BlockLabelStyle` therefore carries `.layoutPriority(1)`. That alone moves the
+damage rather than fixing it: with the label served first, `0.6` in the next row
+broke as "0." over "6", which is worse — a chip holds a number, a name or a
+colour, all atomic. So `WorkspaceChipButtonStyle` pins its label with
+`.fixedSize(horizontal: true, vertical: false)`. Priority rather than
+`fixedSize` on the *label*, deliberately: a row two levels deep with a long name
+(「はこにかける」) genuinely runs out of room, and there the label should still
+wrap instead of overflowing its block. Each level of nesting costs 18pt, so no
+column width wins that race — the wrap is accepted there.
 
 **Drop model**: a `DropGap` between rows carries `(BodyAddress, index)`, so
 insertion semantics need no y-coordinate math and every mouth — an if's else
