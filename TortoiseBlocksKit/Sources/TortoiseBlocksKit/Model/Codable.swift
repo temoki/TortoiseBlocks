@@ -148,6 +148,8 @@ extension BlockKind: Codable {
         case subtractVariable
         case multiplyVariable
         case divideVariable
+        case defineBlock = "define"
+        case callBlock = "call"
     }
 
     private enum RepeatKeys: String, CodingKey {
@@ -167,6 +169,21 @@ extension BlockKind: Codable {
     private enum VariableKeys: String, CodingKey {
         case name
         case value
+    }
+
+    private enum DefineKeys: String, CodingKey {
+        case name
+        case body
+    }
+
+    /// A call wraps its name in a payload object rather than writing a bare
+    /// string, so the shape matches every other named block. Note this is not
+    /// room for a future parameter list: schema version 3 has shipped by the
+    /// time anything could need one, and a fielded decoder drops payload keys
+    /// it doesn't know, so parameters mean a new wire key (see the if block's
+    /// `elseBody` — the last extension that was still legal).
+    private enum CallKeys: String, CodingKey {
+        case name
     }
 
     public init(from decoder: any Decoder) throws {
@@ -242,6 +259,16 @@ extension BlockKind: Codable {
                 name: try payload.decode(String.self, forKey: .name),
                 value: try payload.decode(NumberValue.self, forKey: .value)
             )
+        case .defineBlock:
+            let payload = try container.nestedContainer(
+                keyedBy: DefineKeys.self, forKey: .defineBlock)
+            self = .defineBlock(
+                name: try payload.decode(String.self, forKey: .name),
+                body: try payload.decode([Block].self, forKey: .body)
+            )
+        case .callBlock:
+            let payload = try container.nestedContainer(keyedBy: CallKeys.self, forKey: .callBlock)
+            self = .callBlock(name: try payload.decode(String.self, forKey: .name))
         }
     }
 
@@ -311,6 +338,13 @@ extension BlockKind: Codable {
                 keyedBy: VariableKeys.self, forKey: .divideVariable)
             try payload.encode(name, forKey: .name)
             try payload.encode(value, forKey: .value)
+        case .defineBlock(let name, let body):
+            var payload = container.nestedContainer(keyedBy: DefineKeys.self, forKey: .defineBlock)
+            try payload.encode(name, forKey: .name)
+            try payload.encode(body, forKey: .body)
+        case .callBlock(let name):
+            var payload = container.nestedContainer(keyedBy: CallKeys.self, forKey: .callBlock)
+            try payload.encode(name, forKey: .name)
         }
     }
 }

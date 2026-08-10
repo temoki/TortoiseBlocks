@@ -74,6 +74,19 @@ public enum BlockKind: Hashable, Sendable {
     /// はこを わる — divide the named variable by the value
     /// (dividing by zero is a no-op — see `BlockExpander`).
     case divideVariable(name: String, value: NumberValue)
+
+    // MARK: My Blocks
+    /// じぶんのブロックを つくる — names a block sequence. Like a variable,
+    /// a definition is *the mention*: the named block exists exactly while
+    /// some `defineBlock` in the tree carries that name, and there is no
+    /// registry anywhere else. Reaching the definition while running draws
+    /// nothing — `BlockExpander` collects definitions in a pass of its own,
+    /// so a call may appear before the block it calls.
+    case defineBlock(name: String, body: [Block])
+    /// じぶんのブロックを よぶ — runs the named definition's body inline.
+    /// A name nothing defines is a no-op (the same line as an unset box
+    /// reading 0), so a reference can never dangle.
+    case callBlock(name: String)
 }
 
 /// Which mouth of a container a sibling list lives in. Only the if block
@@ -114,10 +127,13 @@ extension BlockKind {
             else {
                 [(.body, body)]
             }
+        case .defineBlock(_, let body):
+            [(.body, body)]
         case .forward, .backward, .turnRight, .turnLeft, .home,
             .penUp, .penDown, .penColor, .penWidth,
             .fillColor, .beginFill, .endFill,
-            .setVariable, .addVariable, .subtractVariable, .multiplyVariable, .divideVariable:
+            .setVariable, .addVariable, .subtractVariable, .multiplyVariable, .divideVariable,
+            .callBlock:
             []
         }
     }
@@ -143,10 +159,13 @@ extension BlockKind {
             slot == .body
                 ? .ifBlock(condition: condition, body: newBody, elseBody: elseBody)
                 : .ifBlock(condition: condition, body: body, elseBody: newBody)
+        case .defineBlock(let name, _):
+            .defineBlock(name: name, body: newBody)
         case .forward, .backward, .turnRight, .turnLeft, .home,
             .penUp, .penDown, .penColor, .penWidth,
             .fillColor, .beginFill, .endFill,
-            .setVariable, .addVariable, .subtractVariable, .multiplyVariable, .divideVariable:
+            .setVariable, .addVariable, .subtractVariable, .multiplyVariable, .divideVariable,
+            .callBlock:
             self
         }
     }

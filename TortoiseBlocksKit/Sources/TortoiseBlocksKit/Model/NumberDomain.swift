@@ -84,7 +84,7 @@ extension BlockKind {
             .divideVariable:
             .general
         case .home, .penUp, .penDown, .penColor, .fillColor, .beginFill, .endFill,
-            .ifBlock:
+            .ifBlock, .defineBlock, .callBlock:
             nil
         }
     }

@@ -316,6 +316,71 @@ struct BlockTreeTests {
         )
     }
 
+    @Test("used block names come from definitions and calls alike")
+    func usedFunctionNames() {
+        let blocks = [
+            Block(kind: .callBlock(name: "き")),
+            Block(
+                kind: .repeatBlock(
+                    count: .literal(2),
+                    body: [
+                        Block(kind: .defineBlock(name: "はな", body: [Block(kind: .home)])),
+                        Block(kind: .callBlock(name: "き")),
+                    ])),
+            Block(kind: .defineBlock(name: "き", body: [])),
+        ]
+        // First-appearance order, no duplicates — and a call to a name nothing
+        // defines still names something, the same way an unset box does.
+        #expect(BlockTree.usedFunctionNames(in: blocks) == ["き", "はな"])
+        #expect(BlockTree.usedFunctionNames(in: []).isEmpty)
+    }
+
+    @Test("definitions are collected in order, first of a name winning")
+    func functionDefinitions() {
+        let first = Block(kind: .home)
+        let second = Block(kind: .penUp)
+        let blocks = [
+            Block(kind: .defineBlock(name: "き", body: [first])),
+            Block(kind: .defineBlock(name: "はな", body: [])),
+            Block(kind: .defineBlock(name: "き", body: [second])),
+        ]
+        let definitions = BlockTree.functionDefinitions(in: blocks)
+        #expect(definitions.map(\.name) == ["き", "はな"])
+        #expect(definitions[0].body.map(\.id) == [first.id])
+    }
+
+    @Test("renaming a block renames its definition and every call")
+    func renameFunction() throws {
+        let blocks = [
+            Block(kind: .callBlock(name: "き")),
+            Block(
+                kind: .defineBlock(
+                    name: "き",
+                    body: [
+                        Block(kind: .callBlock(name: "き")),
+                        Block(kind: .callBlock(name: "はな")),
+                    ])),
+        ]
+        let renamed = try #require(BlockTree.renamingFunction("き", to: "🌸", in: blocks))
+        #expect(BlockTree.usedFunctionNames(in: renamed) == ["🌸", "はな"])
+        // Nothing to rename, and renaming to the same name, are both no-ops —
+        // so neither registers an undo step.
+        #expect(BlockTree.renamingFunction("ない", to: "🌸", in: blocks) == nil)
+        #expect(BlockTree.renamingFunction("き", to: "き", in: blocks) == nil)
+    }
+
+    @Test("renaming a box leaves block names alone, and reaches inside a definition")
+    func renameVariableIgnoresFunctionNames() throws {
+        let blocks = [
+            Block(kind: .defineBlock(name: "🌟", body: [Block(kind: .forward(.variable("🌟")))]))
+        ]
+        // The same text names a box and a block here; they are separate
+        // namespaces, so only the value slot moves.
+        let renamed = try #require(BlockTree.renamingVariable("🌟", to: "💖", in: blocks))
+        #expect(BlockTree.usedFunctionNames(in: renamed) == ["🌟"])
+        #expect(BlockTree.usedVariableNames(in: renamed) == ["💖"])
+    }
+
     @Test("update a nested block's kind in place")
     func updateNestedKind() throws {
         let result = try #require(

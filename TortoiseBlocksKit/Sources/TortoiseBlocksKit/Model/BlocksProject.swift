@@ -9,10 +9,17 @@ import Foundation
 public struct BlocksProject: Codable, Hashable, Sendable {
     /// 1 = the original format; 2 adds variables (`NumberValue.variable` and
     /// the set / add / subtract / multiply / divide blocks) and the if block
-    /// with its optional else. Documents are written with
-    /// ``requiredSchemaVersion``, not this constant, so files that don't use
-    /// newer features stay openable in older apps.
-    public static let currentSchemaVersion = 2
+    /// with its optional else; 3 adds blocks the child defines (the define /
+    /// call blocks). Documents are written with ``requiredSchemaVersion``, not
+    /// this constant, so files that don't use newer features stay openable in
+    /// older apps.
+    ///
+    /// Version 3 is a bump rather than another rider on 2 because 2 has
+    /// *shipped*: a released decoder meets `{"define":…}` as an unknown
+    /// top-level key and fails the whole document, so the version has to be
+    /// what tells it the file is from the future (`BlocksDocument` probes the
+    /// number before the full decode and shows the friendly message).
+    public static let currentSchemaVersion = 3
 
     public var schemaVersion: Int
     public var title: String
@@ -33,12 +40,20 @@ public struct BlocksProject: Codable, Hashable, Sendable {
     /// canvas and one press of the run button (#10 closed that question).
     public var thumbnail: Data?
 
-    /// The minimum schema version able to read this document: 2 when any
-    /// version-2 feature (variables, if blocks) appears in the tree,
-    /// otherwise 1 — keeping such files byte-identical to what version-1
-    /// apps write. (Version 2 never shipped before gaining the if block, so
-    /// both features share it.)
+    /// The minimum schema version able to read this document: 3 when a block
+    /// the child defined appears, 2 for a version-2 feature (variables, if
+    /// blocks), otherwise 1 — so a file that uses none of them stays
+    /// byte-identical to what a version-1 app writes, and a file that only
+    /// uses variables still opens in the app that shipped them. (Version 2
+    /// never shipped before gaining the if block, so those two share it.)
     public var requiredSchemaVersion: Int {
+        let usesFunctions = BlockTree.contains(in: blocks) { block in
+            switch block.kind {
+            case .defineBlock, .callBlock: true
+            default: false
+            }
+        }
+        if usesFunctions { return 3 }
         let usesIf = BlockTree.contains(in: blocks) { block in
             if case .ifBlock = block.kind { return true }
             return false

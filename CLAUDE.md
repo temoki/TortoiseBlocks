@@ -84,7 +84,9 @@ document-format contract — breaking one breaks users' saved files.
 `BlockKind.numberDomain` (`Model/NumberDomain.swift`),
 `BlockCodableTests.kindFixtures`, the palette entry (`PaletteView`),
 `SimpleBlockLabel` (`WorkspaceView`), and `App/Localizable.xcstrings`.
-The compiler only forces the exhaustive switches — do not skip the rest.
+`BlockTree.usedVariableNames` / `renamingVariable` switch exhaustively too, so
+a kind that mentions a name has to say so there. The compiler only forces the
+exhaustive switches — do not skip the rest.
 Check the new SF Symbol against `BlockLabelStyle.widestSystemImage` too — the
 rule and its silent failure are in `App/Views/CLAUDE.md`.
 
@@ -161,6 +163,41 @@ first-class drop/insertion target; container kinds stay uniform via
 `BlockKind.containerBodies` / `body(for:)` / `replacingBody(_:with:)` — a
 new container only adds its header UI (`ContainerBlockRow` in
 `WorkspaceView`) and the exhaustive switches.
+
+**A block the child defines is a name too** (#14, schema version 3). `define`
+is a container carrying a name, `call` runs that name's body inline, and the
+whole thing follows the variables' philosophy: a block exists exactly while
+something mentions it (`BlockTree.usedFunctionNames` / `functionDefinitions`),
+a call to a name nothing defines is a **no-op** rather than a broken reference,
+and **the first definition of a name wins** — one answer shared by the expander
+and the code generator, so the code pane can't describe a program that doesn't
+run. Expansion is **two passes**: definitions are collected from the whole tree
+(nested ones included) before anything runs, so a call may sit above the block
+it calls, and `SwiftCodeGenerator` hoists each `func` above the program for the
+same reason. Reaching a definition draws nothing and charges one step; a call
+charges one and splices the body in, which is what makes recursion — the point
+of the feature — fall out for free. Highlighting therefore lights the
+*definition's* rows during playback, never the call, exactly as set/add and the
+if test emit nothing. Version 3 is a real bump rather than another rider on 2:
+2 has shipped, and a released decoder meets `{"define":…}` as an unknown
+top-level key and rejects the whole document, so only the version number can
+tell it the file is from the future. Renaming from the definition's header
+renames **every call** with it (`WorkspaceEditor.renameFunction`) — the
+alternative silently unhooks each call from the block it names — while a call's
+own chip retargets that one call.
+
+**The nesting limit is measured, not chosen** (`BlockExpander.defaultNestingLimit`,
+30). Inlining a call recurses on the Swift stack, and the step cap cannot stand
+in for that: in a **debug** build on a 512KB stack — any caller that isn't the
+main actor, which includes every test in this package — expansion overflows
+between 55 and 60 levels, a crash rather than an error (release clears 200), so
+the design comment's original 100 was reachable from a block that calls itself.
+It counts *every* descent, bodies and mouths as well as calls, because that is
+what the stack counts: a definition wrapping its own call in five repeats spends
+six frames per call, and bounding calls alone would have left the crash exactly
+where it was. Re-measure before raising it — the regression test ("runaway
+recursion throws instead of overflowing the stack") fails by killing the test
+process, not by reporting.
 
 **Exports render `lastRunCommands`** (the evaluated stream of the last run),
 so the exported drawing is the one that actually ran — including rolled

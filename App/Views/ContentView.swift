@@ -162,10 +162,13 @@ struct CanvasPane: View {
                 CanvasExportMenu(runner: runner, onExport: export)
             }
         }
-        .alert("Too Many Blocks!", isPresented: $runner.showsExpansionError) {
+        // One alert, switching on why the run failed (`expansionAlert`):
+        // attaching a second one for the recursion case would silently drop
+        // whichever came first.
+        .alert(Text(runner.expansionAlert.title), isPresented: $runner.showsExpansionError) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Try a smaller repeat count.")
+            Text(runner.expansionAlert.message)
         }
         .onChange(of: runner.pendingExport) { _, type in
             guard let type else { return }

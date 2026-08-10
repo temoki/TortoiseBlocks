@@ -6,11 +6,25 @@
 /// becomes `Double.random(in:)` (`Int.random(in:)` for repeat counts), and
 /// every used variable becomes a `var name = 0.0` declaration up front
 /// (matching the expander's "unset reads 0" rule).
+///
+/// A block the child defined becomes a `func`, hoisted above the program
+/// wherever the definition sits in the tree — which is the expander's own
+/// two-pass semantics written out: the definition means the same thing from
+/// anywhere, so it is printed where a Swift program would put it, and nothing
+/// is emitted at the place it was dropped.
 public enum SwiftCodeGenerator {
     public static func code(for blocks: [Block]) -> String {
         var lines = ["let 🐢 = Tortoise()"]
         for name in BlockTree.usedVariableNames(in: blocks) {
             lines.append("var \(name) = 0.0")
+        }
+        // Names are what makes this legal Swift: a box or a block called 🌟
+        // is a valid identifier, an ⭐ (BMP) is not — which is why the presets
+        // are SMP-plane emoji.
+        for (name, body) in BlockTree.functionDefinitions(in: blocks) {
+            lines.append("func \(name)() {")
+            append(body, to: &lines, indent: 1)
+            lines.append("}")
         }
         append(blocks, to: &lines, indent: 0)
         return lines.joined(separator: "\n")
@@ -66,6 +80,12 @@ public enum SwiftCodeGenerator {
                 lines.append("\(pad)\(name) *= \(doubleExpression(value))")
             case .divideVariable(let name, let value):
                 lines.append("\(pad)\(name) /= \(doubleExpression(value))")
+            case .defineBlock:
+                // Hoisted to the top by `code(for:)`; nothing is printed where
+                // the definition sits, exactly as nothing runs there.
+                break
+            case .callBlock(let name):
+                lines.append("\(pad)\(name)()")
             }
         }
     }

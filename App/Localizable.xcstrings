@@ -124,6 +124,16 @@
         }
       }
     },
+    "Block %@" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブロック %@"
+          }
+        }
+      }
+    },
     "blue" : {
       "localizations" : {
         "ja" : {
@@ -160,6 +170,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ブロックをならべよう"
+          }
+        }
+      }
+    },
+    "Call Block" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブロックをよぶ"
           }
         }
       }
@@ -464,6 +484,16 @@
         }
       }
     },
+    "Make Block" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブロックをつくる"
+          }
+        }
+      }
+    },
     "Maximum" : {
       "localizations" : {
         "ja" : {
@@ -520,6 +550,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "はこにかける"
+          }
+        }
+      }
+    },
+    "My Blocks" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "じぶんのブロック"
           }
         }
       }
@@ -1004,6 +1044,16 @@
         }
       }
     },
+    "Tap to choose a block" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "タップしてブロックをえらびます"
+          }
+        }
+      }
+    },
     "Tap to choose a box" : {
       "localizations" : {
         "ja" : {
@@ -1070,6 +1120,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ブロックがおおすぎるよ"
+          }
+        }
+      }
+    },
+    "Too Much Calling!" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "よびすぎだよ"
           }
         }
       }
@@ -1190,6 +1250,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "きいろ"
+          }
+        }
+      }
+    },
+    "Your block keeps calling itself. Use an if block to stop it." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "じぶんのブロックが じぶんを よびすぎているよ。「もし」でとめてね"
           }
         }
       }

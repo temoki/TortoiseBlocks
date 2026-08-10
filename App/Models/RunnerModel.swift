@@ -22,8 +22,26 @@ final class RunnerModel {
     /// exports render exactly what is on screen.
     private(set) var lastRunCommands: [TortoiseCommand] = []
 
-    /// Set when expansion fails (command limit); drives a kid-friendly alert.
+    /// Set when expansion fails; drives a kid-friendly alert.
     var showsExpansionError = false
+
+    /// *Why* it failed, which is what the alert's wording follows from: too
+    /// many blocks and a block that calls itself forever are different
+    /// mistakes, and a child can only fix the one they actually made.
+    private(set) var expansionFailure: BlockExpansionError?
+
+    /// Title and message for that alert. Kept here rather than in the view so
+    /// the pairing lives with the error it explains — there is exactly one
+    /// alert in `CanvasPane` (two would clobber each other), so it switches on
+    /// this instead.
+    var expansionAlert: (title: LocalizedStringResource, message: LocalizedStringResource) {
+        switch expansionFailure {
+        case .nestingLimitExceeded:
+            ("Too Much Calling!", "Your block keeps calling itself. Use an if block to stop it.")
+        default:
+            ("Too Many Blocks!", "Try a smaller repeat count.")
+        }
+    }
 
     /// Bumped by every successful run. `ContentView` watches this number and
     /// stores a fresh thumbnail (#15) — one observer instead of a call at each
@@ -105,6 +123,7 @@ final class RunnerModel {
             runGeneration += 1
         }
         catch {
+            expansionFailure = error as? BlockExpansionError
             showsExpansionError = true
         }
     }

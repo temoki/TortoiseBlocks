@@ -75,6 +75,17 @@ struct WorkspaceEditor {
         setBlocks(new)
     }
 
+    /// Renames a defined block, and with it every call to that name (#14) —
+    /// one undoable edit, because leaving the calls behind would silently turn
+    /// each of them into the no-op an undefined call is.
+    ///
+    /// Retargeting a *single* call is the other operation, and it belongs to
+    /// that call's own name chip: `updateKind(of:to:)`.
+    func renameFunction(_ oldName: String, to newName: String) {
+        guard let new = BlockTree.renamingFunction(oldName, to: newName, in: blocks) else { return }
+        setBlocks(new)
+    }
+
     /// Handles a block drop at (address, index). A payload whose ID
     /// already exists in the tree is *moved* (workspace drag); an unknown ID
     /// is *inserted* (palette drag). Identity moves and invalid targets are

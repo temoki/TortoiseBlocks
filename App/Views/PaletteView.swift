@@ -104,16 +104,32 @@ enum Palette {
                     title: "Divide Box", systemImage: "divide.square",
                     kind: .divideVariable(name: variableNamePresets[0], value: .literal(2))),
             ]),
+        // Two entries, not one per defined name (#14). A palette section that
+        // grew an entry per definition is the other way to do this, and it is
+        // what Scratch does — but the name here is a chip on the block, the
+        // way a box's is, so the generic "call" block already covers every
+        // name and the palette stays a fixed list. Both blocks start on the
+        // same preset name, so つくる → よぶ works with no editing at all.
+        PaletteSection(
+            title: "My Blocks", category: .functions,
+            entries: [
+                PaletteEntry(
+                    title: "Make Block", systemImage: "puzzlepiece.extension",
+                    kind: .defineBlock(name: functionNamePresets[0], body: [])),
+                PaletteEntry(
+                    title: "Call Block", systemImage: "puzzlepiece.extension.fill",
+                    kind: .callBlock(name: functionNamePresets[0])),
+            ]),
     ]
 }
 
 extension BlockCategory {
     /// Category tint: movement=sky, pen=wisteria, fill=mint, control=apricot,
-    /// variables=blush — five hues a child can still name apart, drawn from the
-    /// app's own artwork rather than from the system palette (#41). The app
-    /// icon's gradient is sky to mint and the tortoise sprite is lavender,
-    /// apricot and blush; against that, saturated system colors were the one
-    /// thing on screen that didn't belong.
+    /// variables=blush, functions=coral — six hues a child can still name
+    /// apart, drawn from the app's own artwork rather than from the system
+    /// palette (#41). The app icon's gradient is sky to mint and the tortoise
+    /// sprite is lavender, apricot and blush; against that, saturated system
+    /// colors were the one thing on screen that didn't belong.
     ///
     /// Pastels are also what makes the text legible. The blocks used to be
     /// saturated fills under white text, which measured 1.9–3.3:1 — under AA
@@ -131,6 +147,19 @@ extension BlockCategory {
         case .fill: Color(.sRGB, red: 0.647, green: 0.906, blue: 0.741)  // #A5E7BD
         case .control: Color(.sRGB, red: 0.973, green: 0.808, blue: 0.584)  // #F8CE95
         case .variables: Color(.sRGB, red: 0.969, green: 0.698, blue: 0.788)  // #F7B2C9
+        // The sixth hue had two places to go: the gap at yellow (~55°) and the
+        // one at teal (~180°), with red squeezed between apricot's 33° and
+        // blush's 340°. Judged in a prototype against the other five, yellow
+        // sat too close to apricot — and a definition wrapping an if puts those
+        // two side by side by construction — while teal read as a shade of the
+        // sky blocks. Coral is the narrow gap, and it holds because the
+        // *saturation* differs from blush as well as the hue.
+        //
+        // Lifted a touch above the coral that was prototyped (#F5A79B, 8.8:1)
+        // so ink clears the same ~9.8:1 as the other five: a fill's lightness
+        // is what carries the label, and one darker block would read as the
+        // odd one out long before anyone measured it.
+        case .functions: Color(.sRGB, red: 0.973, green: 0.706, blue: 0.659)  // #F8B4A8
         }
     }
 

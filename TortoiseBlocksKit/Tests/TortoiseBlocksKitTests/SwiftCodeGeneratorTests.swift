@@ -189,4 +189,77 @@ struct SwiftCodeGeneratorTests {
                 "🐢.penColor = [.black, .red, .green, .blue, .yellow, .orange, .purple, .cyan, .magenta].randomElement()!"
             ))
     }
+
+    @Test("a defined block becomes a func hoisted above the program")
+    func definitionHoistsToFunc() {
+        // The definition sits *after* the call in the tree, and below the
+        // variable that drives it — the output puts both where Swift wants
+        // them, which is the expander's two passes written out.
+        let blocks = [
+            Block(kind: .setVariable(name: "🌟", value: .literal(60))),
+            Block(kind: .callBlock(name: "き")),
+            Block(
+                kind: .defineBlock(
+                    name: "き",
+                    body: [
+                        Block(kind: .forward(.variable("🌟"))),
+                        Block(kind: .turnRight(.literal(90))),
+                    ])),
+        ]
+        let expected = """
+            let 🐢 = Tortoise()
+            var 🌟 = 0.0
+            func き() {
+                🐢.forward(🌟)
+                🐢.right(90)
+            }
+            🌟 = 60
+            き()
+            """
+        #expect(SwiftCodeGenerator.code(for: blocks) == expected)
+    }
+
+    @Test("a recursive block renders as a func that calls itself")
+    func recursiveDefinitionCode() {
+        let blocks = [
+            Block(
+                kind: .defineBlock(
+                    name: "き",
+                    body: [
+                        Block(
+                            kind: .ifBlock(
+                                condition: Condition(
+                                    lhs: .variable("🌟"), comparison: .greater, rhs: .literal(5)),
+                                body: [Block(kind: .callBlock(name: "き"))],
+                                elseBody: nil))
+                    ]))
+        ]
+        let expected = """
+            let 🐢 = Tortoise()
+            var 🌟 = 0.0
+            func き() {
+                if 🌟 > 5 {
+                    き()
+                }
+            }
+            """
+        #expect(SwiftCodeGenerator.code(for: blocks) == expected)
+    }
+
+    @Test("only the first definition of a name is printed")
+    func duplicateDefinitionPrintsOnce() {
+        let blocks = [
+            Block(kind: .defineBlock(name: "き", body: [Block(kind: .home)])),
+            Block(kind: .defineBlock(name: "き", body: [Block(kind: .penUp)])),
+        ]
+        let expected = """
+            let 🐢 = Tortoise()
+            func き() {
+                🐢.home()
+            }
+            """
+        // The code pane must describe the program that actually runs, and the
+        // expander runs the first definition (`BlockTree.functionDefinitions`).
+        #expect(SwiftCodeGenerator.code(for: blocks) == expected)
+    }
 }

@@ -20,10 +20,12 @@ struct SeededRNG: RandomNumberGenerator {
 @Suite("BlockExpander")
 struct BlockExpanderTests {
     private func expand(
-        _ blocks: [Block], seed: UInt64 = 1, limit: Int = BlockExpander.defaultLimit
+        _ blocks: [Block], seed: UInt64 = 1, limit: Int = BlockExpander.defaultLimit,
+        nestingLimit: Int = BlockExpander.defaultNestingLimit
     ) throws -> [ExpandedCommand] {
         var rng = SeededRNG(seed: seed)
-        return try BlockExpander.expand(blocks, using: &rng, limit: limit)
+        return try BlockExpander.expand(
+            blocks, using: &rng, limit: limit, nestingLimit: nestingLimit)
     }
 
     @Test("every simple block kind maps to its command")
@@ -460,6 +462,191 @@ struct BlockExpanderTests {
         let blocks = (0..<6).map { _ in Block(kind: .home) }
         #expect(throws: BlockExpansionError.commandLimitExceeded(limit: 5)) {
             try expand(blocks, limit: 5)
+        }
+    }
+
+    // MARK: - My blocks (define / call)
+
+    @Test("a call expands the definition's body, tagged with the body's IDs")
+    func callExpandsDefinition() throws {
+        let forward = Block(kind: .forward(.literal(10)))
+        let turn = Block(kind: .turnRight(.literal(90)))
+        let define = Block(kind: .defineBlock(name: "き", body: [forward, turn]))
+        let call = Block(kind: .callBlock(name: "き"))
+
+        let expanded = try expand([define, call])
+        #expect(expanded.map(\.command) == [.forward(10), .rotate(90)])
+        // The definition's rows light up during playback, not the call —
+        // a call emits no command of its own (like set/add and the if test).
+        #expect(expanded.map(\.blockID) == [forward.id, turn.id])
+    }
+
+    @Test("a call above the block it calls still works (two passes)")
+    func callBeforeDefinition() throws {
+        let call = Block(kind: .callBlock(name: "き"))
+        let define = Block(
+            kind: .defineBlock(name: "き", body: [Block(kind: .forward(.literal(10)))]))
+        #expect(try expand([call, define]).map(\.command) == [.forward(10)])
+    }
+
+    @Test("a definition nested inside a container is still collected")
+    func definitionInsideContainer() throws {
+        let define = Block(
+            kind: .defineBlock(name: "き", body: [Block(kind: .home)]))
+        let outer = Block(kind: .repeatBlock(count: .literal(1), body: [define]))
+        #expect(try expand([Block(kind: .callBlock(name: "き")), outer]).count == 1)
+    }
+
+    @Test("a call to a name nothing defines is a no-op")
+    func undefinedCallIsNoOp() throws {
+        let blocks = [
+            Block(kind: .callBlock(name: "ない")),
+            Block(kind: .home),
+        ]
+        #expect(try expand(blocks).map(\.command) == [.home])
+    }
+
+    @Test("the first definition of a name wins")
+    func firstDefinitionWins() throws {
+        let blocks = [
+            Block(kind: .defineBlock(name: "き", body: [Block(kind: .forward(.literal(1)))])),
+            Block(kind: .defineBlock(name: "き", body: [Block(kind: .forward(.literal(2)))])),
+            Block(kind: .callBlock(name: "き")),
+        ]
+        #expect(try expand(blocks).map(\.command) == [.forward(1)])
+    }
+
+    @Test("reaching a definition draws nothing but charges a step")
+    func definitionDrawsNothingAndCharges() throws {
+        let define = Block(kind: .defineBlock(name: "き", body: [Block(kind: .home)]))
+        #expect(try expand([define]).isEmpty)
+        // A step each, though neither draws: one definition fits under a limit
+        // of 1 and two do not.
+        #expect(throws: BlockExpansionError.commandLimitExceeded(limit: 1)) {
+            try expand([define, define], limit: 1)
+        }
+    }
+
+    @Test("recursion terminated by a condition draws a fractal")
+    func boundedRecursionDrawsFractal() throws {
+        // The whole point of the feature: a block that calls itself, held to a
+        // depth by a box and an if — a two-branch tree. Halving rather than
+        // the ×0.6 a child would actually pick, so the arithmetic is exact in
+        // binary and the assertions below can be equalities.
+        let define = Block(
+            kind: .defineBlock(
+                name: "き",
+                body: [
+                    Block(
+                        kind: .ifBlock(
+                            condition: Condition(
+                                lhs: .variable("🌟"), comparison: .greater, rhs: .literal(6)),
+                            body: [
+                                Block(kind: .forward(.variable("🌟"))),
+                                Block(kind: .multiplyVariable(name: "🌟", value: .literal(0.5))),
+                                Block(kind: .turnRight(.literal(28))),
+                                Block(kind: .callBlock(name: "き")),
+                                Block(kind: .turnLeft(.literal(56))),
+                                Block(kind: .callBlock(name: "き")),
+                                Block(kind: .turnRight(.literal(28))),
+                                Block(kind: .divideVariable(name: "🌟", value: .literal(0.5))),
+                                Block(kind: .backward(.variable("🌟"))),
+                            ],
+                            elseBody: nil))
+                ]))
+        let blocks = [
+            Block(kind: .setVariable(name: "🌟", value: .literal(70))),
+            Block(kind: .callBlock(name: "き")),
+            define,
+        ]
+        // 70 → 35 → 17.5 → 8.75 → 4.375 stops, so 1+2+4+8 = 15 branches are
+        // drawn, each one forward + three turns + one backward.
+        let expanded = try expand(blocks)
+        #expect(expanded.count == 15 * 5)
+        // A box wrapped in ×0.5 … ÷0.5 around the calls comes back to where it
+        // started, which is what makes one global box enough for a fractal —
+        // the last thing the outermost call does is retrace its own trunk.
+        #expect(expanded.last?.command == .forward(-70))
+    }
+
+    @Test("runaway recursion throws instead of overflowing the stack")
+    func recursionLimitThrows() {
+        let blocks = [
+            Block(kind: .callBlock(name: "き")),
+            Block(
+                kind: .defineBlock(
+                    name: "き",
+                    body: [
+                        Block(kind: .forward(.literal(10))),
+                        Block(kind: .callBlock(name: "き")),
+                    ])),
+        ]
+        // Reaching this expectation at all is the assertion: the depth is
+        // measured against a debug build's stack (see `defaultNestingLimit`),
+        // and a limit set too high crashes the test process instead of
+        // failing it.
+        #expect(
+            throws: BlockExpansionError.nestingLimitExceeded(
+                limit: BlockExpander.defaultNestingLimit)
+        ) {
+            try expand(blocks)
+        }
+    }
+
+    @Test("mutual recursion counts against the same depth")
+    func mutualRecursionThrows() {
+        let blocks = [
+            Block(kind: .callBlock(name: "あ")),
+            Block(kind: .defineBlock(name: "あ", body: [Block(kind: .callBlock(name: "い"))])),
+            Block(kind: .defineBlock(name: "い", body: [Block(kind: .callBlock(name: "あ"))])),
+        ]
+        #expect(
+            throws: BlockExpansionError.nestingLimitExceeded(
+                limit: BlockExpander.defaultNestingLimit)
+        ) {
+            try expand(blocks)
+        }
+    }
+
+    @Test("nesting counts bodies as well as calls")
+    func nestedBodiesCountTowardTheLimit() throws {
+        // Every kind of descent costs the same stack, so all of them are
+        // bounded by the one limit — a definition wrapped in repeats spends
+        // several levels per call, which is exactly the case a call-only
+        // counter would have missed.
+        func nested(_ depth: Int) -> [Block] {
+            var body = [Block(kind: .home)]
+            for _ in 0..<depth {
+                body = [Block(kind: .repeatBlock(count: .literal(1), body: body))]
+            }
+            return body
+        }
+        #expect(try expand(nested(3), nestingLimit: 4).count == 1)
+        #expect(throws: BlockExpansionError.nestingLimitExceeded(limit: 2)) {
+            try expand(nested(3), nestingLimit: 2)
+        }
+    }
+
+    @Test("a custom nesting limit applies, and calls still cost steps")
+    func customNestingLimit() throws {
+        let blocks = [
+            Block(kind: .callBlock(name: "き")),
+            Block(kind: .defineBlock(name: "き", body: [Block(kind: .callBlock(name: "き"))])),
+        ]
+        #expect(throws: BlockExpansionError.nestingLimitExceeded(limit: 3)) {
+            try expand(blocks, nestingLimit: 3)
+        }
+        // A call-only loop is bounded by the step cap too, not only by depth:
+        // this one is shallow and still can't run away.
+        let loop = [
+            Block(
+                kind: .repeatBlock(
+                    count: .literal(1000),
+                    body: [Block(kind: .callBlock(name: "き"))])),
+            Block(kind: .defineBlock(name: "き", body: [])),
+        ]
+        #expect(throws: BlockExpansionError.commandLimitExceeded(limit: 20)) {
+            try expand(loop, limit: 20)
         }
     }
 }

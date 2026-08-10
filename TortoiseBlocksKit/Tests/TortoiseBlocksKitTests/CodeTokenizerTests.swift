@@ -18,6 +18,18 @@ struct CodeTokenizerTests {
             tokens.map { describe($0, in: code) } == ["keyword:for", "keyword:in", "keyword:in"])
     }
 
+    @Test("func is a keyword, and the block's own name stays plain")
+    func funcKeyword() {
+        // A defined block's name is an identifier like any local — the same
+        // treatment a box name gets.
+        let code = "func き() {\n    き()\n}"
+        let tokens = CodeTokenizer.tokenize(code)
+        #expect(
+            tokens.filter { $0.kind == .keyword }.map { describe($0, in: code) } == ["keyword:func"]
+        )
+        #expect(tokens.allSatisfy { $0.kind != .methodOrProperty })
+    }
+
     @Test("integers and decimals, including a leading minus, are numbers")
     func numbers() {
         let code = "🐢.forward(100)\n🐢.left(45.5)\n🐢.right(-90)"
