@@ -1,0 +1,145 @@
+{
+  "blocks" : [
+    {
+      "id" : "D71B5BF7-CD65-4F68-8C1C-B023056030E5",
+      "kind" : {
+        "penColor" : "green"
+      }
+    },
+    {
+      "id" : "7CC09958-5A31-4B92-A8B9-ADEF3033BBB0",
+      "kind" : {
+        "penWidth" : {
+          "literal" : 2
+        }
+      }
+    },
+    {
+      "id" : "19ED7BFC-B944-437E-A1A2-24852B7771EA",
+      "kind" : {
+        "setVariable" : {
+          "name" : "🌟",
+          "value" : {
+            "literal" : 70
+          }
+        }
+      }
+    },
+    {
+      "id" : "4ABECC31-3F3F-4637-921D-649DFE559583",
+      "kind" : {
+        "call" : {
+          "name" : "き"
+        }
+      }
+    },
+    {
+      "id" : "200C0AB6-6253-461A-AB2E-C08BC4ECDCA1",
+      "kind" : {
+        "define" : {
+          "body" : [
+            {
+              "id" : "50F77312-3968-491C-AD56-90ECAC212500",
+              "kind" : {
+                "if" : {
+                  "body" : [
+                    {
+                      "id" : "78128476-5143-4E6E-B5A6-A926DE7B3AD9",
+                      "kind" : {
+                        "forward" : {
+                          "variable" : "🌟"
+                        }
+                      }
+                    },
+                    {
+                      "id" : "DD509406-A074-4879-83AF-C4B444E8E625",
+                      "kind" : {
+                        "multiplyVariable" : {
+                          "name" : "🌟",
+                          "value" : {
+                            "literal" : 0.6
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "id" : "49C5E361-E3BF-478E-A358-C09DBE4E4181",
+                      "kind" : {
+                        "turnRight" : {
+                          "literal" : 28
+                        }
+                      }
+                    },
+                    {
+                      "id" : "13EAB67F-55EA-4EED-9FAD-E68A4B189758",
+                      "kind" : {
+                        "call" : {
+                          "name" : "き"
+                        }
+                      }
+                    },
+                    {
+                      "id" : "AE365F66-2B43-46D8-AAA5-CABE76040E43",
+                      "kind" : {
+                        "turnLeft" : {
+                          "literal" : 56
+                        }
+                      }
+                    },
+                    {
+                      "id" : "ED05B83D-210F-4378-B1DC-F43E63656B4C",
+                      "kind" : {
+                        "call" : {
+                          "name" : "き"
+                        }
+                      }
+                    },
+                    {
+                      "id" : "1D62F126-CB16-4E5F-81D6-CF25FB57EF04",
+                      "kind" : {
+                        "turnRight" : {
+                          "literal" : 28
+                        }
+                      }
+                    },
+                    {
+                      "id" : "338F4AB4-A492-4D2B-A2B2-92B2BC8412BD",
+                      "kind" : {
+                        "divideVariable" : {
+                          "name" : "🌟",
+                          "value" : {
+                            "literal" : 0.6
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "id" : "52C160A2-508C-49D1-8034-B7575541F02B",
+                      "kind" : {
+                        "backward" : {
+                          "variable" : "🌟"
+                        }
+                      }
+                    }
+                  ],
+                  "condition" : {
+                    "comparison" : "greater",
+                    "lhs" : {
+                      "variable" : "🌟"
+                    },
+                    "rhs" : {
+                      "literal" : 6
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "name" : "き"
+        }
+      }
+    }
+  ],
+  "schemaVersion" : 3,
+  "title" : "Tree"
+}

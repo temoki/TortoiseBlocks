@@ -1,1 +1,8 @@
-The first release of Tortoise Blocks.
+BLOCKS YOU MAKE YOURSELF
+
+Give a block a name, put whatever you like inside it, and call it from anywhere in your program. A block can call itself, too — which is all it takes to draw a tree.
+
+• A new sample draws a fractal tree, so you can see a block calling itself before you build one.
+• Every block now carries one ⋯ menu: delete it, move it up or down, or give an "if" its "otherwise".
+• Tap the trash can to clear the whole program at once. You can undo it.
+• Block labels stay on one line in narrower windows.
