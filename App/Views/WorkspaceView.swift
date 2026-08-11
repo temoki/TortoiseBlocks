@@ -556,7 +556,6 @@ struct ElseDividerRow: View {
                 // Inside the label, for the reason `RowControls` gives.
                 Label("More", systemImage: "ellipsis")
                     .labelStyle(.iconOnly)
-                    .imageScale(.large)
                     .touchTarget()
             }
             .menuIndicator(.hidden)
@@ -778,10 +777,6 @@ struct RowControls: View {
             // thin band are not, which is exactly how it came out on iPad.
             Label("More", systemImage: "ellipsis")
                 .labelStyle(.iconOnly)
-                // Bigger than a row's own icons on purpose: this is the one
-                // control on the row, and a larger glyph is both easier to see
-                // and a larger shape to hit.
-                .imageScale(.large)
                 .touchTarget()
         }
         .menuIndicator(.hidden)

@@ -105,9 +105,11 @@ frame grows the layout and leaves the tappable area the size of the glyph. It
 looks identical either way, including with the target painted in for a
 screenshot, and only shows up as a control that misses half the taps. The ✕ hid
 this for as long as it was there, because a filled circle is a large shape on
-its own; three dots on a thin band are not. The ⋯ also takes
-`.imageScale(.large)`, bigger than the row's own icons: it is the one control on
-the row, so it can afford to be the one thing easiest to hit.
+its own; three dots on a thin band are not. Note the fix is the target and not
+the glyph: enlarging the ⋯ was tried alongside it and taken back out once the
+44pt label proved enough on device — at `.large` the dots sat heavier than the
+words beside them, and a control that is merely easy to hit does not need to be
+the loudest thing on the row.
 
 **A row compresses in a fixed order: the spacer, then the label, never a chip.**
 Getting there took two modifiers, and neither is the one the symptom suggests.
