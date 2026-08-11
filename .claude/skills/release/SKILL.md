@@ -45,8 +45,8 @@ language is a full copy of the page, screenshots included, and **the hidden
 copy's images are fetched anyway** — an `<img>` with no layout box loads
 eagerly, `loading="lazy"` and all (measured against a logging local server,
 with and without a forced screenshot). So every visitor downloads both
-languages' screenshots, ~750KB, and quantization is what keeps that a
-non-issue. Only CSS `background-image` would actually skip them, and it is
+languages' screenshots — ~1MB at ten of them, 1.1.0's count — and
+quantization is what keeps that a non-issue. Only CSS `background-image` would actually skip them, and it is
 not worth trading `<img alt>` on the page's content images to save one
 language's worth of cached bytes.
 
@@ -58,9 +58,15 @@ tracking should make no third-party request), and its `href` is *the* single
 place the store URL lands: `apps.apple.com/app/id6798677334`, with no country
 code, so Apple sends each visitor to their own storefront. Its screenshots are downscaled
 copies of `appstore/screenshots/`, quantized to 256 colors (`magick -dither None
--colors 256`): flat app UI loses nothing visible and the page drops from 3.2MB
-to 750KB — but check a re-quantized shot by eye, since dithering *on* leaves
-visible speckle in the toolbar shadows. And each Japanese paragraph is one
+-colors 256 -strip`) and then run through `oxipng -o max --strip safe`: flat app
+UI loses nothing visible and the page drops from ~4.7MB to ~1MB — but check a
+re-quantized shot by eye, since dithering *on* leaves visible speckle in the
+toolbar shadows. The oxipng pass is a third of that saving and it is *lossless*,
+so it goes over the store captures and `docs/` too (18.6% off everything, pixels
+proved identical by hashing the decoded images before and after). Without it,
+`magick` alone lands about 25% high: the 1.0.0 files were plainly made with some
+such pass, so a set regenerated on a machine that has none comes out heavier for
+no visible reason. And each Japanese paragraph is one
 source line: a newline between two CJK characters is not reliably collapsed
 away, and shows up as a gap mid-sentence.
 
