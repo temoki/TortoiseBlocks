@@ -760,6 +760,11 @@ struct RowControls: View {
             }
             if let addElseAction {
                 Button("Add Otherwise", systemImage: "arrow.triangle.branch", action: addElseAction)
+                    // The hint the button on the header used to carry: what an
+                    // else mouth *is* still needs saying, and a menu entry is
+                    // where it is now read.
+                    .accessibilityHint(
+                        Text("Adds an otherwise mouth that runs when the condition fails"))
             }
             Divider()
             Button("Delete", systemImage: "xmark.circle", role: .destructive) {
