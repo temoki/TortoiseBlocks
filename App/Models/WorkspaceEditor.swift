@@ -11,6 +11,14 @@ final class WorkspaceUIState {
     /// (nil = top level). Toggled from the container/else rows' target
     /// buttons.
     var insertionTarget: BodyAddress?
+
+    /// Whether the "delete everything?" confirmation is on screen (#48).
+    ///
+    /// It lives here rather than in the trash can's own `@State` because two
+    /// places ask for it — the can and the Mac's menu — and there must be
+    /// exactly one dialog: a second presentation modifier of the same kind
+    /// silently swallows the first.
+    var confirmsDeleteAll = false
 }
 
 /// Value-type editing facade over the document.
@@ -55,6 +63,22 @@ struct WorkspaceEditor {
     /// `setBlocks`, so it's undoable and dirties the document like any edit.
     func insertSample(_ blocks: [Block]) {
         setBlocks(blocks)
+    }
+
+    var confirmsDeleteAll: Bool {
+        get { uiState.confirmsDeleteAll }
+        nonmutating set { uiState.confirmsDeleteAll = newValue }
+    }
+
+    /// Empties the workspace (#48) — one edit, so one ⌘Z brings the whole
+    /// program back. Nothing to delete is a no-op, and `setBlocks` refuses an
+    /// unchanged tree anyway, so it never registers an empty undo step.
+    ///
+    /// The insertion target goes with it: the container it pointed into no
+    /// longer exists.
+    func deleteAll() {
+        guard setBlocks([]) else { return }
+        insertionTarget = nil
     }
 
     func delete(_ id: UUID) {
