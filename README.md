@@ -20,11 +20,18 @@ graphics engine written in Swift.
 ## Features
 
 - **Block editor** — tap or drag & drop blocks (movement / pen / fill /
-  control / boxes), nest them, edit arguments in place, reorder freely,
-  drop one on the trash to throw it away, undo everything
+  control / boxes / my blocks), nest them, edit arguments in place, and reach
+  every row operation from one ⋯ menu; drop a block on the trash to throw it
+  away or tap the trash to clear the program, and undo everything
 - **Repeat, if, and boxes** — loop a body, branch on a comparison
   (with an optional else), and keep a value in a named box 🌟 you can set
   and do arithmetic on — enough to write a program that grows as it draws
+- **My blocks 🌳** — name a block, put anything inside it, and call it by name
+  from anywhere; a definition is *the mention*, so an undefined call is a no-op
+  rather than a broken reference, and the first definition of a name wins.
+  Calls are spliced in where they stand, which makes recursion fall out for
+  free — a block that calls itself twice is a fractal tree, and one of the
+  samples is exactly that
 - **Dice 🎲** — any number *or color* slot can roll a random value on every
   run, so the same program draws a different picture each time
 - **Live playback** — a video-style transport: play, pause, step one command
@@ -133,10 +140,18 @@ the app; opening a document still starts with an empty canvas.
 
 `schemaVersion` is the lowest version that can *read* the file, not the one
 that wrote it. A document is written as version 1 unless it uses a version-2
-feature (a box or an if block), so a simple program stays byte-identical to
-what the first release produced and keeps opening in older builds. A file
-that asks for a newer version than the app knows is turned away with a plain
-"made with a newer version" message instead of a decode error.
+feature (a box or an if block) or a version-3 one (a block the child defined,
+or a call to one), so a simple program stays byte-identical to what the first
+release produced and keeps opening in older builds. A file that asks for a
+newer version than the app knows is turned away with a plain "made with a
+newer version" message instead of a decode error.
+
+The jump from 2 to 3 is what a *released* version costs. Version 2 gained the
+if block after variables without a bump, because 2 had never shipped; by the
+time blocks-you-define arrived, it had. A decoder in the wild meets
+`{"define":…}` as an unknown top-level key and rejects the whole document, so
+only the version number can tell it the file is from the future — and for the
+same reason, a payload gains fields only before its version ships.
 
 Number slots are bounded, by the slot they sit in:
 
