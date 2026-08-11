@@ -27,8 +27,15 @@ extension View {
 
     /// Holds an icon-only control to the 44pt finger minimum on iPadOS.
     /// A borderless SF Symbol button is only as tappable as the glyph is big —
-    /// around 24pt at body size — so the ✕ on a block row is a small target on
+    /// around 24pt at body size — so the ⋯ on a block row is a small target on
     /// a touch screen even though the row around it is not.
+    ///
+    /// On a `Menu`, apply this to the *label* rather than to the menu: a menu
+    /// hit-tests what it was handed to draw, so wrapped around the outside this
+    /// grows the layout and leaves the tappable area the size of the glyph. The
+    /// symptom is a control that looks right and misses half the taps, and it
+    /// only showed up when the row's ✕ became a ⋯ — a filled circle is a large
+    /// shape by itself, three dots on a thin band are not.
     ///
     /// Only the *hit* area grows, and only where fingers are: the glyph is
     /// unchanged, and macOS keeps its own (smaller, pointer-sized) metrics

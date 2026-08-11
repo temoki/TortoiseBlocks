@@ -553,14 +553,16 @@ struct ElseDividerRow: View {
             Menu {
                 removeButton
             } label: {
+                // Inside the label, for the reason `RowControls` gives.
                 Label("More", systemImage: "ellipsis")
+                    .labelStyle(.iconOnly)
+                    .imageScale(.large)
+                    .touchTarget()
             }
             .menuIndicator(.hidden)
-            .labelStyle(.iconOnly)
             .buttonStyle(.borderless)
             .controlSize(.large)
             .tint(BlockCategory.ink)
-            .touchTarget()
         }
         .blockChrome(
             BlockCategory.control.color, corners: .containerDivider,
@@ -764,14 +766,23 @@ struct RowControls: View {
                 workspace.delete(blockID)
             }
         } label: {
+            // The finger target belongs *inside* the label: a `Menu` hit-tests
+            // what it was handed to draw, so a `frame` wrapped around the menu
+            // grows the layout and not the tappable area. The ✕ hid this — a
+            // filled circle is a big shape on its own — and three dots on a
+            // thin band are not, which is exactly how it came out on iPad.
             Label("More", systemImage: "ellipsis")
+                .labelStyle(.iconOnly)
+                // Bigger than a row's own icons on purpose: this is the one
+                // control on the row, and a larger glyph is both easier to see
+                // and a larger shape to hit.
+                .imageScale(.large)
+                .touchTarget()
         }
         .menuIndicator(.hidden)
-        .labelStyle(.iconOnly)
         .buttonStyle(.borderless)
         .controlSize(.large)
         .tint(BlockCategory.ink)
-        .touchTarget()
     }
 }
 

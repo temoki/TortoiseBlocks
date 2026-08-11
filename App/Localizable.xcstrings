@@ -4,22 +4,22 @@
     "" : {
 
     },
-    "🎲" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "🎲"
-          }
-        }
-      }
-    },
     "%@ to %@" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ 〜 %@"
+          }
+        }
+      }
+    },
+    "🎲" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "🎲"
           }
         }
       }
@@ -85,6 +85,7 @@
       }
     },
     "Adds an otherwise mouth that runs when the condition fails" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ja" : {
           "stringUnit" : {

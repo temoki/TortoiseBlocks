@@ -99,6 +99,16 @@ macOS right-click keeps working. Note the icon is `ellipsis`, not
 `ellipsis.circle` — the row already carries two circled glyphs (the chips and
 the ⊕), and a third circle read as another control of the same kind.
 
+**A `Menu` hit-tests its label, so `touchTarget()` goes inside it.** Wrapped
+around the outside — where it sat for every `Button` before this — the 44pt
+frame grows the layout and leaves the tappable area the size of the glyph. It
+looks identical either way, including with the target painted in for a
+screenshot, and only shows up as a control that misses half the taps. The ✕ hid
+this for as long as it was there, because a filled circle is a large shape on
+its own; three dots on a thin band are not. The ⋯ also takes
+`.imageScale(.large)`, bigger than the row's own icons: it is the one control on
+the row, so it can afford to be the one thing easiest to hit.
+
 **A row compresses in a fixed order: the spacer, then the label, never a chip.**
 Getting there took two modifiers, and neither is the one the symptom suggests.
 An if header nested one level deep broke its label onto two lines — 「も」/「し」 —
