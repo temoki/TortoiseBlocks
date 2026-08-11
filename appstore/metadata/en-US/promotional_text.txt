@@ -1,1 +1,1 @@
-Any number can be a dice roll, so the same program draws a different picture every run. Snap a few blocks together and watch the tortoise draw, line by line.
+Give a block your own name, fill it with blocks, and call it from your program. A block can even call itself — which is all it takes to draw a whole tree.

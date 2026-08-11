@@ -66,15 +66,21 @@ public enum SampleBlocks {
     ///
     /// 70 down to 6 is five levels — 31 branches, ~155 commands, nesting 11 —
     /// well inside both the step cap and `BlockExpander.defaultNestingLimit`.
+    ///
+    /// The block is called 🌳 rather than 「き」 for the reason the box presets
+    /// are emoji: a sample ships in every language, and a name a child can
+    /// neither read nor retype teaches nothing about naming. It is SMP-plane,
+    /// so the generated code's `func 🌳()` is valid Swift like every other
+    /// preset name.
     public static func fractalTree() -> [Block] {
         [
             Block(kind: .penColor(.literal(.green))),
             Block(kind: .penWidth(.literal(2))),
             Block(kind: .setVariable(name: "🌟", value: .literal(70))),
-            Block(kind: .callBlock(name: "き")),
+            Block(kind: .callBlock(name: "🌳")),
             Block(
                 kind: .defineBlock(
-                    name: "き",
+                    name: "🌳",
                     body: [
                         Block(
                             kind: .ifBlock(
@@ -84,9 +90,9 @@ public enum SampleBlocks {
                                     Block(kind: .forward(.variable("🌟"))),
                                     Block(kind: .multiplyVariable(name: "🌟", value: .literal(0.6))),
                                     Block(kind: .turnRight(.literal(28))),
-                                    Block(kind: .callBlock(name: "き")),
+                                    Block(kind: .callBlock(name: "🌳")),
                                     Block(kind: .turnLeft(.literal(56))),
-                                    Block(kind: .callBlock(name: "き")),
+                                    Block(kind: .callBlock(name: "🌳")),
                                     Block(kind: .turnRight(.literal(28))),
                                     Block(kind: .divideVariable(name: "🌟", value: .literal(0.6))),
                                     Block(kind: .backward(.variable("🌟"))),

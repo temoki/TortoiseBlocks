@@ -1,10 +1,13 @@
 Tortoise Blocks is a visual programming app for children. Snap a few blocks together, press play, and a tortoise draws the picture on the canvas — one line at a time, with the block it is drawing lit up in the program.
 
 BLOCKS THAT SNAP TOGETHER
-Move and turn. Put the pen down, pick a color, fill a shape. Drag a block into place or tap to add it, change a number where it sits, and undo anything you like.
+Move and turn. Put the pen down, pick a color, fill a shape. Drag a block into place or tap to add it, change a number where it sits, and undo anything you like. One tap on the trash can clears the whole program when you want to start over.
 
 REPEAT, IF, AND BOXES
 Run a group of blocks again and again. Ask a question and take one path or the other. Keep a number in a box and add to it as the program runs. These are the ideas real programs are made of, in words a child already knows.
+
+BLOCKS YOU MAKE YOURSELF
+Give a block a name, put whatever you like inside it, and call it by that name from anywhere in the program. A block can call itself, too — and one that calls itself twice, a little smaller each time, draws a tree. There is a ready-made tree to look at before you build your own.
 
 ROLL THE DICE
 Any number — and any color — can be a dice roll instead. The same program then draws a different picture every time it runs, which turns "do it again" into a game of its own.
