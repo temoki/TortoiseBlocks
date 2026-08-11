@@ -394,6 +394,16 @@
         }
       }
     },
+    "Filled Square" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "しかくをぬる"
+          }
+        }
+      }
+    },
     "Forward" : {
       "localizations" : {
         "ja" : {
@@ -894,42 +904,12 @@
         }
       }
     },
-    "Sample: Filled Square" : {
+    "Samples" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "サンプル: しかくをぬる"
-          }
-        }
-      }
-    },
-    "Sample: Spiral" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "サンプル: うずまきをかく"
-          }
-        }
-      }
-    },
-    "Sample: Star" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "サンプル: ほしをかく"
-          }
-        }
-      }
-    },
-    "Sample: Tree" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "サンプル: きをかく"
+            "value" : "サンプル"
           }
         }
       }
@@ -960,6 +940,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "はやさ"
+          }
+        }
+      }
+    },
+    "Spiral" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "うずまきをかく"
+          }
+        }
+      }
+    },
+    "Star" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ほしをかく"
           }
         }
       }
@@ -1150,6 +1150,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "よびすぎだよ"
+          }
+        }
+      }
+    },
+    "Tree" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "きをかく"
           }
         }
       }

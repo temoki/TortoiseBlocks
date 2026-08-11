@@ -29,17 +29,26 @@ struct WorkspaceView: View {
                     // artwork, not text — the same in every language — so it
                     // is a `verbatim` icon rather than part of the localized
                     // title, and the string catalog stays free of it.
+                    //
+                    // "Sample" is said once, over the list, rather than at the
+                    // head of all four names: four labels that begin the same
+                    // way are four labels a child has to read past to find the
+                    // word that differs.
                     VStack(alignment: .leading, spacing: 8) {
-                        SampleButton("🟦", "Sample: Filled Square") {
+                        Text("Samples")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .accessibilityAddTraits(.isHeader)
+                        SampleButton("🟦", "Filled Square") {
                             workspace.insertSample(SampleBlocks.filledSquare())
                         }
-                        SampleButton("⭐️", "Sample: Star") {
+                        SampleButton("⭐️", "Star") {
                             workspace.insertSample(SampleBlocks.star())
                         }
-                        SampleButton("🌀", "Sample: Spiral") {
+                        SampleButton("🌀", "Spiral") {
                             workspace.insertSample(SampleBlocks.spiral())
                         }
-                        SampleButton("🌳", "Sample: Tree") {
+                        SampleButton("🌳", "Tree") {
                             workspace.insertSample(SampleBlocks.fractalTree())
                         }
                     }
