@@ -135,7 +135,22 @@ included — is a target. Tap-to-add, with the "Add Here" toggle
 accessibility alternative and must stay. A permanent trash circle rides a
 `safeAreaInset` at the bottom of the workspace (`WorkspaceTrashZone`, #30) —
 the way out of a drag you regret, since deleting a *placed* block was never
-the hidden part. It can't appear only mid-drag: SwiftUI has no
+the hidden part.
+
+**The can does two things, and the second one made it accessible** (#48). A drop
+throws away the block you are holding; a *tap* offers to throw away the program,
+which is what #44 took away when the row's ✕ became a menu — clearing a
+workspace by opening one menu per row is not a thing a child will do. The two
+never collide, being different gestures, and the tap asks first. Being a
+`Button` is also what let the can stop being `accessibilityHidden`: a drop
+target is nothing a VoiceOver user can operate, so it had been invisible since
+#30, and it can now say what it is. The confirmation is an **alert**, not a
+`confirmationDialog`: on iPad the latter is a popover hanging off the can, and
+that form drops the title *and* the cancel button — the question never gets
+asked, and the way out is the one control not on screen. It is one alert for
+both entry points (the can and the Mac's ⌘⌫), living on `WorkspaceView` and
+driven by `WorkspaceUIState.confirmsDeleteAll`, because two presentation
+modifiers of the same kind would silently swallow one another. It can't appear only mid-drag: SwiftUI has no
 cross-platform "a drag started" signal (`onDragSessionUpdated` is
 macOS-only), so a can that appeared on drag could never reliably learn the
 drag was cancelled. It replaced drop-on-the-palette deletion, which had no

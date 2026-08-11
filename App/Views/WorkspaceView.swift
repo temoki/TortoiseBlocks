@@ -108,6 +108,30 @@ struct WorkspaceView: View {
                     .padding(.vertical, 12)
             }
         }
+        // One dialog for both ways in — the can and the Mac's Edit menu —
+        // because a second presentation modifier of the same kind would
+        // silently swallow this one. It asks even though ⌘Z brings the
+        // program straight back: a child who has just lost their work does
+        // not know that yet.
+        //
+        // An alert rather than a `confirmationDialog`, which on iPad is a
+        // popover hanging off the can: that form drops the title *and* the
+        // cancel button (you dismiss it by tapping away), so the question
+        // never gets asked and the way out is the one thing not on screen.
+        // Both matter more here than the tidier anchoring.
+        .alert(
+            "Delete all blocks?",
+            isPresented: Binding(
+                get: { workspace.confirmsDeleteAll },
+                set: { workspace.confirmsDeleteAll = $0 })
+        ) {
+            Button("Delete All", role: .destructive) {
+                workspace.deleteAll()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("You can undo this.")
+        }
         // Puts the inset on the window's bottom edge. Without it SwiftUI keeps
         // the home indicator's 20pt *inside* the inset, which reads as 36pt
         // under the can against 12pt above it. Note it has to be applied here
@@ -153,10 +177,15 @@ private struct SampleButton: View {
 }
 
 /// Somewhere to put a block you have picked up and thought better of — the one
-/// thing dragging was missing (#30). Deleting was never hidden: every row's
-/// menu carries it (a ✕ of its own, when this was written — #44). What there
-/// was no answer for was "I'm holding this and I don't want it", where the only
-/// way out was to put it back exactly where it came from.
+/// thing dragging was missing (#30) — and, since #48, the way to throw away the
+/// whole program.
+///
+/// Deleting one block was never hidden: every row's menu carries it (a ✕ of its
+/// own, when this was written — #44). What there was no answer for was "I'm
+/// holding this and I don't want it", where the only way out was to put it back
+/// exactly where it came from. Clearing the workspace had no answer either once
+/// the row's ✕ went away, and a can you can only drop onto was the obvious
+/// place to put one.
 ///
 /// It is always visible rather than appearing mid-drag because SwiftUI has no
 /// cross-platform signal for "a drag started" — `onDragSessionUpdated` is
@@ -172,37 +201,49 @@ struct WorkspaceTrashZone: View {
     @ScaledMetric private var diameter: CGFloat = 56
 
     var body: some View {
-        Image(systemName: isTargeted ? "trash.fill" : "trash")
-            .font(.title2)
-            .foregroundStyle(isTargeted ? Color.red : Color.secondary)
-            .frame(width: diameter, height: diameter)
-            .background {
-                Circle()
-                    .fill(isTargeted ? Color.red.opacity(0.15) : Color.clear)
-                    .stroke(
-                        isTargeted ? Color.red : Color.secondary.opacity(0.4),
-                        lineWidth: 2)
-            }
-            .scaleEffect(isTargeted ? 1.1 : 1)
-            .dropDestination(for: Block.self) { items, _ in
-                guard let dropped = items.first else { return false }
-                // A palette-origin block has no ID in the tree, so this is a
-                // no-op for it (`BlockTree.removing` returns nil and
-                // `delete` bails before touching undo). That is the right
-                // outcome: throwing away a block you were carrying but never
-                // placed just means not placing it.
-                workspace.delete(dropped.id)
-                return true
-            } isTargeted: {
-                isTargeted = $0
-            }
-            .animation(.easeOut(duration: 0.12), value: isTargeted)
-            // The icon carries the meaning on its own, but a pointer gets the
-            // words too.
-            .help("Drop to Delete")
-            // Drop-only, so VoiceOver can't operate it at all; the ✕ on every
-            // row and the context menu's Delete stay the accessible paths.
-            .accessibilityHidden(true)
+        // Tapping is the second thing it does (#48): a drop throws away the
+        // one block you are holding, a tap offers to throw away the program.
+        // The two never collide — they are different gestures — and the tap
+        // asks first.
+        //
+        // It also stops being invisible to VoiceOver. The can was hidden
+        // because a drop target is nothing a VoiceOver user can operate; a
+        // button is, so it can finally say what it is.
+        Button {
+            workspace.confirmsDeleteAll = true
+        } label: {
+            Image(systemName: isTargeted ? "trash.fill" : "trash")
+                .font(.title2)
+                .foregroundStyle(isTargeted ? Color.red : Color.secondary)
+                .frame(width: diameter, height: diameter)
+                .background {
+                    Circle()
+                        .fill(isTargeted ? Color.red.opacity(0.15) : Color.clear)
+                        .stroke(
+                            isTargeted ? Color.red : Color.secondary.opacity(0.4),
+                            lineWidth: 2)
+                }
+                .scaleEffect(isTargeted ? 1.1 : 1)
+        }
+        .buttonStyle(.plain)
+        .pointerHover()
+        .dropDestination(for: Block.self) { items, _ in
+            guard let dropped = items.first else { return false }
+            // A palette-origin block has no ID in the tree, so this is a
+            // no-op for it (`BlockTree.removing` returns nil and
+            // `delete` bails before touching undo). That is the right
+            // outcome: throwing away a block you were carrying but never
+            // placed just means not placing it.
+            workspace.delete(dropped.id)
+            return true
+        } isTargeted: {
+            isTargeted = $0
+        }
+        .animation(.easeOut(duration: 0.12), value: isTargeted)
+        // Both of its jobs, for a pointer.
+        .help("Tap to delete every block, or drop one here to delete it")
+        .accessibilityLabel("Delete All")
+        .accessibilityHint("Deletes every block in the program. You can undo it.")
     }
 }
 

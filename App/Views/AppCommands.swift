@@ -10,14 +10,32 @@ import UniformTypeIdentifiers
 extension FocusedValues {
     @Entry var runner: RunnerModel?
     @Entry var workspaceBlocks: [Block]?
+    /// The front window's non-document editor state (#48). The menu only has
+    /// to *ask* for the delete-everything confirmation; the workspace owns the
+    /// dialog and does the deleting, so what travels here is this small
+    /// observable rather than the `WorkspaceEditor` itself — a value type
+    /// wrapping a `Binding`, which a focused value cannot carry.
+    @Entry var workspaceUIState: WorkspaceUIState?
 }
 
 /// Run / pause / step / export, wired to the front document window only.
 struct TortoiseBlocksCommands: Commands {
     @FocusedValue(\.runner) private var runner
     @FocusedValue(\.workspaceBlocks) private var workspaceBlocks
+    @FocusedValue(\.workspaceUIState) private var workspaceUIState
 
     var body: some Commands {
+        // Edit, after the pasteboard items, which is where a Mac user looks
+        // for it. The can at the bottom of the workspace is the same command
+        // (#48) and raises the same confirmation.
+        CommandGroup(after: .pasteboard) {
+            Button("Delete All", role: .destructive) {
+                workspaceUIState?.confirmsDeleteAll = true
+            }
+            .keyboardShortcut(.delete, modifiers: .command)
+            .disabled(workspaceUIState == nil || (workspaceBlocks ?? []).isEmpty)
+        }
+
         CommandMenu("Run") {
             Button("Run") {
                 runner?.run(workspaceBlocks ?? [])

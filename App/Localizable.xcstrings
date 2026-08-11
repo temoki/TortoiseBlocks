@@ -184,6 +184,16 @@
         }
       }
     },
+    "Cancel" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "やめる"
+          }
+        }
+      }
+    },
     "Canvas" : {
       "localizations" : {
         "ja" : {
@@ -270,6 +280,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "けす"
+          }
+        }
+      }
+    },
+    "Delete All" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ぜんぶけす"
+          }
+        }
+      }
+    },
+    "Delete all blocks?" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブロックを ぜんぶ けす？"
+          }
+        }
+      }
+    },
+    "Deletes every block in the program. You can undo it." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プログラムのブロックをぜんぶけします。もとにもどせます"
           }
         }
       }
@@ -1104,6 +1144,16 @@
         }
       }
     },
+    "Tap to delete every block, or drop one here to delete it" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "タップでぜんぶけす／ドロップで 1 まいけす"
+          }
+        }
+      }
+    },
     "then" : {
       "localizations" : {
         "ja" : {
@@ -1280,6 +1330,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "きいろ"
+          }
+        }
+      }
+    },
+    "You can undo this." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "もとに もどす ことが できるよ"
           }
         }
       }
