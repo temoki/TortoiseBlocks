@@ -32,6 +32,12 @@ let variableNameMaxLength = 10
 struct WorkspaceChipButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
+            // A chip never wraps (#44). It holds a number, a name or a colour —
+            // atomic things, where a second line reads as damage: 0.6 broke as
+            // "0." over "6" once the label beside it was given first claim on
+            // the row. So the row compresses in a fixed order — the spacer,
+            // then the label, and the chips never.
+            .fixedSize(horizontal: true, vertical: false)
             .foregroundStyle(BlockCategory.ink)
             .padding(.vertical, 6)
             .padding(.horizontal, 10)

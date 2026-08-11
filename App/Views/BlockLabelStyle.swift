@@ -44,5 +44,15 @@ private struct BlockLabel: View {
             }
             configuration.title
         }
+        // First claim on the row's width (#44). A row is `label + chips +
+        // Spacer + menu`, and an `HStack` hands space to its flexible children
+        // together: `Text` can wrap and `Spacer` can grow, so the label was
+        // breaking onto two lines — 「も」/「し」 — while 60pt of empty space sat
+        // beside it waiting for the menu button. The wrapping was never a
+        // shortage of width, which is why widening the column didn't fix it.
+        //
+        // Priority, not `fixedSize`: when the room genuinely isn't there the
+        // label still wraps, rather than overflowing its block.
+        .layoutPriority(1)
     }
 }

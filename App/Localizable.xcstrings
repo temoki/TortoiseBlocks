@@ -4,22 +4,22 @@
     "" : {
 
     },
-    "🎲" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "🎲"
-          }
-        }
-      }
-    },
     "%@ to %@" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ 〜 %@"
+          }
+        }
+      }
+    },
+    "🎲" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "🎲"
           }
         }
       }
@@ -510,6 +510,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "さいしょう"
+          }
+        }
+      }
+    },
+    "More" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メニュー"
           }
         }
       }

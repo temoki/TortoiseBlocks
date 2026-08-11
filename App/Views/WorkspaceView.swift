@@ -113,10 +113,10 @@ struct WorkspaceView: View {
 }
 
 /// Somewhere to put a block you have picked up and thought better of — the one
-/// thing dragging was missing (#30). Deleting was never hidden: every row
-/// carries a ✕ and a context-menu entry. What there was no answer for was
-/// "I'm holding this and I don't want it", where the only way out was to put
-/// it back exactly where it came from.
+/// thing dragging was missing (#30). Deleting was never hidden: every row's
+/// menu carries it (a ✕ of its own, when this was written — #44). What there
+/// was no answer for was "I'm holding this and I don't want it", where the only
+/// way out was to put it back exactly where it came from.
 ///
 /// It is always visible rather than appearing mid-drag because SwiftUI has no
 /// cross-platform signal for "a drag started" — `onDragSessionUpdated` is
@@ -315,7 +315,18 @@ struct BlockRowView: View {
                 block: block, childBlocks: body, workspace: workspace,
                 highlightedID: highlightedID, usedVariableNames: usedVariableNames,
                 usedFunctionNames: usedFunctionNames,
-                elseBlocks: elseBody
+                elseBlocks: elseBody,
+                // そうでなければ lives in the row's menu (#44) — the header is
+                // the widest row in the app, and this is 52pt of it. Offered
+                // only while there is no else mouth yet, exactly as the button
+                // it replaced was (#24).
+                addElseAction: elseBody == nil
+                    ? {
+                        workspace.updateKind(
+                            of: block.id,
+                            to: .ifBlock(condition: condition, body: body, elseBody: []))
+                    }
+                    : nil
             ) {
                 Label("If", systemImage: "questionmark.diamond")
                     .labelStyle(BlockLabelStyle())
@@ -327,23 +338,6 @@ struct BlockRowView: View {
                         to: .ifBlock(condition: new, body: body, elseBody: elseBody))
                 }
                 Text("then")
-                // Omitted (not just faded) once there's already an else
-                // mouth, so it stops reserving header width for nothing
-                // (#24).
-                if elseBody == nil {
-                    Button("Add Otherwise", systemImage: "arrow.triangle.branch") {
-                        workspace.updateKind(
-                            of: block.id,
-                            to: .ifBlock(condition: condition, body: body, elseBody: []))
-                    }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
-                    .controlSize(.large)
-                    .tint(BlockCategory.ink)
-                    .touchTarget()
-                    .accessibilityHint(
-                        "Adds an otherwise mouth that runs when the condition fails")
-                }
             }
         case .defineBlock(let name, let body):
             ContainerBlockRow(
@@ -433,6 +427,9 @@ struct ContainerBlockRow<Header: View>: View {
     /// instead, which is the whole visual difference between "this runs here"
     /// and "this is a block being named" (#14).
     var headerCorners: RowCorners = .containerHeader
+    /// An extra entry for this header's menu — the if block's そうでなければ,
+    /// which used to be a button of its own on the header (#44).
+    var addElseAction: (() -> Void)? = nil
     @ViewBuilder let header: Header
 
     @State private var isDropTargeted = false
@@ -458,7 +455,8 @@ struct ContainerBlockRow<Header: View>: View {
                 InsertionTargetButton(
                     address: BodyAddress(containerID: block.id), workspace: workspace)
                 Spacer(minLength: 0)
-                RowControls(blockID: block.id, workspace: workspace)
+                RowControls(
+                    blockID: block.id, workspace: workspace, addElseAction: addElseAction)
             }
             .blockChrome(
                 block.kind.category.color, corners: headerCorners,
@@ -466,6 +464,13 @@ struct ContainerBlockRow<Header: View>: View {
             )
             .draggable(block)
             .rowContextMenu(blockID: block.id, workspace: workspace)
+            // The menu holds it, and a menu is reachable — but an action says
+            // it out loud, the way Move Up / Move Down do.
+            .accessibilityActions {
+                if let addElseAction {
+                    Button("Add Otherwise", action: addElseAction)
+                }
+            }
             // Dropping onto the header appends into this container's body.
             .dropDestination(for: Block.self) { items, _ in
                 guard let dropped = items.first else { return false }
@@ -542,22 +547,27 @@ struct ElseDividerRow: View {
                 .labelStyle(BlockLabelStyle())
             InsertionTargetButton(address: address, workspace: workspace)
             Spacer(minLength: 0)
-            Button("Remove Otherwise", systemImage: "xmark.circle", role: .destructive) {
-                guard let block = BlockTree.block(withID: blockID, in: workspace.blocks),
-                    case .ifBlock(let condition, let body, _) = block.kind
-                else { return }
-                workspace.updateKind(
-                    of: blockID, to: .ifBlock(condition: condition, body: body, elseBody: nil))
+            // The same control every other row now carries: one menu, opened
+            // either by the ⋯ or by long-press. The mouth is removed from
+            // inside it, so "けす" means the same thing wherever it is found.
+            Menu {
+                removeButton
+            } label: {
+                // Inside the label, for the reason `RowControls` gives.
+                Label("More", systemImage: "ellipsis")
+                    .labelStyle(.iconOnly)
+                    .touchTarget()
             }
-            .labelStyle(.iconOnly)
+            .menuIndicator(.hidden)
             .buttonStyle(.borderless)
             .controlSize(.large)
-            .touchTarget()
+            .tint(BlockCategory.ink)
         }
         .blockChrome(
             BlockCategory.control.color, corners: .containerDivider,
             isDropTargeted: isDropTargeted
         )
+        .contextMenu { removeButton }
         // Dropping onto the divider appends into the else mouth.
         .dropDestination(for: Block.self) { items, _ in
             guard let dropped = items.first else { return false }
@@ -565,6 +575,23 @@ struct ElseDividerRow: View {
         } isTargeted: {
             isDropTargeted = $0
         }
+        // Reachable without opening the menu, the way every row's Delete is.
+        .accessibilityAction(named: Text("Remove Otherwise"), removeElse)
+    }
+
+    private var removeButton: some View {
+        Button(
+            "Remove Otherwise", systemImage: "xmark.circle", role: .destructive, action: removeElse)
+    }
+
+    /// Drops the else mouth, contents included — tree-swap undo makes that
+    /// safe.
+    private func removeElse() {
+        guard let block = BlockTree.block(withID: blockID, in: workspace.blocks),
+            case .ifBlock(let condition, let body, _) = block.kind
+        else { return }
+        workspace.updateKind(
+            of: blockID, to: .ifBlock(condition: condition, body: body, elseBody: nil))
     }
 }
 
@@ -702,21 +729,60 @@ struct InsertionTargetButton: View {
     }
 }
 
-/// Delete for one row — the only row operation that stays always visible
-/// (#21); move up/down live in the row's context menu instead (see
-/// `rowContextMenu`), with an explicit VoiceOver custom action alongside it.
+/// The row's one visible control: the menu, not the ✕ (#44).
+///
+/// Everything a row can do lives in one place — うえへ / したへ / けす, plus
+/// whatever the row itself adds (the if block's そうでなければ). It replaced the
+/// always-visible ✕ #21 had put there, and the trade is deliberate. Deleting
+/// had three ways in (the ✕, the long-press menu, the trash can) and this was
+/// the redundant one; moving a row had *none* a child would find, because the
+/// menu it lived in only opens on long-press. A visible ⋯ costs けす one tap
+/// and buys うえへ / したへ their first real affordance — children press what
+/// looks pressable, and nobody presses a block hoping for a hidden menu.
+///
+/// It also buys the widest row its width back: the if header's そうでなければ
+/// button moved in here, which is what stopped the condition chip wrapping at
+/// one level of nesting on iPad.
 struct RowControls: View {
     let blockID: UUID
     let workspace: WorkspaceEditor
+    /// The if block's "add an otherwise mouth", when this row has one.
+    var addElseAction: (() -> Void)? = nil
 
     var body: some View {
-        Button("Delete", systemImage: "xmark.circle", role: .destructive) {
-            workspace.delete(blockID)
+        Menu {
+            Button("Move Up", systemImage: "chevron.up") {
+                workspace.move(blockID, by: -1)
+            }
+            Button("Move Down", systemImage: "chevron.down") {
+                workspace.move(blockID, by: 1)
+            }
+            if let addElseAction {
+                Button("Add Otherwise", systemImage: "arrow.triangle.branch", action: addElseAction)
+                    // The hint the button on the header used to carry: what an
+                    // else mouth *is* still needs saying, and a menu entry is
+                    // where it is now read.
+                    .accessibilityHint(
+                        Text("Adds an otherwise mouth that runs when the condition fails"))
+            }
+            Divider()
+            Button("Delete", systemImage: "xmark.circle", role: .destructive) {
+                workspace.delete(blockID)
+            }
+        } label: {
+            // The finger target belongs *inside* the label: a `Menu` hit-tests
+            // what it was handed to draw, so a `frame` wrapped around the menu
+            // grows the layout and not the tappable area. The ✕ hid this — a
+            // filled circle is a big shape on its own — and three dots on a
+            // thin band are not, which is exactly how it came out on iPad.
+            Label("More", systemImage: "ellipsis")
+                .labelStyle(.iconOnly)
+                .touchTarget()
         }
-        .labelStyle(.iconOnly)
+        .menuIndicator(.hidden)
         .buttonStyle(.borderless)
         .controlSize(.large)
-        .touchTarget()
+        .tint(BlockCategory.ink)
     }
 }
 
