@@ -924,6 +924,16 @@
         }
       }
     },
+    "Sample: Tree" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サンプル: きをかく"
+          }
+        }
+      }
+    },
     "Share PNG" : {
       "localizations" : {
         "ja" : {

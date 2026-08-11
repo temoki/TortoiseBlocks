@@ -56,6 +56,46 @@ public enum SampleBlocks {
         ]
     }
 
+    /// A recursive tree: a block the child defined, calling itself (#14).
+    ///
+    /// Two branches per level, stopped by an if — the shape recursion exists to
+    /// draw, and the one sample that uses じぶんのブロック at all. The box is
+    /// scaled by 0.6 on the way in and divided back out on the way out, which
+    /// is why a single global box is enough: each call leaves 🌟 exactly as it
+    /// found it, so the trunk it retraces is the one it drew.
+    ///
+    /// 70 down to 6 is five levels — 31 branches, ~155 commands, nesting 11 —
+    /// well inside both the step cap and `BlockExpander.defaultNestingLimit`.
+    public static func fractalTree() -> [Block] {
+        [
+            Block(kind: .penColor(.literal(.green))),
+            Block(kind: .penWidth(.literal(2))),
+            Block(kind: .setVariable(name: "🌟", value: .literal(70))),
+            Block(kind: .callBlock(name: "き")),
+            Block(
+                kind: .defineBlock(
+                    name: "き",
+                    body: [
+                        Block(
+                            kind: .ifBlock(
+                                condition: Condition(
+                                    lhs: .variable("🌟"), comparison: .greater, rhs: .literal(6)),
+                                body: [
+                                    Block(kind: .forward(.variable("🌟"))),
+                                    Block(kind: .multiplyVariable(name: "🌟", value: .literal(0.6))),
+                                    Block(kind: .turnRight(.literal(28))),
+                                    Block(kind: .callBlock(name: "き")),
+                                    Block(kind: .turnLeft(.literal(56))),
+                                    Block(kind: .callBlock(name: "き")),
+                                    Block(kind: .turnRight(.literal(28))),
+                                    Block(kind: .divideVariable(name: "🌟", value: .literal(0.6))),
+                                    Block(kind: .backward(.variable("🌟"))),
+                                ],
+                                elseBody: nil))
+                    ])),
+        ]
+    }
+
     /// A filled square — fill color, four repeated sides, then close the fill.
     public static func filledSquare() -> [Block] {
         [

@@ -25,15 +25,22 @@ struct WorkspaceView: View {
                     // A one-tap educational on-ramp: dropping in a whole
                     // sample goes through insertSample -> setBlocks, so it's
                     // undoable and dirties the document like any other edit.
-                    VStack(spacing: 8) {
-                        Button("Sample: Filled Square") {
+                    // Each sample wears the picture it draws. The emoji is
+                    // artwork, not text — the same in every language — so it
+                    // is a `verbatim` icon rather than part of the localized
+                    // title, and the string catalog stays free of it.
+                    VStack(alignment: .leading, spacing: 8) {
+                        SampleButton("🟦", "Sample: Filled Square") {
                             workspace.insertSample(SampleBlocks.filledSquare())
                         }
-                        Button("Sample: Star") {
+                        SampleButton("⭐️", "Sample: Star") {
                             workspace.insertSample(SampleBlocks.star())
                         }
-                        Button("Sample: Spiral") {
+                        SampleButton("🌀", "Sample: Spiral") {
                             workspace.insertSample(SampleBlocks.spiral())
+                        }
+                        SampleButton("🌳", "Sample: Tree") {
+                            workspace.insertSample(SampleBlocks.fractalTree())
                         }
                     }
                 }
@@ -107,6 +114,30 @@ struct WorkspaceView: View {
                     workspace.redo()
                 }
                 .disabled(!workspace.canRedo)
+            }
+        }
+    }
+}
+
+/// One entry in the empty workspace's "start from a sample" list: the drawing
+/// it makes, then what it is called.
+private struct SampleButton: View {
+    let emoji: String
+    let title: LocalizedStringResource
+    let action: () -> Void
+
+    init(_ emoji: String, _ title: LocalizedStringResource, action: @escaping () -> Void) {
+        self.emoji = emoji
+        self.title = title
+        self.action = action
+    }
+
+    var body: some View {
+        Button(action: action) {
+            Label {
+                Text(title)
+            } icon: {
+                Text(verbatim: emoji)
             }
         }
     }

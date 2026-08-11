@@ -48,6 +48,27 @@ struct SampleBlocksTests {
         #expect(distances == distances.sorted())
     }
 
+    @Test("fractalTree draws 31 branches and comes back down its own trunk")
+    func fractalTreeExpansion() throws {
+        let expanded = try BlockExpander.expand(SampleBlocks.fractalTree())
+        let commands = expanded.map(\.command)
+        // Pen colour + width, then 31 branches of forward + three turns +
+        // backward. 70 halved-ish by 0.6 five times drops under the if's 6.
+        #expect(commands.count == 2 + 31 * 5)
+        let distances = commands.compactMap { command -> Double? in
+            guard case .forward(let distance) = command else { return nil }
+            return distance
+        }
+        #expect(distances.count == 31 * 2)
+        #expect(distances.first == 70)
+        // The outermost call retraces its own trunk, which is the whole claim
+        // that one global box is enough: ×0.6 … ÷0.6 leaves 🌟 where it was.
+        #expect(distances.last == -70)
+        // And it stays well clear of both limits, so the sample can never be
+        // the program that trips them.
+        #expect(commands.count < BlockExpander.defaultLimit)
+    }
+
     @Test("filledSquare expands to a fill-wrapped square")
     func filledSquareExpansion() throws {
         let expanded = try BlockExpander.expand(SampleBlocks.filledSquare())
