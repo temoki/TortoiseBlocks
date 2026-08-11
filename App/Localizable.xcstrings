@@ -354,16 +354,6 @@
         }
       }
     },
-    "Drop to Delete" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ドロップしてけす"
-          }
-        }
-      }
-    },
     "End Fill" : {
       "localizations" : {
         "ja" : {
