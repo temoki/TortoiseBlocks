@@ -357,8 +357,18 @@ greps `project.pbxproj` for the setting, because a build setting cannot
 enforce its own absence and Xcode writes one there the moment a team is
 picked in Signing & Capabilities.
 The everyday loop needs no team because **Debug ad-hoc-signs**
-(`CODE_SIGN_IDENTITY = "-"` on macOS for both targets). Release does not, and
-must not: those pins used to sit in Release too, which quietly made the
+(`CODE_SIGN_IDENTITY = "-"` on macOS for both targets). Note *on macOS* — the
+identity is `[sdk=macosx*]`-conditional, and it has to be written that way
+round. The extension had it as a bare `CODE_SIGN_IDENTITY = "-"` with an
+`[sdk=iphoneos*]` exception naming a real certificate, which reads the same
+until a platform arrives that the exception doesn't name: a visionOS *device*
+build then fell into the ad-hoc default and stopped with "has entitlements
+that require signing with a development certificate" (both targets are
+sandboxed, so ad-hoc is never enough on a device). Simulators hid it, because
+they ad-hoc sign whatever they are given. Name the platform that wants ad-hoc,
+never the ones that don't — the same rule as `#if !os(macOS)` in
+`PlatformModifiers`, and the same silent failure when it is inverted.
+Release does not ad-hoc sign, and must not: those pins used to sit in Release too, which quietly made the
 distribution configuration unable to archive at all — an ad-hoc macOS app
 cannot go to App Store Connect. Release is left to automatic signing, which
 is what Xcode Cloud's cloud signing then takes over; that is the whole reason
