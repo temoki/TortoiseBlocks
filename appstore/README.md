@@ -5,14 +5,24 @@ App Store Connect (#42).
 
 ```
 metadata/<locale>/*.txt            the text, one file per field
-screenshots/<platform>/<locale>/   ios/ and macos/, one directory per locale
+screenshots/<platform>/<locale>/   ios/, macos/ and visionos/, one directory per locale
 screenshot-sources/                the documents the captures were shot from
 ```
 
 `<locale>` is an App Store Connect locale code (`en-US`, `ja`), not the app's
-`en` / `ja` string-catalog code. `ios` and `macos` name the two listings: there
-is no ipadOS — iPad is a display type under iOS, and deliver files a screenshot
-by its pixel size.
+`en` / `ja` string-catalog code. `ios`, `macos` and `visionos` name the three
+listings: there is no ipadOS — iPad is a display type under iOS, and deliver
+files a screenshot by its pixel size.
+
+**`visionos` is the one directory name that is load-bearing.** A Vision Pro
+screenshot is 3840×2160 — the same size as an Apple TV one — so deliver cannot
+tell the two display types apart by size and breaks the tie on whether the
+*path* contains `vision`, downcased, anywhere in it. Naming the directory
+`xros` to match deliver's platform value would file every capture under
+`APP_APPLE_TV`, on an app with no tvOS listing at all. visionOS is spelled
+three different ways across this pipeline and all three are required:
+`visionos` here (the ASC `Platform` enum, lowercased, like `ios` and `macos`),
+`xros` to deliver, `VISION_OS` to spaceship.
 
 ## Running it
 
@@ -24,10 +34,18 @@ export ASC_KEY_ID=…
 export ASC_PRIVATE_KEY_PATH=~/…/AuthKey_XXXXXXXXXX.p8
 
 bundle install
-bundle exec fastlane metadata_check      # the files alone, no network, no key
-bundle exec fastlane ios metadata_diff   # what is live, against what is written
-bundle exec fastlane ios metadata_push   # upload (mac for the other listing)
+bundle exec fastlane metadata_check           # the files alone, no network, no key
+bundle exec fastlane ios metadata_diff        # what is live, against what is written
+bundle exec fastlane ios metadata_push        # upload
+bundle exec fastlane mac metadata_push        # …and the same two for the other
+bundle exec fastlane visionos metadata_push   #    two listings
 ```
+
+A listing only exists once its platform does: `metadata_diff` and
+`metadata_push` both need an **editable version** for that platform in App
+Store Connect, and for visionOS that means the app record has to carry the
+Apple Vision Pro platform first. Until then the lane stops with "No editable
+xros version — create one first", which is the guard working, not a bug.
 
 In CI it is the **App Store Metadata** workflow, run by hand from the Actions
 tab: pick a platform, and tick *apply* to upload rather than diff. It reads the
@@ -86,8 +104,11 @@ hand-run upload cannot skip it. It is plain Ruby with no gems, so CI runs it as
 ## Screenshots
 
 - The sizes are the ones Apple accepts as-is: **iPad 13-inch landscape
-  2752×2064** and **Mac 2880×1800**. A reshoot has to keep the window sizes
-  that produced them
+  2752×2064**, **Mac 2880×1800** and **Apple Vision Pro 3840×2160**. A reshoot
+  has to keep the window sizes that produced them. The Vision Pro size needs no
+  arranging at all — `xcrun simctl io <device> screenshot` on the visionOS
+  simulator writes exactly 3840×2160 — but the file it writes **has an alpha
+  channel**, so it still needs `-alpha off` like every other capture
 - Order comes from the leading number in the filename. Ten per locale, at most
 - **Carry no alpha channel** (`magick <f> -alpha off -define png:color-type=2
   <f>`). Fully opaque is not enough — the channel alone can get a screenshot
@@ -95,7 +116,10 @@ hand-run upload cannot skip it. It is plain Ruby with no gems, so CI runs it as
 - Capture the whole screen on Mac, not the window: a window-only capture has
   transparent rounded corners and shadow. Set the *system* language to the
   locale being shot, too — switching only the app's language leaves the menu
-  bar in the other language
+  bar in the other language. On Vision Pro the whole "screen" is the simulated
+  room, so the app window sits in the middle of a living room — that is what
+  the platform's screenshots look like, and cropping to the window would give
+  a size Apple does not accept
 - **deliver uploads every screenshot twice on a first upload**, reproducibly.
   It matches local against live by MD5, and Apple has not computed that
   checksum seven seconds after the PUT, so each image looks missing and the

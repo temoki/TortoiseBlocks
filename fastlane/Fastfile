@@ -4,11 +4,17 @@
 # Builds reach TestFlight from Xcode Cloud on a v* tag, and these lanes never
 # upload a binary — skip_binary_upload is on.
 #
-# iOS and macOS are separate versions in App Store Connect, so each takes its
-# own run against its own screenshots directory. The text is shared: one
-# directory of files per locale, which is deliver's own layout.
+# iOS, macOS and visionOS are separate versions in App Store Connect, so each
+# takes its own run against its own screenshots directory. The text is shared:
+# one directory of files per locale, which is deliver's own layout.
 
 require_relative "metadata_check"
+
+# fastlane knows :ios, :mac and :android as Fastfile platforms and warns on
+# every run about anything else. deliver understands visionOS perfectly well
+# (its platform value is "xros"); it is only the namespace around the lanes
+# that has to be declared.
+Fastlane::SupportedPlatforms.extra = [:visionos]
 
 APP_IDENTIFIER = "space.hiraku.tortoiseblocks"
 
@@ -40,6 +46,24 @@ platform :mac do
   desc "Push appstore/ to the macOS listing"
   lane :metadata_push do
     push_metadata(platform: "osx", screenshots: "macos")
+  end
+end
+
+# The screenshots directory is "visionos" and it is not free to rename (#11).
+# A Vision Pro screenshot is 3840x2160 — the same size as an Apple TV one — so
+# deliver cannot tell the two display types apart by size, and breaks the tie
+# on whether the *path* contains "vision" (downcased, anywhere in it). Call the
+# directory "xros" to match deliver's platform value and every screenshot is
+# filed under APP_APPLE_TV instead, on an app that has no tvOS listing at all.
+platform :visionos do
+  desc "Diff the live visionOS listing against appstore/metadata"
+  lane :metadata_diff do
+    diff_metadata(platform: "xros")
+  end
+
+  desc "Push appstore/ to the visionOS listing"
+  lane :metadata_push do
+    push_metadata(platform: "xros", screenshots: "visionos")
   end
 end
 
@@ -185,11 +209,14 @@ APP_FIELDS = {
 }.freeze
 
 # deliver and spaceship do not share a vocabulary for the platforms: deliver
-# takes "osx", the Connect API calls the same thing MAC_OS. The lanes speak
-# deliver's, so the translation happens here.
+# takes "osx" and "xros", the Connect API calls the same things MAC_OS and
+# VISION_OS. The lanes speak deliver's, so the translation happens here. Note
+# visionOS is spelled a third way again in appstore/screenshots — see the
+# visionos platform above.
 CONNECT_PLATFORM = {
   "ios" => Spaceship::ConnectAPI::Platform::IOS,
-  "osx" => Spaceship::ConnectAPI::Platform::MAC_OS
+  "osx" => Spaceship::ConnectAPI::Platform::MAC_OS,
+  "xros" => Spaceship::ConnectAPI::Platform::VISION_OS
 }.freeze
 
 private_lane :diff_metadata do |options|

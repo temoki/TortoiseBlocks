@@ -56,8 +56,8 @@ graphics engine written in Swift.
 ## Requirements
 
 - **Xcode** 26+ (Swift 6.2)
-- **Platforms** iPadOS 26+ · macOS 26+ · visionOS 26+ (the same three-pane app
-  in a window; not on the App Store yet)
+- **Platforms** iPadOS 26+ · macOS 26+ · visionOS 26+ (the same three-pane app,
+  in a window on Vision Pro)
 
 ## Getting Started
 
@@ -172,8 +172,8 @@ arithmetic saturates the same way, so a value can never run off to infinity.
 ## Releasing
 
 A `v*` tag is the release. Pushing one starts an Xcode Cloud workflow that
-archives the iPadOS and macOS apps and sends them to TestFlight, while GitHub
-Actions checks that the tag matches `MARKETING_VERSION` in every configuration
+archives the app for each platform and sends the builds to TestFlight, while
+GitHub Actions checks that the tag matches `MARKETING_VERSION` in every configuration
 — the two are otherwise unconnected, and a mismatch would ship the wrong
 version silently. The same tag drafts a GitHub release, with notes split by
 whether a commit reached the app or only the site, the listing, CI or the docs.

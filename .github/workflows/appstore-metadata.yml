@@ -13,8 +13,8 @@ on:
       platform:
         description: Which listing
         type: choice
-        options: [both, ios, macos]
-        default: both
+        options: [all, ios, macos, visionos]
+        default: all
       apply:
         description: Upload (unticked, only the diff is shown)
         type: boolean
@@ -48,9 +48,10 @@ jobs:
         run: |
           lane='${{ inputs.apply && 'metadata_push' || 'metadata_diff' }}'
           case '${{ inputs.platform }}' in
-            ios)   platforms="ios" ;;
-            macos) platforms="mac" ;;
-            *)     platforms="ios mac" ;;
+            ios)      platforms="ios" ;;
+            macos)    platforms="mac" ;;
+            visionos) platforms="visionos" ;;
+            *)        platforms="ios mac visionos" ;;
           esac
           for p in $platforms; do
             echo "::group::$p $lane"
