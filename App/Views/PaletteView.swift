@@ -189,8 +189,63 @@ struct PaletteView: View {
             }
             .padding()
         }
+        .documentBrowserToolbar()
     }
 }
+
+extension View {
+    /// The way back to the document browser, beside the document's own title
+    /// (#11). visionOS only, so the `#if` hides in a modifier rather than
+    /// sitting at the call site.
+    ///
+    /// Every other platform already has a way and would end up with two:
+    /// iPadOS puts a chevron next to the title, macOS has File ▸ Open and one
+    /// window per document. **visionOS has neither.** Its window carries the
+    /// document it was opened with, nothing offers another, and the only route
+    /// to a second drawing was closing the window and launching the app again.
+    func documentBrowserToolbar() -> some View {
+        #if os(visionOS)
+            modifier(DocumentBrowserToolbar())
+        #else
+            self
+        #endif
+    }
+}
+
+#if os(visionOS)
+
+    /// Closes this document, which leaves the browser it was opened from.
+    ///
+    /// `dismiss` is what a `DocumentGroup`'s document closes itself with, and
+    /// **where it is read from decides whether it does anything.** Read inside
+    /// the toolbar item's own view — the obvious place, since that is where the
+    /// button is — it resolves against the toolbar's context and the button is
+    /// simply inert: it highlights, and nothing happens. It has to come from
+    /// the environment of the *content* the toolbar is attached to, which is
+    /// what makes this a `ViewModifier` rather than a view inside the
+    /// `toolbar` block. The failure is silent in the worst way — the code
+    /// compiles, the button draws, and only pressing it tells you.
+    ///
+    /// Deliberately not paired with a "new drawing" button: the browser's own ⊕
+    /// is right there once you are back, and reaching the browser at all is the
+    /// part that was missing.
+    private struct DocumentBrowserToolbar: ViewModifier {
+        @Environment(\.dismiss) private var dismiss
+
+        func body(content: Content) -> some View {
+            content.toolbar {
+                ToolbarItem(placement: .navigation) {
+                    Button("Open Another Drawing", systemImage: "folder") {
+                        dismiss()
+                    }
+                    .labelStyle(.iconOnly)
+                    .touchTarget()
+                }
+            }
+        }
+    }
+
+#endif
 
 struct PaletteSectionView: View {
     let section: PaletteSection

@@ -66,6 +66,50 @@ with `.toolbar(removing: .title)` (#31). The back chevron beside it is not
 ours to remove — neither dropping that column's toolbar nor
 `navigationBarBackButtonHidden` touches it.
 
+**visionOS needs three things the other two get for free** (#11), and all three
+are `#if os(visionOS)` rather than shared, because on iPadOS and macOS each
+would be a second copy of something that already exists.
+
+*A way back to the browser.* iPadOS puts a chevron beside the document title
+and macOS has File ▸ Open with a window per document; visionOS has neither, so
+the window carries the drawing it was opened with and the only route to another
+was to close it and launch again. `documentBrowserToolbar()` puts a folder
+button in the sidebar's bar, and `dismiss` — what a `DocumentGroup` document
+closes itself with — is what it calls. **Where `dismiss` is read from decides
+whether it does anything.** Read inside the toolbar item's own view, which is
+the obvious place, it resolves against the toolbar's context and the button is
+inert: it highlights on press and nothing happens. It has to come from the
+environment of the *content* the toolbar is attached to, which is why this is a
+`ViewModifier` and not a view inside the `toolbar` block. Nothing warns you —
+the code compiles and the button draws.
+
+*The name is deliberately in one place.* The sidebar carries the
+DocumentGroup's own title with its rename chevron, and `CanvasPane` still drops
+its copy with `.toolbar(removing: .title)` (#31). A second, self-drawn label in
+the canvas pane was tried — `\.documentConfiguration`'s `fileURL`, which unlike
+the system chrome is right from the first frame — and taken back out: on a
+window this wide the two read as one name printed twice rather than as a title
+and a reminder.
+
+*No `hoverEffect`.* See `PlatformModifiers` — it crashes there.
+
+**The code pane is paper, not a semantic surface** (#11). It sat on
+`.background.secondary`, which resolves to near-white or near-black on iPad and
+Mac but to light translucent glass on visionOS — and the syntax colors had
+nowhere to stand: system `.purple` and `.blue` are tuned for an opaque backdrop
+and `.plain` was `Color.primary`, which is *white* there, so the plain text and
+its ground were both light. It is now white, opaque, the same in both
+appearances, rounded the same 8 as the canvas — the two swap places inside one
+`ZStack`, so pressing the toggle should change the content and nothing else.
+The token colors are fixed values measured against white (8.6:1, 8.4:1, 5.1:1,
+16.9:1) for the reason the block fills are fixed (#41). Two traps came with it.
+The copy button stays *outside* the paper: on it, it needed the ink as a tint
+to be legible, and on visionOS the tint went to the button's capsule instead of
+its label, leaving a black lozenge with invisible text. And a program narrower
+than the pane sat in the middle of it — in a scroll view that scrolls both ways
+the content is offered no width to fill, so a `.leading` frame does nothing and
+`defaultScrollAnchor(.topLeading)` is what places it.
+
 **A block row is one VoiceOver element, a container header is not** (#1).
 Swiping a program should say "まえへ、かず 100、じっこうちゅう" once per block,
 not stop three times, so a simple row is `.accessibilityElement(children:

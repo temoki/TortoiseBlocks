@@ -704,6 +704,16 @@
         }
       }
     },
+    "Open Another Drawing" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ほかの えを ひらく"
+          }
+        }
+      }
+    },
     "Order" : {
       "localizations" : {
         "ja" : {
