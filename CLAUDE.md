@@ -390,14 +390,24 @@ conditional: visionOS has **no draggable split-view divider** — macOS and
 iPadOS 26 both do — so the workspace column is stuck at its `ideal` for good
 while the canvas takes the rest of a wide window. That is what set the ideal at
 440; the measurement is in `App/Views/CLAUDE.md`.
-Two things are known-missing rather than done. **`hoverEffect` crashes**
-there — `.automatic` as well as `.highlight`, a `swift_release` segfault inside
+One thing is known-missing rather than done: **`hoverEffect` crashes** there —
+`.automatic` as well as `.highlight`, a `swift_release` segfault inside
 SwiftUI's update of `PaletteEntryButton.body`, before a window appears — so
-`pointerHover()` stays iOS-only and says so. And **there is no app icon**:
-visionOS wants a circular layered icon, Icon Composer only knows squares (plus
-watchOS circles), so `AppIcon.icon` produces nothing for it and the system
-placeholder is what shows on the Home View. That needs artwork and an
-`AppIcon.solidimagestack`, and it is what stands between this and shipping.
+`pointerHover()` stays iOS-only and says so.
+
+**The app icon comes from a second, differently-shaped source.** visionOS wants
+a circular layered icon and Icon Composer writes only squares (plus watchOS
+circles), so `AppIcon.icon` produces nothing for it —
+`Assets.xcassets/AppIcon.solidimagestack` does, three
+`.solidimagestacklayer`s (Front / Middle / Back) of 1024×1024 at the `vision`
+idiom. The two carry the same name on purpose and do **not** collide:
+`ASSETCATALOG_COMPILER_APPICON_NAME` is `AppIcon` for every platform and actool
+routes by idiom, so the visionOS `Assets.car` gets a `SolidImageStack` and no
+`IconImageStack`, iOS gets the reverse, and macOS still gets `AppIcon.icns`.
+Check a change here in the *built* product rather than in Xcode — `assetutil
+--info` on each platform's `Assets.car` — because a stack that never made it in
+fails the same silent way a missing one does: the system's placeholder, which
+looks like a plain app that hasn't been styled yet.
 
 **Releasing, the store listing and the website are in the `release` skill.** Tags, Xcode Cloud, TestFlight, `appstore/`, fastlane, and `site/`.
 
