@@ -91,7 +91,17 @@ the system chrome is right from the first frame — and taken back out: on a
 window this wide the two read as one name printed twice rather than as a title
 and a reminder.
 
-*No `hoverEffect`.* See `PlatformModifiers` — it crashes there.
+*A hover effect, but never on a drag source.* visionOS does not give a button
+with a custom `ButtonStyle` the system hover treatment, so without
+`pointerHover()` a palette block is the one thing on screen that never lights
+up when looked at — and gaze feedback is the whole targeting affordance there.
+The catch is that a hover effect and `draggable` **on the same view** segfault
+(a `swift_release` inside SwiftUI's update of that view's body, before a window
+appears). The palette entry is a drag source, so its hover lives inside
+`PaletteBlockButtonStyle` — one level below the `Button` that carries
+`draggable` — while every other call site applies it directly. The crash blames
+the body, not the modifier, which is why this first read as "`hoverEffect`
+crashes on visionOS": it does not, the pairing does.
 
 **The code pane is paper, not a semantic surface** (#11). It sat on
 `.background.secondary`, which resolves to near-white or near-black on iPad and

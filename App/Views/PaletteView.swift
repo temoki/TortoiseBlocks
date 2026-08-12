@@ -282,6 +282,11 @@ private struct PaletteBlockButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(color, in: RoundedRectangle(cornerRadius: 8))
             .opacity(configuration.isPressed ? 0.7 : 1)
+            // Here rather than on the `Button`, because the button is a drag
+            // source and the pair crashes visionOS — see `pointerHover`. It
+            // also reads better: the highlight follows the shape the style
+            // draws instead of the label's own bounds.
+            .pointerHover()
     }
 }
 
@@ -307,7 +312,9 @@ struct PaletteEntryButton: View {
         // color — white — which is the one thing a pastel fill can't carry. A
         // palette entry and the row it becomes should look alike anyway.
         .buttonStyle(PaletteBlockButtonStyle(color: category.color))
-        .pointerHover()
+        // The hover is inside that style, not here. On visionOS a hover effect
+        // and `draggable` on the same view segfault — see `pointerHover`.
+        //
         // Evaluated per drag, so every drag stamps a fresh Block (new ID).
         .draggable(Block(kind: entry.kind))
         .accessibilityHint("Tap to add to the end of the program. Drag to place anywhere.")

@@ -22,20 +22,28 @@ extension View {
         #endif
     }
 
-    /// The iPad (pointer) hover highlight (#24); a no-op on macOS, which has
-    /// its own cursor affordances.
+    /// The hover highlight (#24): the iPad's pointer, and on visionOS the gaze,
+    /// which is the only thing there that says what you are about to press.
+    /// A no-op on macOS, which has its own cursor affordances.
     ///
-    /// Deliberately *not* extended to visionOS, where gaze feedback would seem
-    /// to be exactly what this is for: `hoverEffect` on a palette entry crashes
-    /// the app there. Launching straight into the workspace segfaults in
-    /// `PaletteEntryButton.body` — a `swift_release` inside SwiftUI's own
-    /// update, not our code — before a window is ever shown, and it does so
-    /// with `.automatic` as well as `.highlight`, so it is the modifier and not
-    /// the effect. (visionOS 26.5 / 27.0 simulators, Xcode 26.6.) Buttons get
-    /// the system's own hover treatment there in any case; this is only the
-    /// extra highlight iPadOS needs, so the platform loses nothing visible.
+    /// **Never put this on a view that is also `draggable`.** That combination
+    /// segfaults on visionOS — a `swift_release` inside SwiftUI's own update of
+    /// the view's body, before a window is ever shown, with `.automatic` as
+    /// well as `.highlight`. It cost a while to place, because the crash blames
+    /// the body rather than the modifier and the effect looked like the
+    /// culprit; the effect is fine and the *pairing* is not. So a palette
+    /// entry, which is a drag source, wears its hover inside
+    /// `PaletteBlockButtonStyle` — on the shaped body the style draws, one
+    /// level below the `Button` that `draggable` is attached to — and that is
+    /// why the palette applies this in its style while everything else applies
+    /// it at the call site.
+    ///
+    /// visionOS needs it stated at all because it does *not* give a button with
+    /// a custom `ButtonStyle` the system hover treatment; without this, a
+    /// palette block is the one thing on screen that never lights up when
+    /// looked at.
     func pointerHover() -> some View {
-        #if os(iOS)
+        #if !os(macOS)
             hoverEffect(.highlight)
         #else
             self
