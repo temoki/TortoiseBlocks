@@ -4,7 +4,7 @@
 
 [![Swift](https://img.shields.io/badge/Swift-6.2-orange.svg)](https://swift.org)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-iPadOS%2026%2B%20%7C%20macOS%2026%2B-lightgrey.svg)]()
+[![Platform](https://img.shields.io/badge/platform-iPadOS%2026%2B%20%7C%20macOS%2026%2B%20%7C%20visionOS%2026%2B-lightgrey.svg)]()
 
 A visual programming app for kids — snap blocks together, press play, and
 watch the tortoise draw. Powered by
@@ -56,7 +56,8 @@ graphics engine written in Swift.
 ## Requirements
 
 - **Xcode** 26+ (Swift 6.2)
-- **Platforms** iPadOS 26+ · macOS 26+ (visionOS planned)
+- **Platforms** iPadOS 26+ · macOS 26+ · visionOS 26+ (the same three-pane app
+  in a window; not on the App Store yet)
 
 ## Getting Started
 
@@ -171,11 +172,11 @@ arithmetic saturates the same way, so a value can never run off to infinity.
 ## Releasing
 
 A `v*` tag is the release. Pushing one starts an Xcode Cloud workflow that
-archives both platforms and sends them to TestFlight, while GitHub Actions
-checks that the tag matches `MARKETING_VERSION` in every configuration — the
-two are otherwise unconnected, and a mismatch would ship the wrong version
-silently. The same tag drafts a GitHub release, with notes split by whether a
-commit reached the app or only the site, the listing, CI or the docs.
+archives the iPadOS and macOS apps and sends them to TestFlight, while GitHub
+Actions checks that the tag matches `MARKETING_VERSION` in every configuration
+— the two are otherwise unconnected, and a mismatch would ship the wrong
+version silently. The same tag drafts a GitHub release, with notes split by
+whether a commit reached the app or only the site, the listing, CI or the docs.
 
 The store listing is not part of that. It lives in [appstore/](appstore/) and
 goes up on demand, by hand:

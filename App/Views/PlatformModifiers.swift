@@ -2,13 +2,20 @@ import SwiftUI
 
 // Small cross-cutting modifiers that hide their `#if os(...)` inside a
 // modifier (the SwiftUI-way rule), so call sites stay platform-agnostic.
+//
+// They are written `#if !os(macOS)` rather than naming iOS wherever the
+// behaviour is simply "the touch platforms": these are UIKit-backed and exist
+// on visionOS as well as iPadOS (#11), and spelling the condition as "not the
+// Mac" is what keeps a new platform from silently taking the no-op branch the
+// way visionOS did — an `#if os(iOS)` compiles clean everywhere and just stops
+// applying. `pointerHover` is the exception, and says why.
 extension View {
-    /// The number pad for numeric entry on iOS (#24); a no-op elsewhere.
-    /// `.decimalPad` gives the digits and decimal point kids need; the
-    /// number blocks don't take negative literals, so its lack of a minus
-    /// key is intentional.
+    /// The number pad for numeric entry (#24); a no-op on macOS, which has a
+    /// hardware keyboard. `.decimalPad` gives the digits and decimal point kids
+    /// need; the number blocks don't take negative literals, so its lack of a
+    /// minus key is intentional.
     func numericKeyboard() -> some View {
-        #if os(iOS)
+        #if !os(macOS)
             keyboardType(.decimalPad)
         #else
             self
@@ -17,6 +24,16 @@ extension View {
 
     /// The iPad (pointer) hover highlight (#24); a no-op on macOS, which has
     /// its own cursor affordances.
+    ///
+    /// Deliberately *not* extended to visionOS, where gaze feedback would seem
+    /// to be exactly what this is for: `hoverEffect` on a palette entry crashes
+    /// the app there. Launching straight into the workspace segfaults in
+    /// `PaletteEntryButton.body` — a `swift_release` inside SwiftUI's own
+    /// update, not our code — before a window is ever shown, and it does so
+    /// with `.automatic` as well as `.highlight`, so it is the modifier and not
+    /// the effect. (visionOS 26.5 / 27.0 simulators, Xcode 26.6.) Buttons get
+    /// the system's own hover treatment there in any case; this is only the
+    /// extra highlight iPadOS needs, so the platform loses nothing visible.
     func pointerHover() -> some View {
         #if os(iOS)
             hoverEffect(.highlight)
@@ -25,7 +42,9 @@ extension View {
         #endif
     }
 
-    /// Holds an icon-only control to the 44pt finger minimum on iPadOS.
+    /// Holds an icon-only control to the 44pt finger minimum on iPadOS (and to
+    /// the same floor on visionOS, where the target is a gaze rather than a
+    /// finger — 44 is the iPad number, not a measured visionOS one).
     /// A borderless SF Symbol button is only as tappable as the glyph is big —
     /// around 24pt at body size — so the ⋯ on a block row is a small target on
     /// a touch screen even though the row around it is not.
@@ -44,7 +63,7 @@ extension View {
     /// this is used sits after a `Spacer`, so the extra width takes slack
     /// instead of pushing the label.
     func touchTarget() -> some View {
-        #if os(iOS)
+        #if !os(macOS)
             frame(minWidth: 44, minHeight: 44).contentShape(.rect)
         #else
             self

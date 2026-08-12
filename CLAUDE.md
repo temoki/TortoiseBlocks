@@ -303,7 +303,8 @@ And a macOS QuickLook extension has to be sandboxed to be loaded, so it carries
 even though the app itself has none. `pluginkit -mAvvv | grep -i tortoise`
 confirms registration — the `-p com.apple.quicklook.thumbnail` filter does not
 match it and will make a working extension look missing.
-`TARGETED_DEVICE_FAMILY` is `"2"` — iPad and Mac, no iPhone (#29).
+`TARGETED_DEVICE_FAMILY` is `"2,7"` — iPad, Mac and Vision Pro, no iPhone
+(#29, #11).
 Documents are `.tortoise` files, but the exported UTI keeps the
 `tortoiseblocks` spelling (`space.hiraku.tortoiseblocks.project`, and
 `.block` for the drag payload), which is also the bundle ID's — the
@@ -369,6 +370,44 @@ rules apply. The app takes `files.user-selected.read-write` for the
 `DocumentGroup`'s open/save panels and the exporter; the extension keeps
 `read-only` and is sandboxed for a different reason (a macOS QuickLook
 extension is not loaded otherwise).
+
+**visionOS runs the iPad app, not a port** (#11). `SUPPORTED_PLATFORMS` gains
+`xros xrsimulator`, `XROS_DEPLOYMENT_TARGET` is 26.0, and the same three-pane
+`NavigationSplitView` fills the window — the scene is regular width, so nothing
+in the layout is platform-conditional and no ornament or volumetric anything is
+declared. Both packages already shipped `.visionOS(.v26)`. What the platform
+actually costs is the `#if`s, in both directions. **A guard written
+`#if os(iOS)` stops applying** — it still compiles everywhere, so `LaunchScene`
+(`DocumentGroupLaunchScene` is unavailable on *macOS* only) and the numeric
+keyboard and touch targets in `PlatformModifiers` were silently dropped until
+they were rewritten as `#if !os(macOS)`. And some UIKit-era API is genuinely
+gone: `ToolbarSpacer` — the Liquid Glass grouping separator — is unavailable,
+which is the only reason `CanvasToolbar` exists as a `ToolbarContent` type of
+its own. That is also why CI builds visionOS: nothing else catches an `#if`
+that quietly does nothing.
+One layout constant *is* load-bearing here, though the layout itself isn't
+conditional: visionOS has **no draggable split-view divider** — macOS and
+iPadOS 26 both do — so the workspace column is stuck at its `ideal` for good
+while the canvas takes the rest of a wide window. That is what set the ideal at
+440; the measurement is in `App/Views/CLAUDE.md`.
+One thing is known-missing rather than done: **`hoverEffect` crashes** there —
+`.automatic` as well as `.highlight`, a `swift_release` segfault inside
+SwiftUI's update of `PaletteEntryButton.body`, before a window appears — so
+`pointerHover()` stays iOS-only and says so.
+
+**The app icon comes from a second, differently-shaped source.** visionOS wants
+a circular layered icon and Icon Composer writes only squares (plus watchOS
+circles), so `AppIcon.icon` produces nothing for it —
+`Assets.xcassets/AppIcon.solidimagestack` does, three
+`.solidimagestacklayer`s (Front / Middle / Back) of 1024×1024 at the `vision`
+idiom. The two carry the same name on purpose and do **not** collide:
+`ASSETCATALOG_COMPILER_APPICON_NAME` is `AppIcon` for every platform and actool
+routes by idiom, so the visionOS `Assets.car` gets a `SolidImageStack` and no
+`IconImageStack`, iOS gets the reverse, and macOS still gets `AppIcon.icns`.
+Check a change here in the *built* product rather than in Xcode — `assetutil
+--info` on each platform's `Assets.car` — because a stack that never made it in
+fails the same silent way a missing one does: the system's placeholder, which
+looks like a plain app that hasn't been styled yet.
 
 **Releasing, the store listing and the website are in the `release` skill.** Tags, Xcode Cloud, TestFlight, `appstore/`, fastlane, and `site/`.
 
