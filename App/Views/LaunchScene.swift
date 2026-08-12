@@ -1,11 +1,12 @@
-#if os(iOS)
+#if !os(macOS)
 
     import SwiftUI
 
     /// The screen in front of the system document browser (#32).
     ///
-    /// `DocumentGroupLaunchScene` is `@available(macOS, unavailable)`, so this
-    /// whole file is iOS-only and the Mac keeps the standard open panel.
+    /// `DocumentGroupLaunchScene` is `@available(macOS, unavailable)` and
+    /// nothing else, so this file covers iPadOS and visionOS while the Mac
+    /// keeps the standard open panel.
     struct LaunchScene: Scene {
         var body: some Scene {
             DocumentGroupLaunchScene(

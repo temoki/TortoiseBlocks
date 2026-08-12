@@ -303,7 +303,8 @@ And a macOS QuickLook extension has to be sandboxed to be loaded, so it carries
 even though the app itself has none. `pluginkit -mAvvv | grep -i tortoise`
 confirms registration — the `-p com.apple.quicklook.thumbnail` filter does not
 match it and will make a working extension look missing.
-`TARGETED_DEVICE_FAMILY` is `"2"` — iPad and Mac, no iPhone (#29).
+`TARGETED_DEVICE_FAMILY` is `"2,7"` — iPad, Mac and Vision Pro, no iPhone
+(#29, #11).
 Documents are `.tortoise` files, but the exported UTI keeps the
 `tortoiseblocks` spelling (`space.hiraku.tortoiseblocks.project`, and
 `.block` for the drag payload), which is also the bundle ID's — the
@@ -369,6 +370,29 @@ rules apply. The app takes `files.user-selected.read-write` for the
 `DocumentGroup`'s open/save panels and the exporter; the extension keeps
 `read-only` and is sandboxed for a different reason (a macOS QuickLook
 extension is not loaded otherwise).
+
+**visionOS runs the iPad app, not a port** (#11). `SUPPORTED_PLATFORMS` gains
+`xros xrsimulator`, `XROS_DEPLOYMENT_TARGET` is 26.0, and the same three-pane
+`NavigationSplitView` fills the window — the scene is regular width, so nothing
+in the layout is platform-conditional and no ornament or volumetric anything is
+declared. Both packages already shipped `.visionOS(.v26)`. What the platform
+actually costs is the `#if`s, in both directions. **A guard written
+`#if os(iOS)` stops applying** — it still compiles everywhere, so `LaunchScene`
+(`DocumentGroupLaunchScene` is unavailable on *macOS* only) and the numeric
+keyboard and touch targets in `PlatformModifiers` were silently dropped until
+they were rewritten as `#if !os(macOS)`. And some UIKit-era API is genuinely
+gone: `ToolbarSpacer` — the Liquid Glass grouping separator — is unavailable,
+which is the only reason `CanvasToolbar` exists as a `ToolbarContent` type of
+its own. That is also why CI builds visionOS: nothing else catches an `#if`
+that quietly does nothing.
+Two things are known-missing rather than done. **`hoverEffect` crashes**
+there — `.automatic` as well as `.highlight`, a `swift_release` segfault inside
+SwiftUI's update of `PaletteEntryButton.body`, before a window appears — so
+`pointerHover()` stays iOS-only and says so. And **there is no app icon**:
+visionOS wants a circular layered icon, Icon Composer only knows squares (plus
+watchOS circles), so `AppIcon.icon` produces nothing for it and the system
+placeholder is what shows on the Home View. That needs artwork and an
+`AppIcon.solidimagestack`, and it is what stands between this and shipping.
 
 **Releasing, the store listing and the website are in the `release` skill.** Tags, Xcode Cloud, TestFlight, `appstore/`, fastlane, and `site/`.
 

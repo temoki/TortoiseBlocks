@@ -27,12 +27,13 @@ struct ContentView: View {
     }
 }
 
-/// The one layout, on both platforms (#29). The app is iPad and Mac only, and
-/// compact width — an iPhone, or an iPad window squeezed into Slide Over — is
-/// no longer a design target: three panes' worth of information (palette,
-/// program, canvas) folded into one 390pt column never came out usable. A
-/// window narrow enough to go compact gets `NavigationSplitView`'s own
-/// collapse, not a layout of ours.
+/// The one layout, on every platform (#29) — iPad, Mac, and the visionOS
+/// window, which is a regular-width scene and needs nothing of its own (#11).
+/// Compact width — an iPhone, or an iPad window squeezed into Slide Over — is
+/// not a design target: three panes' worth of information (palette, program,
+/// canvas) folded into one 390pt column never came out usable. A window narrow
+/// enough to go compact gets `NavigationSplitView`'s own collapse, not a layout
+/// of ours.
 struct RootView: View {
     let workspace: WorkspaceEditor
     let runner: RunnerModel
@@ -150,18 +151,8 @@ struct CanvasPane: View {
         // toolbar nor `navigationBarBackButtonHidden` touches it.
         .toolbar(removing: .title)
         .toolbar {
-            ToolbarSpacer(.flexible, placement: .primaryAction)
-
-            ToolbarItemGroup(placement: .primaryAction) {
-                CanvasViewToggle(showsCode: $showsCode)
-            }
-
-            ToolbarSpacer(.fixed, placement: .primaryAction)
-
-            ToolbarItemGroup(placement: .primaryAction) {
-                CanvasRollAgainButton(workspace: workspace, runner: runner)
-                CanvasExportMenu(runner: runner, onExport: export)
-            }
+            CanvasToolbar(
+                workspace: workspace, runner: runner, showsCode: $showsCode, onExport: export)
         }
         // One alert, switching on why the run failed (`expansionAlert`):
         // attaching a second one for the recursion case would silently drop
@@ -194,6 +185,39 @@ struct CanvasPane: View {
         guard let data else { return }
         exportType = type
         exportFile = ExportFile(data: data)
+    }
+}
+
+/// `CanvasPane`'s toolbar: the canvas/code toggle, then ⟳ and the export menu.
+///
+/// It is a `ToolbarContent` type of its own only so the `#if` below has
+/// somewhere to live that isn't the call site — `ToolbarSpacer` is the Liquid
+/// Glass grouping separator and is unavailable on visionOS, which lays its
+/// toolbar out as an ornament and spaces the groups itself. The items and
+/// their order are the same everywhere; only the separators come and go.
+struct CanvasToolbar: ToolbarContent {
+    let workspace: WorkspaceEditor
+    let runner: RunnerModel
+    @Binding var showsCode: Bool
+    let onExport: (Data?, UTType) -> Void
+
+    var body: some ToolbarContent {
+        #if !os(visionOS)
+            ToolbarSpacer(.flexible, placement: .primaryAction)
+        #endif
+
+        ToolbarItemGroup(placement: .primaryAction) {
+            CanvasViewToggle(showsCode: $showsCode)
+        }
+
+        #if !os(visionOS)
+            ToolbarSpacer(.fixed, placement: .primaryAction)
+        #endif
+
+        ToolbarItemGroup(placement: .primaryAction) {
+            CanvasRollAgainButton(workspace: workspace, runner: runner)
+            CanvasExportMenu(runner: runner, onExport: onExport)
+        }
     }
 }
 

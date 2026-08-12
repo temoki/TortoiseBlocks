@@ -99,6 +99,13 @@ jobs:
             destination: generic/platform=iOS Simulator
           - name: macOS
             destination: platform=macOS
+          # visionOS (#11). It shares every source file with iPadOS, so what
+          # this catches is the `#if` that quietly stops applying: SwiftUI
+          # marks a handful of iOS API unavailable there (`ToolbarSpacer`),
+          # and an `#if os(iOS)` compiles clean on all three platforms while
+          # doing nothing on this one.
+          - name: visionOS
+            destination: generic/platform=visionOS Simulator
     steps:
       - uses: actions/checkout@v7
 
