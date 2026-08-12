@@ -57,8 +57,21 @@ struct RootView: View {
             PaletteView(workspace: workspace)
                 .navigationSplitViewColumnWidth(paletteWidth)
         } content: {
+            // 440pt is measured, not chosen, and `ideal` carries more weight
+            // than it looks. macOS and iPadOS both let the divider be dragged,
+            // so there the ideal is only where the column *opens*; on visionOS
+            // it can't be, so the ideal is the width, permanently, while the
+            // detail column absorbs every extra point — a 1280pt visionOS
+            // window put 360 here and ~690 on the canvas (#11).
+            // At 360 a three-deep program broke its labels onto two lines, and
+            // not only at depth: 「くりかえす 10 かい」 wrapped か/い at the top
+            // level, and 「はこにかける」 split in the middle. 440 fits every one
+            // of them on one line at three levels of nesting (each level costs
+            // 18pt), and still leaves the canvas ~600pt — well over its own 420
+            // ideal. `max` has to stay above `ideal`, or the two platforms that
+            // can drag could only ever drag narrower.
             WorkspaceView(workspace: workspace, runner: runner)
-                .navigationSplitViewColumnWidth(min: 300, ideal: 360, max: 440)
+                .navigationSplitViewColumnWidth(min: 300, ideal: 440, max: 560)
         } detail: {
             // 280pt keeps the canvas usable (#23) — narrower and its own
             // playback row starts contesting space with the drawing.

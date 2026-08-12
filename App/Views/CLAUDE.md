@@ -123,10 +123,24 @@ damage rather than fixing it: with the label served first, `0.6` in the next row
 broke as "0." over "6", which is worse — a chip holds a number, a name or a
 colour, all atomic. So `WorkspaceChipButtonStyle` pins its label with
 `.fixedSize(horizontal: true, vertical: false)`. Priority rather than
-`fixedSize` on the *label*, deliberately: a row two levels deep with a long name
-(「はこにかける」) genuinely runs out of room, and there the label should still
-wrap instead of overflowing its block. Each level of nesting costs 18pt, so no
-column width wins that race — the wrap is accepted there.
+`fixedSize` on the *label*, deliberately: a row deep enough with a long name
+genuinely runs out of room, and there the label should still wrap instead of
+overflowing its block. Each level of nesting costs 18pt, so no column width wins
+that race for ever — the wrap is the correct last resort, not the working state.
+
+**And `ideal` is not a starting point on every platform.** macOS and iPadOS 26
+both let the split view's divider be dragged, so there the ideal is only where
+the workspace column *opens*. **visionOS has no draggable divider**, so there
+the ideal is the width, for good, and the *detail* column absorbs every extra
+point the window has. On a 1280pt visionOS window that used to read 360 here
+and ~690 on the canvas (#11) — with 「くりかえす 10 かい」 wrapping か/い at the
+**top** level, no nesting involved, and 「はこにかける」 splitting in the middle
+three levels down. The ideal is now 440, measured against exactly that program:
+every row fits on one line at three levels, and the canvas still clears its own
+420 ideal. `max` (560) has to stay above `ideal`, or the two platforms that can
+drag could only ever drag narrower. Judge a change to it on a *nested Japanese*
+program — English fits where 「はこにかける」 does not, and the top-level wrap is
+invisible in a flat one.
 
 **Drop model**: a `DropGap` between rows carries `(BodyAddress, index)`, so
 insertion semantics need no y-coordinate math and every mouth — an if's else

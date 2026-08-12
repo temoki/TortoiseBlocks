@@ -385,6 +385,11 @@ gone: `ToolbarSpacer` — the Liquid Glass grouping separator — is unavailable
 which is the only reason `CanvasToolbar` exists as a `ToolbarContent` type of
 its own. That is also why CI builds visionOS: nothing else catches an `#if`
 that quietly does nothing.
+One layout constant *is* load-bearing here, though the layout itself isn't
+conditional: visionOS has **no draggable split-view divider** — macOS and
+iPadOS 26 both do — so the workspace column is stuck at its `ideal` for good
+while the canvas takes the rest of a wide window. That is what set the ideal at
+440; the measurement is in `App/Views/CLAUDE.md`.
 Two things are known-missing rather than done. **`hoverEffect` crashes**
 there — `.automatic` as well as `.highlight`, a `swift_release` segfault inside
 SwiftUI's update of `PaletteEntryButton.body`, before a window appears — so
