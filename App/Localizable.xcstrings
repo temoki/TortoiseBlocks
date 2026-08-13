@@ -184,6 +184,16 @@
         }
       }
     },
+    "Can't Open This" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "これは ひらけません"
+          }
+        }
+      }
+    },
     "Cancel" : {
       "localizations" : {
         "ja" : {
@@ -634,6 +644,16 @@
         }
       }
     },
+    "No Drawing" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "えが ありません"
+          }
+        }
+      }
+    },
     "Nothing to play" : {
       "localizations" : {
         "ja" : {
@@ -674,12 +694,32 @@
         }
       }
     },
+    "Open" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ひらく"
+          }
+        }
+      }
+    },
     "Open Another Drawing" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "ほかの えを ひらく"
+          }
+        }
+      }
+    },
+    "Open a drawing, or start from a sample." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "えを ひらくか、サンプルから はじめてね。"
           }
         }
       }
@@ -824,12 +864,42 @@
         }
       }
     },
+    "Pinch to resize, twist to turn, drag to move." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "つまむと おおきさ、ひねると むき、うごかすと ばしょが かわるよ。"
+          }
+        }
+      }
+    },
+    "Place on Table" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "つくえに おく"
+          }
+        }
+      }
+    },
     "Position" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "さいせいいち"
+          }
+        }
+      }
+    },
+    "Put Away" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "しまう"
           }
         }
       }
@@ -890,6 +960,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "くりかえす"
+          }
+        }
+      }
+    },
+    "Reset Position" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "もとの ばしょに もどす"
           }
         }
       }
@@ -1060,6 +1140,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "SVG"
+          }
+        }
+      }
+    },
+    "Sit on a Table" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "つくえに のせる"
           }
         }
       }

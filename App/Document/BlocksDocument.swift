@@ -25,6 +25,15 @@ struct BlocksDocument: FileDocument {
         guard let data = configuration.file.regularFileContents else {
             throw CocoaError(.fileReadCorruptFile)
         }
+        self.project = try Self.project(from: data)
+    }
+
+    /// Decoding, apart from `FileDocument`, because the visionOS viewer (#53)
+    /// reads `.tortoise` files through a `fileImporter` and has no
+    /// `DocumentGroup` to hand it a `ReadConfiguration`. The version gate has
+    /// to be the same one, or the two ways in would disagree about which files
+    /// are from the future.
+    static func project(from data: Data) throws -> BlocksProject {
         // Probe just the version before the full decode: a newer file's
         // unknown block shapes would fail the full decode with a generic
         // "corrupt" error before the version gate could explain it.
@@ -32,7 +41,7 @@ struct BlocksDocument: FileDocument {
         guard probe.schemaVersion <= BlocksProject.currentSchemaVersion else {
             throw DocumentError.newerSchema
         }
-        self.project = try JSONDecoder().decode(BlocksProject.self, from: data)
+        return try JSONDecoder().decode(BlocksProject.self, from: data)
     }
 
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {

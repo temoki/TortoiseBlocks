@@ -2,60 +2,60 @@ import SwiftUI
 
 @main
 struct TortoiseBlocksApp: App {
-    // Phase 0 spike (#53) — the immersive space is its own Scene and cannot
-    // see the document's RunnerModel, so the two meet here. Delete with
-    // `TableSpike.swift`.
+    // The viewer's whole state, shared by its two scenes (#53). One `Scene`
+    // cannot see another's, and the window and the table are exactly that
+    // split: controls here, drawing there.
     #if os(visionOS)
-        @State private var tableSpike = TableSpikeModel()
+        @State private var viewer = ViewerModel()
     #endif
 
     var body: some Scene {
-        // Phase 0 spike (#53) — first in the body so `-TBSpike YES` can take
-        // the launch off the DocumentGroup. Suppressed without the flag, so a
-        // normal launch is unchanged. Delete with `TableSpike.swift`.
+        // **visionOS is a viewer, not the editor** (#53), so its scene tree is
+        // a different tree rather than the same one with adjustments.
+        //
+        // No `DocumentGroup`: a `.fileImporter` in a plain window opens a
+        // drawing in one press, which is exactly what #52 could never make a
+        // DocumentGroup do there — `dismiss()` only reveals the system's own
+        // 「書類」 button, and `openDocument` / `newDocument` are unavailable on
+        // the platform. Dropping the apparatus drops the editing UI with it,
+        // and that is what makes a visionOS build worth having at all instead
+        // of an iPad app in a window.
         #if os(visionOS)
-            WindowGroup(id: "table-spike-launcher") {
-                TableSpikeLauncher()
-                    .environment(tableSpike)
+            WindowGroup {
+                ViewerWindow(model: viewer)
             }
-            .defaultLaunchBehavior(TableSpikeModel.autoOpens ? .presented : .suppressed)
-            // Small, so it does not stand in front of the thing being looked at.
-            .defaultSize(width: 320, height: 140)
-        #endif
+            .defaultSize(width: 560, height: 520)
 
-        DocumentGroup(newDocument: BlocksDocument()) { file in
-            ContentView(document: file.$document)
-                #if os(visionOS)
-                    .environment(tableSpike)
-                #endif
-        }
-        .commands {
-            TortoiseBlocksCommands()
-        }
-        // A default worth having anyway — three panes need room, and macOS
-        // otherwise opens something narrower than the palette, workspace and
-        // canvas want. It is also exactly the App Store's macOS screenshot
-        // size: a Retina backing scale of 2 makes 1280×800pt capture as
-        // 2560×1600px, so a window at its default size needs no cropping or
-        // resampling. Only a default — macOS restores a window's saved frame
-        // in preference to it, so a capture wants that state cleared first.
-        .defaultWindowSize()
-
-        // The custom launch screen (#32). `DocumentGroupLaunchScene` is
-        // unavailable on macOS and SwiftUI has no empty `Scene` to return in
-        // its place, so this `#if` can't hide inside a modifier the way the
-        // ones in `PlatformModifiers` do.
-        #if !os(macOS)
-            LaunchScene()
-        #endif
-
-        // Phase 0 spike (#53) — delete with `TableSpike.swift`.
-        #if os(visionOS)
-            ImmersiveSpace(id: TableSpikeModel.spaceID) {
-                TableSpikeSpace()
-                    .environment(tableSpike)
+            ImmersiveSpace(id: ViewerModel.spaceID) {
+                TableCanvasSpace(model: viewer)
             }
             .immersionStyle(selection: .constant(.mixed), in: .mixed)
+        #else
+            DocumentGroup(newDocument: BlocksDocument()) { file in
+                ContentView(document: file.$document)
+            }
+            .commands {
+                TortoiseBlocksCommands()
+            }
+            // A default worth having anyway — three panes need room, and macOS
+            // otherwise opens something narrower than the palette, workspace
+            // and canvas want. It is also exactly the App Store's macOS
+            // screenshot size: a Retina backing scale of 2 makes 1280×800pt
+            // capture as 2560×1600px, so a window at its default size needs no
+            // cropping or resampling. Only a default — macOS restores a
+            // window's saved frame in preference to it, so a capture wants that
+            // state cleared first.
+            .defaultWindowSize()
+
+            // The custom launch screen (#32) — iPadOS only. It is
+            // `DocumentGroupLaunchScene`, so it has nothing to attach to on the
+            // platform with no DocumentGroup, and nothing to do on macOS, which
+            // keeps the standard open panel. (It never appeared on visionOS
+            // even while that platform had a DocumentGroup: the system document
+            // browser is shown straight away there.)
+            #if os(iOS)
+                LaunchScene()
+            #endif
         #endif
     }
 }

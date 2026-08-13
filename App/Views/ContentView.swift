@@ -151,15 +151,10 @@ struct CanvasPane: View {
             }
             Divider()
             PlaybackControls(
-                workspace: workspace, runner: runner,
+                blocks: workspace.blocks, runner: runner,
                 isStale: runner.isStale(comparedTo: workspace.blocks)
             )
             .padding()
-
-            // Phase 0 spike (#53) — delete with `TableSpike.swift`.
-            #if os(visionOS)
-                TableSpikeBar(runner: runner)
-            #endif
         }
         // The document title belongs to the sidebar's bar, once (#31). On
         // iPadOS the DocumentGroup hands its title chrome to *both* ends of the
