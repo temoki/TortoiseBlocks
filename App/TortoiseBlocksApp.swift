@@ -2,9 +2,32 @@ import SwiftUI
 
 @main
 struct TortoiseBlocksApp: App {
+    // Phase 0 spike (#53) — the immersive space is its own Scene and cannot
+    // see the document's RunnerModel, so the two meet here. Delete with
+    // `TableSpike.swift`.
+    #if os(visionOS)
+        @State private var tableSpike = TableSpikeModel()
+    #endif
+
     var body: some Scene {
+        // Phase 0 spike (#53) — first in the body so `-TBSpike YES` can take
+        // the launch off the DocumentGroup. Suppressed without the flag, so a
+        // normal launch is unchanged. Delete with `TableSpike.swift`.
+        #if os(visionOS)
+            WindowGroup(id: "table-spike-launcher") {
+                TableSpikeLauncher()
+                    .environment(tableSpike)
+            }
+            .defaultLaunchBehavior(TableSpikeModel.autoOpens ? .presented : .suppressed)
+            // Small, so it does not stand in front of the thing being looked at.
+            .defaultSize(width: 320, height: 140)
+        #endif
+
         DocumentGroup(newDocument: BlocksDocument()) { file in
             ContentView(document: file.$document)
+                #if os(visionOS)
+                    .environment(tableSpike)
+                #endif
         }
         .commands {
             TortoiseBlocksCommands()
@@ -24,6 +47,15 @@ struct TortoiseBlocksApp: App {
         // ones in `PlatformModifiers` do.
         #if !os(macOS)
             LaunchScene()
+        #endif
+
+        // Phase 0 spike (#53) — delete with `TableSpike.swift`.
+        #if os(visionOS)
+            ImmersiveSpace(id: TableSpikeModel.spaceID) {
+                TableSpikeSpace()
+                    .environment(tableSpike)
+            }
+            .immersionStyle(selection: .constant(.mixed), in: .mixed)
         #endif
     }
 }
