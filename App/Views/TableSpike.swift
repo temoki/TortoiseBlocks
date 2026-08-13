@@ -1,6 +1,7 @@
 #if os(visionOS)
 
     import RealityKit
+    import Spatial
     import SwiftUI
     import TortoiseBlocksKit
     import TortoiseUI
@@ -11,10 +12,10 @@
     //   1. Is a drawing laid on a real table legible as line work? — **yes**,
     //      answered on device.
     //   2. How big should it be? — **wrong question.** There is no right size;
-    //      the wearer sets it, so the size and the spin are gestures now and
-    //      what is left to learn is where people actually land.
+    //      the wearer sets it. Size, spin and position are all gestures now,
+    //      and what is left to learn is where people actually land.
     //   3. Does a 10,000-command program still play at a usable frame rate?
-    //      — still open.
+    //      — **yes**, answered on device.
     //
     // It deliberately bolts onto the existing DocumentGroup app rather than
     // building the viewer #53 actually describes: the point is to measure the
@@ -52,16 +53,29 @@
         var side: Double = 0.6
         static let sideRange: ClosedRange<Double> = 0.15...2.0
 
-        /// Committed rotation about the vertical axis, in radians. A sheet
-        /// lying flat has its normal straight up, so a plain 2-D twist *is*
-        /// the vertical-axis spin — no 3-D rotation gesture needed.
+        /// Committed rotation about the vertical axis, in radians.
+        ///
+        /// This started on a 2-D `RotateGesture`, reasoning that a sheet lying
+        /// flat has its normal straight up so a plain twist *is* the
+        /// vertical-axis spin. The geometry is right and the gesture is wrong:
+        /// on visionOS a 2-D rotate wants **two hands**, so a one-handed wrist
+        /// turn did nothing, and two-handed attempts fought the magnify.
+        /// `RotateGesture3D(constrainedToAxis: .y)` is the one that means
+        /// "turn your wrist, and only the vertical axis counts".
         var spin: Double = 0
 
-        /// In-flight gesture values: a multiplier and an offset that apply on
-        /// top of the committed ones until the gesture ends. Kept apart from
-        /// the committed values so a cancelled gesture leaves nothing behind.
+        /// Committed translation, in the entity's **parent** space — which is
+        /// the plane anchor when there is one, so the drag stays right without
+        /// the app ever reading the anchor's transform (which visionOS does
+        /// not hand out anyway).
+        var offset: SIMD3<Float> = .zero
+
+        /// In-flight gesture values, applying on top of the committed ones
+        /// until the gesture ends. Kept apart so a cancelled gesture leaves
+        /// nothing behind.
         var liveScale: Double = 1
         var liveSpin: Double = 0
+        var liveOffset: SIMD3<Float> = .zero
 
         /// What the wearer is actually looking at, gesture included.
         var visibleSide: Double {
@@ -69,6 +83,8 @@
         }
 
         var visibleSpin: Double { spin + liveSpin }
+
+        var visibleOffset: SIMD3<Float> { offset + liveOffset }
 
         /// The entity scale that turns the one built render into that size.
         var entityScale: Float { Float(visibleSide / Self.builtSide) }
@@ -83,11 +99,25 @@
             liveSpin = 0
         }
 
+        func commitOffset(_ translation: SIMD3<Float>) {
+            offset += translation
+            liveOffset = .zero
+        }
+
         func resetPlacement() {
             side = 0.6
             spin = 0
+            offset = .zero
             liveScale = 1
             liveSpin = 0
+            liveOffset = .zero
+        }
+
+        /// The signed turn a constrained `RotateGesture3D` describes. Held to
+        /// the vertical axis, the rotation's own axis comes back as ±Y and its
+        /// sign is the direction — the angle alone is unsigned.
+        static func verticalAngle(of rotation: Rotation3D) -> Double {
+            rotation.angle.radians * (rotation.axis.y < 0 ? -1 : 1)
         }
 
         /// The runner whose canvas goes on the table. Set by `CanvasPane` when
@@ -173,41 +203,73 @@
                         ).addingChild(canvas))
                 }
                 else {
-                    // **An immersive space's origin is on the floor**, under
-                    // where the wearer started — not at eye level. The first
-                    // try put this at y = -0.4 for "desk height, below the
-                    // eyes" and buried it under the floor, which looks exactly
-                    // like nothing rendering at all.
-                    //
-                    // Higher than a real table so the simulator's fixed
-                    // horizontal gaze can see it — this mode is for checking
-                    // that the drawing renders, not for judging its height.
-                    canvas.position = [0, 1.0, -1.2]
                     content.add(canvas)
                 }
             } update: { content in
                 guard let canvas = Self.canvas(in: content) else { return }
+                canvas.position = Self.home(anchored: model.anchorsToTable) + model.visibleOffset
                 canvas.scale = .init(repeating: model.entityScale)
-                // Lie flat first, then spin about the world's vertical axis.
+                // Lie flat first, then spin about the parent's vertical axis —
+                // which is the plane's normal when anchored, and up either way.
                 canvas.orientation =
                     simd_quatf(angle: Float(model.visibleSpin), axis: [0, 1, 0])
                     * simd_quatf(angle: -.pi / 2, axis: [1, 0, 0])
             }
-            // Only the placement mode rebuilds; size and spin are transforms
-            // on the entity that is already there.
+            // Only the placement mode rebuilds; size, spin and position are
+            // transforms on the entity that is already there.
             .id(model.anchorsToTable)
+            // All three run together, the way a hand does them: a pinch that
+            // drifts and turns should move and spin, not pick one. The
+            // rotation's 5° threshold is what keeps an ordinary drag from
+            // spinning the sheet on the way.
             .gesture(
+                DragGesture()
+                    .targetedToAnyEntity()
+                    .onChanged { model.liveOffset = Self.translation(of: $0) }
+                    .onEnded { model.commitOffset(Self.translation(of: $0)) }
+            )
+            .simultaneousGesture(
+                RotateGesture3D(constrainedToAxis: .y, minimumAngleDelta: .degrees(5))
+                    .targetedToAnyEntity()
+                    .onChanged {
+                        model.liveSpin = TableSpikeModel.verticalAngle(of: $0.gestureValue.rotation)
+                    }
+                    .onEnded {
+                        model.commitSpin(
+                            TableSpikeModel.verticalAngle(of: $0.gestureValue.rotation))
+                    }
+            )
+            .simultaneousGesture(
                 MagnifyGesture()
                     .targetedToAnyEntity()
                     .onChanged { model.liveScale = $0.gestureValue.magnification }
                     .onEnded { model.commitScale($0.gestureValue.magnification) }
             )
-            .simultaneousGesture(
-                RotateGesture()
-                    .targetedToAnyEntity()
-                    .onChanged { model.liveSpin = $0.gestureValue.rotation.radians }
-                    .onEnded { model.commitSpin($0.gestureValue.rotation.radians) }
-            )
+        }
+
+        /// Where the sheet sits before the wearer moves it.
+        ///
+        /// **An immersive space's origin is on the floor**, under where the
+        /// wearer started — not at eye level. The first try put the fixed
+        /// placement at y = -0.4 for "desk height, below the eyes" and buried
+        /// it under the floor, which looks exactly like nothing rendering at
+        /// all. The anchored one is the plane's own origin, so it needs no
+        /// height of its own; the fixed one sits higher than a real table so
+        /// the simulator's fixed horizontal gaze can see it, since that mode
+        /// is for checking that the drawing renders rather than for judging
+        /// where it belongs.
+        private static func home(anchored: Bool) -> SIMD3<Float> {
+            anchored ? .zero : [0, 1.0, -1.2]
+        }
+
+        /// A drag's translation in the entity's parent space, which is where
+        /// `position` is read. Converting to `.scene` instead would be wrong
+        /// the moment the sheet hangs off a plane anchor.
+        private static func translation(
+            of value: EntityTargetValue<DragGesture.Value>
+        ) -> SIMD3<Float> {
+            guard let parent = value.entity.parent else { return .zero }
+            return value.convert(value.gestureValue.translation3D, from: .local, to: parent)
         }
 
         private static func canvas(in content: RealityViewContent) -> Entity? {
