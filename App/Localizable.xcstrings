@@ -674,6 +674,16 @@
         }
       }
     },
+    "Open Another Drawing" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ほかの えを ひらく"
+          }
+        }
+      }
+    },
     "or less" : {
       "localizations" : {
         "ja" : {
@@ -700,16 +710,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "オレンジ"
-          }
-        }
-      }
-    },
-    "Open Another Drawing" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ほかの えを ひらく"
           }
         }
       }
@@ -1353,6 +1353,12 @@
           }
         }
       }
+    },
+    "しまう" : {
+
+    },
+    "つくえに おく" : {
+
     }
   },
   "version" : "1.0"
