@@ -44,21 +44,26 @@
         var side: Double = 0.6
         static let sideRange: ClosedRange<Double> = 0.2...2.0
 
-        /// The size the one render is built at.
+        /// The size the one render is built at — **the resolution knob**.
         ///
         /// The wearer's pinch scales the *entity* rather than rebuilding the
         /// attachment, because rebuilding mid-drag re-runs the anchor search
-        /// and makes the drawing jump. Enlarging past this size goes slightly
-        /// soft — so this was tried at the top of the range, on the theory
-        /// that a sheet only ever scaled *down* would never soften.
+        /// and makes the drawing jump. So the sheet carries one render of a
+        /// fixed point size and stretches it, and this is that size.
         ///
-        /// **It made no observable difference on device.** Which says the
-        /// number does not control what it looks like: visionOS decides an
-        /// attachment's render resolution for itself, and the point size it is
-        /// handed is a layout size, not a fidelity knob. So this is back to a
-        /// plain 1m — carrying a render sized for 2m bought nothing and cost
-        /// four times the pixels. If sharpness ever has to be pushed, this is
-        /// the wrong lever; a rebuild at the settled size is the right one.
+        /// visionOS lays out at **1m = 1360pt**, so 1.0 here is a 1360pt²
+        /// render. What that buys depends on how big the sheet is shown: at
+        /// the 60cm default it is ~2270pt per displayed metre, at the 2m top
+        /// of the range ~680 — a 3.3× spread across the range, which is where
+        /// the slight softness at the large end comes from. Raising this is
+        /// the fix, and it costs the square: 2.0 would be 2720pt², four times
+        /// the pixels (and heading toward texture-size limits at 2× backing).
+        ///
+        /// Do **not** conclude from the one measurement so far that this has
+        /// no effect. It was tried at 1.2 against 1.0 and looked identical on
+        /// device — but that is a 20% change in linear resolution, which is
+        /// about what "identical" should look like. A real test is a 2× swing,
+        /// judged at *one* displayed size.
         static let builtSide: Double = 1.0
 
         /// Committed rotation about the vertical axis, in radians.
@@ -391,6 +396,11 @@
         @Environment(TableSpikeModel.self) private var model
         @Environment(\.openImmersiveSpace) private var openSpace
 
+        /// Only here to make `builtSide` legible as what it is: the render's
+        /// size in points. Printed rather than reasoned about, because the
+        /// points-per-metre figure is the scene's to decide.
+        @PhysicalMetric(from: .meters) private var pointsPerMeter: CGFloat = 1
+
         var body: some View {
             VStack(spacing: 12) {
                 Text(verbatim: "spike #53")
@@ -400,6 +410,14 @@
                 Text(verbatim: "\(Int((model.visibleSide * 100).rounded()))cm")
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
+                Text(
+                    verbatim:
+                        "1m = \(Int(pointsPerMeter))pt / "
+                        + "render \(Int(TableSpikeModel.builtSide * pointsPerMeter))pt²"
+                )
+                .font(.caption)
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
             }
             .padding(40)
             .task {
