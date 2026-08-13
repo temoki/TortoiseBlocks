@@ -37,24 +37,29 @@
     final class TableSpikeModel {
         static let spaceID = "table-spike"
 
-        /// Committed size of the sheet's side, in metres, bounded at both ends.
-        ///
-        /// The bounds started out only as a guard — an unbounded pinch reaches
-        /// a 50m canvas in about a second — but on device they turned out to
-        /// be the answer to a second problem too. The wearer's pinch scales the
-        /// *entity* rather than rebuilding the attachment (rebuilding mid-drag
-        /// would re-run the anchor search and make the drawing jump), so one
-        /// render is stretched, and past its built size that goes soft. Mildly,
-        /// on device — but bounding the size is what makes it not matter.
+        /// Committed size of the sheet's side, in metres. Bounded because an
+        /// unbounded pinch reaches a 50m canvas in about a second; 2m at the
+        /// top because a drawing that fills a whole table is a thing people
+        /// want, and it stays legible there.
         var side: Double = 0.6
-        static let sideRange: ClosedRange<Double> = 0.2...1.2
+        static let sideRange: ClosedRange<Double> = 0.2...2.0
 
-        /// The size the one render is built at: **the top of the range**, so
-        /// the sheet is only ever scaled *down*, which never softens. The cost
-        /// is that the common 60cm view carries a render sized for 1.2m, which
-        /// is the cheaper half of the trade — the alternative was a rebuild
-        /// per resize, and a drawing that jumps every time you touch it.
-        static var builtSide: Double { sideRange.upperBound }
+        /// The size the one render is built at.
+        ///
+        /// The wearer's pinch scales the *entity* rather than rebuilding the
+        /// attachment, because rebuilding mid-drag re-runs the anchor search
+        /// and makes the drawing jump. Enlarging past this size goes slightly
+        /// soft — so this was tried at the top of the range, on the theory
+        /// that a sheet only ever scaled *down* would never soften.
+        ///
+        /// **It made no observable difference on device.** Which says the
+        /// number does not control what it looks like: visionOS decides an
+        /// attachment's render resolution for itself, and the point size it is
+        /// handed is a layout size, not a fidelity knob. So this is back to a
+        /// plain 1m — carrying a render sized for 2m bought nothing and cost
+        /// four times the pixels. If sharpness ever has to be pushed, this is
+        /// the wrong lever; a rebuild at the settled size is the right one.
+        static let builtSide: Double = 1.0
 
         /// Committed rotation about the vertical axis, in radians.
         ///
