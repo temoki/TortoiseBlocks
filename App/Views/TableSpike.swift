@@ -37,21 +37,24 @@
     final class TableSpikeModel {
         static let spaceID = "table-spike"
 
-        /// The point size the attachment is built at, expressed in metres.
+        /// Committed size of the sheet's side, in metres, bounded at both ends.
         ///
-        /// The wearer's pinch scales the *entity*, not this — rebuilding the
-        /// attachment mid-gesture would re-run the anchor search and make the
-        /// drawing jump every time it is resized. So one render is made at
-        /// this size and scaled from there, which never softens below it and
-        /// may above it: **whether the upper end goes visibly soft is a Phase 0
-        /// question to answer on device**, and the reason this is 1m rather
-        /// than the 60cm the drawing usually sits at.
-        static let builtSide: Double = 1.0
-
-        /// Committed size of the sheet's side, in metres. Bounded because an
-        /// unbounded pinch reaches a 50m canvas in about a second.
+        /// The bounds started out only as a guard — an unbounded pinch reaches
+        /// a 50m canvas in about a second — but on device they turned out to
+        /// be the answer to a second problem too. The wearer's pinch scales the
+        /// *entity* rather than rebuilding the attachment (rebuilding mid-drag
+        /// would re-run the anchor search and make the drawing jump), so one
+        /// render is stretched, and past its built size that goes soft. Mildly,
+        /// on device — but bounding the size is what makes it not matter.
         var side: Double = 0.6
-        static let sideRange: ClosedRange<Double> = 0.15...2.0
+        static let sideRange: ClosedRange<Double> = 0.2...1.2
+
+        /// The size the one render is built at: **the top of the range**, so
+        /// the sheet is only ever scaled *down*, which never softens. The cost
+        /// is that the common 60cm view carries a render sized for 1.2m, which
+        /// is the cheaper half of the trade — the alternative was a rebuild
+        /// per resize, and a drawing that jumps every time you touch it.
+        static var builtSide: Double { sideRange.upperBound }
 
         /// Committed rotation about the vertical axis, in radians.
         ///
@@ -225,8 +228,14 @@
             .gesture(
                 DragGesture()
                     .targetedToAnyEntity()
-                    .onChanged { model.liveOffset = Self.translation(of: $0) }
-                    .onEnded { model.commitOffset(Self.translation(of: $0)) }
+                    .onChanged {
+                        model.liveOffset = Self.translation(
+                            of: $0, keepingOnPlane: model.anchorsToTable)
+                    }
+                    .onEnded {
+                        model.commitOffset(
+                            Self.translation(of: $0, keepingOnPlane: model.anchorsToTable))
+                    }
             )
             .simultaneousGesture(
                 RotateGesture3D(constrainedToAxis: .y, minimumAngleDelta: .degrees(5))
@@ -265,11 +274,20 @@
         /// A drag's translation in the entity's parent space, which is where
         /// `position` is read. Converting to `.scene` instead would be wrong
         /// the moment the sheet hangs off a plane anchor.
+        ///
+        /// `keepingOnPlane` is what stops a drag lifting the sheet off the
+        /// table: on a plane anchor the parent's Y **is** the plane's normal,
+        /// so dropping that one component slides the drawing along the surface
+        /// instead of into the air. It is off in the fixed placement, where
+        /// there is no surface to stay on and height is the only way to put
+        /// the sheet somewhere sensible.
         private static func translation(
-            of value: EntityTargetValue<DragGesture.Value>
+            of value: EntityTargetValue<DragGesture.Value>, keepingOnPlane: Bool
         ) -> SIMD3<Float> {
             guard let parent = value.entity.parent else { return .zero }
-            return value.convert(value.gestureValue.translation3D, from: .local, to: parent)
+            var delta = value.convert(value.gestureValue.translation3D, from: .local, to: parent)
+            if keepingOnPlane { delta.y = 0 }
+            return delta
         }
 
         private static func canvas(in content: RealityViewContent) -> Entity? {
