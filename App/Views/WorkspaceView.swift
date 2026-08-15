@@ -632,21 +632,20 @@ struct ElseDividerRow: View {
             // either by the ⋯ or by long-press. The mouth is removed from
             // inside it, so "けす" means the same thing wherever it is found.
             Menu {
+                // See `RowControls.editingMenu`: the tint below belongs to the
+                // glyph, and a menu hands its tint to the popup as well.
                 removeButton
+                    .tint(nil)
             } label: {
                 // Inside the label, for the reason `RowControls` gives.
                 Label("More", systemImage: "ellipsis")
                     .labelStyle(.iconOnly)
-                    // On the glyph, not on the `Menu`. A tint set on the menu
-                    // reaches its *popup* too, and this ink is a fixed near-
-                    // black (#41) — which on macOS's dark menu background is a
-                    // row of black icons on black.
-                    .foregroundStyle(BlockCategory.ink)
                     .touchTarget()
             }
             .menuIndicator(.hidden)
             .buttonStyle(.borderless)
             .controlSize(.large)
+            .blockMenuInk()
         }
         .blockChrome(
             BlockCategory.control.color, corners: .containerDivider,
@@ -858,24 +857,35 @@ struct RowControls: View {
 
     private var editingMenu: some View {
         Menu {
-            Button("Move Up", systemImage: "chevron.up") {
-                workspace.move(blockID, by: -1)
-            }
-            Button("Move Down", systemImage: "chevron.down") {
-                workspace.move(blockID, by: 1)
-            }
-            if let addElseAction {
-                Button("Add Otherwise", systemImage: "arrow.triangle.branch", action: addElseAction)
+            // The popup keeps the system's own colours. `blockMenuInk()` below
+            // is a *tint*, and a tint reaches a menu's items as well as its
+            // glyph — which put a fixed near-black (#41) on macOS's dark menu
+            // background. Resetting it here is what lets the glyph keep the
+            // ink it needs against a pastel block.
+            Group {
+                Button("Move Up", systemImage: "chevron.up") {
+                    workspace.move(blockID, by: -1)
+                }
+                Button("Move Down", systemImage: "chevron.down") {
+                    workspace.move(blockID, by: 1)
+                }
+                if let addElseAction {
+                    Button(
+                        "Add Otherwise", systemImage: "arrow.triangle.branch",
+                        action: addElseAction
+                    )
                     // The hint the button on the header used to carry: what an
                     // else mouth *is* still needs saying, and a menu entry is
                     // where it is now read.
                     .accessibilityHint(
                         Text("Adds an otherwise mouth that runs when the condition fails"))
+                }
+                Divider()
+                Button("Delete", systemImage: "xmark.circle", role: .destructive) {
+                    workspace.delete(blockID)
+                }
             }
-            Divider()
-            Button("Delete", systemImage: "xmark.circle", role: .destructive) {
-                workspace.delete(blockID)
-            }
+            .tint(nil)
         } label: {
             // The finger target belongs *inside* the label: a `Menu` hit-tests
             // what it was handed to draw, so a `frame` wrapped around the menu
@@ -884,13 +894,12 @@ struct RowControls: View {
             // thin band are not, which is exactly how it came out on iPad.
             Label("More", systemImage: "ellipsis")
                 .labelStyle(.iconOnly)
-                // On the glyph, not on the `Menu` — see `ElseDividerRow`.
-                .foregroundStyle(BlockCategory.ink)
                 .touchTarget()
         }
         .menuIndicator(.hidden)
         .buttonStyle(.borderless)
         .controlSize(.large)
+        .blockMenuInk()
     }
 }
 
@@ -1100,4 +1109,23 @@ extension EnvironmentValues {
     /// Hiding is not what enforces read-only — a constant document binding is
     /// (see `ProgramWindow`). This is about not *offering* what cannot happen.
     @Entry var showsBlockEditing = true
+}
+
+extension View {
+    /// The ⋯ glyph's colour, on the two menus a block row can carry.
+    ///
+    /// Every row this appears on is a filled pastel block, so the glyph takes
+    /// the same fixed near-black the label does (#41) rather than the system
+    /// accent — white on a pastel is the control nobody can see.
+    ///
+    /// It is a `tint` because that is what a `borderless` menu reads for its
+    /// label; `foregroundStyle` on the label is ignored there, which is how the
+    /// first attempt at this ended up with a white ⋯ in dark mode. The cost is
+    /// that the tint reaches the *popup* too, so each menu's content resets it
+    /// with `.tint(nil)` — a fixed dark ink is right against a pastel block and
+    /// wrong against macOS's dark menu background, which is the whole of the
+    /// bug this pair exists to hold apart.
+    fileprivate func blockMenuInk() -> some View {
+        tint(BlockCategory.ink)
+    }
 }

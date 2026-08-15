@@ -43,22 +43,10 @@
                         }
                 }
             }
-            // Read-only twice over, and the belt matters more than the braces.
-            //
-            // The *binding* is what enforces it: `WorkspaceEditor` writes
-            // through `document`, and a constant binding throws those writes
-            // away — so even a path that tried to edit could not, and no list
-            // of hidden affordances has to stay complete for that to hold.
-            // Hit-testing is off as well, which is what actually removes the
-            // drag sources, the drop gaps, the row menus, the value chips and
-            // the "add here" toggles from a window where none of them mean
-            // anything.
-            .allowsHitTesting(false)
-            // And the editing controls are not drawn at all. Inert-but-visible
-            // was tried first and reads worse than either alternative: the ⋯
-            // menu and the mouths' "add here" toggle look pressable, do
-            // nothing, and are the two things #53 says a read-only program must
-            // not offer.
+            // The editing controls are not drawn at all. Inert-but-visible was
+            // tried first and reads worse than either alternative: the ⋯ menu
+            // and the mouths' "add here" toggle look pressable, do nothing, and
+            // are the two things #53 says a read-only program must not offer.
             .environment(\.showsBlockEditing, false)
             .overlay {
                 if !model.hasProgram {
@@ -85,6 +73,20 @@
                 usedFunctionNames: BlockTree.usedFunctionNames(in: model.blocks)
             )
             .padding()
+            // Read-only twice over, and the belt matters more than the braces.
+            //
+            // The *binding* is what enforces it: `WorkspaceEditor` writes
+            // through `document`, and a constant binding throws those writes
+            // away — so even a path that tried to edit could not, and no list
+            // of hidden affordances has to stay complete for that to hold.
+            // Hit-testing off then removes the drag sources, the drop gaps and
+            // the value chips from a window where none of them mean anything.
+            //
+            // On the **content**, not on the `ScrollView`. Around the scroll
+            // view it takes the scrolling with it, and the window becomes one
+            // that can only ever show the rows it happens to open on — which is
+            // most of the program for anything but a short one.
+            .allowsHitTesting(false)
         }
 
         /// An editor that cannot edit: no undo manager to register with, fresh
