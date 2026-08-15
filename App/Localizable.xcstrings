@@ -714,16 +714,6 @@
         }
       }
     },
-    "Open Another Drawing" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ほかの えを ひらく"
-          }
-        }
-      }
-    },
     "or less" : {
       "localizations" : {
         "ja" : {
