@@ -22,6 +22,7 @@
 
         @Environment(\.openImmersiveSpace) private var openSpace
         @Environment(\.dismissImmersiveSpace) private var dismissSpace
+        @Environment(\.openWindow) private var openWindow
 
         @State private var showsImporter = false
 
@@ -78,6 +79,7 @@
                 }
                 model.load(SampleBlocks.spiral(), title: String(localized: "Spiral"))
                 model.sitsOnTable = false
+                openWindow(id: ViewerModel.programWindowID)
                 await place()
             }
         }
@@ -183,16 +185,28 @@
         let model: ViewerModel
         let place: () async -> Void
 
+        @Environment(\.openWindow) private var openWindow
+
         var body: some View {
             @Bindable var model = model
             VStack(spacing: 14) {
-                Button(
-                    model.isPlaced ? "Put Away" : "Place on Table",
-                    systemImage: model.isPlaced ? "xmark.circle" : "table.furniture"
-                ) {
-                    Task { await place() }
+                // The two places a drawing can be shown, side by side: on the
+                // table, and as the program that draws it. Neither replaces the
+                // other — having both open at once is the point (#53).
+                HStack(spacing: 12) {
+                    Button(
+                        model.isPlaced ? "Put Away" : "Place on Table",
+                        systemImage: model.isPlaced ? "xmark.circle" : "table.furniture"
+                    ) {
+                        Task { await place() }
+                    }
+                    .buttonStyle(.borderedProminent)
+
+                    Button("Show Blocks", systemImage: "square.stack.3d.up") {
+                        openWindow(id: ViewerModel.programWindowID)
+                    }
+                    .buttonStyle(.bordered)
                 }
-                .buttonStyle(.borderedProminent)
 
                 // Size, spin and position are gestures on the sheet itself —
                 // there is nothing here for them. What is left is the choice a

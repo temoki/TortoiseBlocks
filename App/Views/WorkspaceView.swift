@@ -787,9 +787,19 @@ struct InsertionTargetButton: View {
     let address: BodyAddress
     let workspace: WorkspaceEditor
 
+    @Environment(\.showsBlockEditing) private var showsBlockEditing
+
     private var isTarget: Bool { workspace.insertionTarget == address }
 
     var body: some View {
+        // Gone entirely when the program is only being read (#53). This is the
+        // palette's aim, and a viewer has no palette to aim.
+        if showsBlockEditing {
+            targetToggle
+        }
+    }
+
+    private var targetToggle: some View {
         Toggle(
             "Add Here",
             systemImage: isTarget ? "arrow.down.to.line.circle.fill" : "arrow.down.to.line.circle",
@@ -830,7 +840,19 @@ struct RowControls: View {
     /// The if block's "add an otherwise mouth", when this row has one.
     var addElseAction: (() -> Void)? = nil
 
+    @Environment(\.showsBlockEditing) private var showsBlockEditing
+
     var body: some View {
+        // Absent, not disabled, where the program is only being read (#53):
+        // the visionOS viewer's constant document binding already makes this
+        // menu incapable of changing anything, and a control that looks
+        // pressable and does nothing is worse than no control.
+        if showsBlockEditing {
+            editingMenu
+        }
+    }
+
+    private var editingMenu: some View {
         Menu {
             Button("Move Up", systemImage: "chevron.up") {
                 workspace.move(blockID, by: -1)
@@ -1056,4 +1078,21 @@ extension View {
                 color: color, corners: corners, isHighlighted: isHighlighted,
                 isDropTargeted: isDropTargeted))
     }
+}
+
+extension EnvironmentValues {
+    /// Whether block rows draw the controls that *change* the program — the
+    /// row menu (⋯) and the container mouths' "add here" target toggle.
+    ///
+    /// True everywhere the workspace is an editor, and false in the visionOS
+    /// viewer's program window (#53), which shows the same rows for reading
+    /// only. It is an environment value rather than a parameter because the
+    /// two views that read it sit several layers below the one that knows —
+    /// threading a flag through `BlockListView`, `BlockRowView` and
+    /// `ContainerBlockRow` would put an argument on every one of them for the
+    /// benefit of two leaves.
+    ///
+    /// Hiding is not what enforces read-only — a constant document binding is
+    /// (see `ProgramWindow`). This is about not *offering* what cannot happen.
+    @Entry var showsBlockEditing = true
 }

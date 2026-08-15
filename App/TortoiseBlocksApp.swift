@@ -30,6 +30,15 @@ struct TortoiseBlocksApp: App {
             // grows when a drawing brings the transport with it.
             .windowResizability(.contentSize)
 
+            // The program, on a surface of its own (#53). A separate window
+            // rather than a pane, because that is the version of this idea the
+            // iPad cannot give: the blocks and the drawing at full size at the
+            // same time, with nothing to switch between.
+            WindowGroup(id: ViewerModel.programWindowID) {
+                ProgramWindow(model: viewer)
+            }
+            .defaultSize(width: 480, height: 700)
+
             ImmersiveSpace(id: ViewerModel.spaceID) {
                 TableCanvasSpace(model: viewer)
             }

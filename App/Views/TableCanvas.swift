@@ -28,6 +28,7 @@
     @MainActor
     final class ViewerModel {
         static let spaceID = "table"
+        static let programWindowID = "program"
 
         // MARK: What is loaded
 
