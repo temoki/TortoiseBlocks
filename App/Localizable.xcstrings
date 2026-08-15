@@ -704,22 +704,22 @@
         }
       }
     },
-    "Open Another Drawing" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ほかの えを ひらく"
-          }
-        }
-      }
-    },
     "Open a drawing, or start from a sample." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "えを ひらくか、サンプルから はじめてね。"
+          }
+        }
+      }
+    },
+    "Open Another Drawing" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ほかの えを ひらく"
           }
         }
       }
@@ -834,6 +834,26 @@
         }
       }
     },
+    "Pinch to resize, twist to turn, drag to move." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "つまむと おおきさ、ひねると むき、うごかすと ばしょが かわるよ。"
+          }
+        }
+      }
+    },
+    "Place on Table" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "つくえに おく"
+          }
+        }
+      }
+    },
     "Play" : {
       "localizations" : {
         "ja" : {
@@ -864,26 +884,6 @@
         }
       }
     },
-    "Pinch to resize, twist to turn, drag to move." : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "つまむと おおきさ、ひねると むき、うごかすと ばしょが かわるよ。"
-          }
-        }
-      }
-    },
-    "Place on Table" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "つくえに おく"
-          }
-        }
-      }
-    },
     "Position" : {
       "localizations" : {
         "ja" : {
@@ -894,22 +894,22 @@
         }
       }
     },
-    "Put Away" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "しまう"
-          }
-        }
-      }
-    },
     "purple" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "むらさき"
+          }
+        }
+      }
+    },
+    "Put Away" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "しまう"
           }
         }
       }
@@ -1054,6 +1054,16 @@
         }
       }
     },
+    "Sit on a Table" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "つくえに のせる"
+          }
+        }
+      }
+    },
     "Speed" : {
       "localizations" : {
         "ja" : {
@@ -1140,16 +1150,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "SVG"
-          }
-        }
-      }
-    },
-    "Sit on a Table" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "つくえに のせる"
           }
         }
       }
@@ -1443,15 +1443,6 @@
           }
         }
       }
-    },
-    "しまう" : {
-
-    },
-    "つくえに おく" : {
-
-    },
-    "もとに もどす" : {
-
     }
   },
   "version" : "1.0"

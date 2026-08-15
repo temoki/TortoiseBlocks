@@ -24,7 +24,11 @@ struct TortoiseBlocksApp: App {
             WindowGroup {
                 ViewerWindow(model: viewer)
             }
-            .defaultSize(width: 560, height: 520)
+            // The window is its contents, not a canvas they sit in — so no
+            // `defaultSize`, which left a band of empty glass under the
+            // controls on device. It shrinks to the "no drawing" state and
+            // grows when a drawing brings the transport with it.
+            .windowResizability(.contentSize)
 
             ImmersiveSpace(id: ViewerModel.spaceID) {
                 TableCanvasSpace(model: viewer)

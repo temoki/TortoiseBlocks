@@ -44,7 +44,15 @@
                 }
             }
             .padding(28)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            // A fixed width and *no* height at all. The window sizes itself to
+            // this content (`windowResizability(.contentSize)`), so leaving the
+            // height to the content is what stops the empty band under the
+            // controls — a remote control should be exactly as tall as its
+            // buttons, and it grows by itself when a drawing brings the
+            // transport with it. The width is held because the scrubber has no
+            // opinion of its own and would otherwise collapse toward the
+            // widest label.
+            .frame(width: 520)
             .fileImporter(
                 isPresented: $showsImporter, allowedContentTypes: [.tortoiseBlocksProject]
             ) { result in
