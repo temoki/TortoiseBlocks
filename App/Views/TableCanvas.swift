@@ -154,7 +154,7 @@
         /// How far ahead of the eyes the sheet lands. Desk reach: near enough
         /// to be *the thing you are looking at*, far enough not to sit in your
         /// lap. Everything past this is the wearer's to drag.
-        private static let reach: Float = 0.6
+        static let reach: Float = 0.6
 
         /// Drop below eye level for the floating fallback — roughly where a
         /// desk would be if there were one.
@@ -188,17 +188,30 @@
         /// stand, the far edge is the top, which is the way a sheet of paper on
         /// a desk is oriented without anyone thinking about it.
         private func aim(from device: simd_float4x4, height y: Float) {
+            let target = Self.gazeTarget(from: device)
+            home = [target.x, y, target.z]
+            homeYaw = Self.yaw(from: device)
+        }
+
+        /// The spot the sheet aims for: `reach` metres ahead of the eyes, at
+        /// eye height. Shared with surface picking, so "the table I am looking
+        /// at" and "where on it the drawing goes" are the same point.
+        static func gazeTarget(from device: simd_float4x4) -> SIMD3<Float> {
             let eye = SIMD3(device.columns.3.x, device.columns.3.y, device.columns.3.z)
-            let ahead = Self.forward(of: device)
-            home = [eye.x + ahead.x * Self.reach, y, eye.z + ahead.z * Self.reach]
-            homeYaw = atan2(-ahead.x, -ahead.z)
+            let ahead = forward(of: device)
+            return eye + ahead * reach
+        }
+
+        static func yaw(from device: simd_float4x4) -> Float {
+            let ahead = forward(of: device)
+            return atan2(-ahead.x, -ahead.z)
         }
 
         /// The gaze, flattened onto the horizontal plane. A head transform
         /// looks along its own −Z; dropping the Y component is what keeps the
         /// sheet level however far up or down the wearer happens to be looking
         /// when it lands.
-        private static func forward(of device: simd_float4x4) -> SIMD3<Float> {
+        static func forward(of device: simd_float4x4) -> SIMD3<Float> {
             let flat = SIMD3(-device.columns.2.x, 0, -device.columns.2.z)
             let length = simd_length(flat)
             return length > 1e-4 ? flat / length : SIMD3(0, 0, -1)
@@ -246,6 +259,27 @@
     extension Double {
         fileprivate func clamped(to range: ClosedRange<Double>) -> Double {
             min(max(self, range.lowerBound), range.upperBound)
+        }
+    }
+
+    /// Keeps every horizontal surface ARKit has told us about, so the choice of
+    /// where to put the drawing is made over the whole set rather than over
+    /// whichever one happened to arrive first.
+    @MainActor
+    final class SurfaceCollector {
+        private var surfaces: [UUID: PlaneAnchor] = [:]
+
+        var all: [PlaneAnchor] { Array(surfaces.values) }
+
+        func consume(_ provider: PlaneDetectionProvider) async {
+            for await update in provider.anchorUpdates {
+                if update.event == .removed {
+                    surfaces[update.anchor.id] = nil
+                }
+                else {
+                    surfaces[update.anchor.id] = update.anchor
+                }
+            }
         }
     }
 
@@ -373,12 +407,6 @@
 
         /// Finds a table, or gives up and floats — and either way ends with the
         /// sheet in front of the wearer, turned to face them.
-        ///
-        /// Note the heights are read against the **eyes**, not the floor: a
-        /// surface between 25cm and 1.4m below eye level is a table or a desk,
-        /// and that one test excludes the floor and the ceiling without
-        /// trusting the classifier, which reports `.undetermined` often enough
-        /// to matter.
         private func findSomewhereToPutIt() async {
             let session = ARKitSession()
             let world = WorldTrackingProvider()
@@ -400,27 +428,101 @@
                 model.floatInFront(device: await Self.pose(from: world))
                 return
             }
-
-            let giveUp = Task { @MainActor in
-                try? await Task.sleep(for: Self.searchTimeout)
-                guard !Task.isCancelled, model.placement == .searching else { return }
-                model.floatInFront(device: await Self.pose(from: world))
-            }
-            defer { giveUp.cancel() }
-
-            for await update in planes.anchorUpdates {
-                // Once something has been placed, a later plane must not move
-                // it — the wearer is already looking at the drawing.
-                guard model.placement == .searching else { return }
-                guard update.event != .removed else { continue }
-                guard let device = await Self.pose(from: world) else { continue }
-                let height = update.anchor.originFromAnchorTransform.columns.3.y
-                let belowEyes = device.columns.3.y - height
-                guard belowEyes > 0.25, belowEyes < 1.4 else { continue }
-                model.placeOnTable(atHeight: height, device: device)
+            guard let device = await Self.pose(from: world) else {
+                model.floatInFront(device: nil)
                 return
             }
+
+            // Collected rather than consumed. Taking the **first** surface that
+            // passed was the whole of the "it keeps choosing the floor" bug:
+            // updates arrive in no useful order, and a floor is large, flat and
+            // found early, so it won nearly every race it was allowed to enter.
+            let surfaces = SurfaceCollector()
+            let collecting = Task { await surfaces.consume(planes) }
+            defer { collecting.cancel() }
+
+            let clock = ContinuousClock()
+            let started = clock.now
+            var firstSeen: ContinuousClock.Instant?
+
+            while clock.now - started < Self.searchTimeout {
+                if let best = Self.bestSurface(among: surfaces.all, device: device) {
+                    firstSeen = firstSeen ?? clock.now
+                    // A table by name is the answer outright. Anything else is
+                    // a guess worth holding a moment, in case the real table is
+                    // still being mapped.
+                    if best.surfaceClassification == .table
+                        || clock.now - firstSeen! >= Self.settleDelay
+                    {
+                        model.placeOnTable(
+                            atHeight: best.originFromAnchorTransform.columns.3.y, device: device)
+                        return
+                    }
+                }
+                try? await Task.sleep(for: .milliseconds(250))
+            }
+            model.floatInFront(device: device)
         }
+
+        /// The surface to put the drawing on: the one nearest to where the
+        /// wearer is looking, out of those that could be a table at all.
+        ///
+        /// **Height is tested two ways, and each covers the other's blind
+        /// spot.** An immersive space's origin sits on the floor, so an
+        /// absolute height excludes the floor outright — but only while the
+        /// origin really is down there. Eye-relative height does not depend on
+        /// that, but on its own it lets the floor through for anyone *sitting*:
+        /// a seated wearer's eyes are about 1.2m up, which puts the floor 1.2m
+        /// below them, in exactly the band a standing wearer's desk occupies.
+        /// That is what made this pick the floor. Together they leave a desk
+        /// and take a floor whether you sit or stand.
+        ///
+        /// Classification is a *preference*, never a filter: it reports
+        /// `.undetermined` often enough that filtering on it would find nothing
+        /// in an ordinary room.
+        private static func bestSurface(
+            among surfaces: [PlaneAnchor], device: simd_float4x4
+        ) -> PlaneAnchor? {
+            let eye = SIMD3(device.columns.3.x, device.columns.3.y, device.columns.3.z)
+            let ahead = ViewerModel.gazeTarget(from: device)
+            return
+                surfaces
+                .filter { surface in
+                    let y = surface.originFromAnchorTransform.columns.3.y
+                    let belowEyes = eye.y - y
+                    return y > minimumSurfaceHeight && belowEyes > 0.2
+                        && belowEyes < maximumDropBelowEyes
+                }
+                .min { a, b in
+                    // A named table beats an unnamed surface; after that, the
+                    // one closest to what the wearer is looking at wins, which
+                    // is what makes "the desk in front of me" beat "the counter
+                    // behind me".
+                    let named = (
+                        a.surfaceClassification == .table, b.surfaceClassification == .table
+                    )
+                    if named.0 != named.1 { return named.0 }
+                    return distance(from: ahead, to: a) < distance(from: ahead, to: b)
+                }
+        }
+
+        private static func distance(from point: SIMD3<Float>, to surface: PlaneAnchor) -> Float {
+            let centre = surface.originFromAnchorTransform.columns.3
+            return simd_length(SIMD2(centre.x - point.x, centre.z - point.z))
+        }
+
+        /// The floor is at zero, so anything at knee height or below is not a
+        /// table. Deliberately low: a child's desk is lower than an adult's.
+        private static let minimumSurfaceHeight: Float = 0.35
+
+        /// Far enough below the eyes to be a surface you look *down* at, near
+        /// enough that a seated wearer's floor (about 1.2m down) is excluded.
+        private static let maximumDropBelowEyes: Float = 1.1
+
+        /// How long a non-table surface is held before being accepted, in case
+        /// a real table is still being mapped. Cheap against the ten seconds
+        /// detection takes anyway.
+        private static let settleDelay: Duration = .seconds(2)
 
         /// The head pose — **once world tracking is actually tracking**.
         ///
