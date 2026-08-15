@@ -224,9 +224,35 @@
                 }
                 .font(.callout)
 
-                Text("Pinch to resize, twist to turn, drag to move.")
+                PlacementStatus(model: model)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// What the sheet is doing, under the placement controls.
+    ///
+    /// Finding a table takes **ten seconds or more** on device, and the sheet
+    /// is deliberately not drawn until there is somewhere to put it — so
+    /// without this the app spends that time looking broken. Saying what it is
+    /// waiting for is the whole of the fix: a wait you understand is a wait,
+    /// and a wait you don't is a bug.
+    private struct PlacementStatus: View {
+        let model: ViewerModel
+
+        var body: some View {
+            switch model.placement {
+            case .searching:
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Looking for a table…")
+                }
+            case .floating:
+                Text("No table found, so it is floating in front of you.")
+            case .onTable:
+                Text("Pinch to resize, twist to turn, drag to move.")
             }
         }
     }

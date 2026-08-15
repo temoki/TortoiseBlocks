@@ -1,5 +1,7 @@
 #if os(visionOS)
 
+    import ARKit
+    import QuartzCore
     import RealityKit
     import Spatial
     import SwiftUI
@@ -106,9 +108,9 @@
         /// your wrist, and only the vertical axis counts".
         var spin: Double = 0
 
-        /// Committed translation, in the entity's **parent** space — the plane
-        /// anchor when there is one, so a drag stays right without the app ever
-        /// reading that anchor's transform (which visionOS does not hand out).
+        /// Committed translation, in world space — which is also the sheet's
+        /// parent space, now that it hangs off the scene root rather than a
+        /// plane anchor.
         var offset: SIMD3<Float> = .zero
 
         /// In-flight gesture values, applying on top of the committed ones
@@ -125,6 +127,82 @@
         var sitsOnTable = true
 
         var isPlaced = false
+
+        // MARK: Finding somewhere to put it
+
+        /// How the sheet came to be where it is.
+        enum Placement {
+            /// Looking for a table. **The sheet is not drawn yet**, and this
+            /// can take ten seconds or more, so it is a state the window has
+            /// to say out loud rather than a gap it leaves unexplained.
+            case searching
+            /// Standing on a surface ARKit found.
+            case onTable
+            /// In mid-air in front of the wearer, because no surface turned up
+            /// (or none was asked for).
+            case floating
+        }
+
+        var placement: Placement = .searching
+
+        /// Where the sheet was put, in world space, before the wearer moved it.
+        private(set) var home: SIMD3<Float> = [0, 1.0, -1.2]
+
+        /// The turn that puts the sheet's top edge away from the wearer.
+        private(set) var homeYaw: Float = 0
+
+        /// How far ahead of the eyes the sheet lands. Desk reach: near enough
+        /// to be *the thing you are looking at*, far enough not to sit in your
+        /// lap. Everything past this is the wearer's to drag.
+        private static let reach: Float = 0.6
+
+        /// Drop below eye level for the floating fallback — roughly where a
+        /// desk would be if there were one.
+        private static let floatingDrop: Float = 0.35
+
+        func placeOnTable(atHeight y: Float, device: simd_float4x4) {
+            aim(from: device, height: y)
+            placement = .onTable
+        }
+
+        /// The fallback. `device` is nil only when world tracking has not
+        /// produced a pose yet, and then there is nothing to aim by — the sheet
+        /// takes a fixed spot ahead of the origin instead.
+        func floatInFront(device: simd_float4x4?) {
+            if let device {
+                aim(from: device, height: device.columns.3.y - Self.floatingDrop)
+            }
+            else {
+                home = [0, 1.0, -1.2]
+                homeYaw = 0
+            }
+            placement = .floating
+        }
+
+        /// Puts the sheet in front of the wearer, facing the way they face.
+        ///
+        /// Lying down, the sheet's top edge points along **−Z** (that is what
+        /// the −90° turn about X does to the page's up direction). So the yaw
+        /// that carries −Z onto the gaze direction is exactly the one that puts
+        /// the drawing's *north* away from the wearer — read from where you
+        /// stand, the far edge is the top, which is the way a sheet of paper on
+        /// a desk is oriented without anyone thinking about it.
+        private func aim(from device: simd_float4x4, height y: Float) {
+            let eye = SIMD3(device.columns.3.x, device.columns.3.y, device.columns.3.z)
+            let ahead = Self.forward(of: device)
+            home = [eye.x + ahead.x * Self.reach, y, eye.z + ahead.z * Self.reach]
+            homeYaw = atan2(-ahead.x, -ahead.z)
+        }
+
+        /// The gaze, flattened onto the horizontal plane. A head transform
+        /// looks along its own −Z; dropping the Y component is what keeps the
+        /// sheet level however far up or down the wearer happens to be looking
+        /// when it lands.
+        private static func forward(of device: simd_float4x4) -> SIMD3<Float> {
+            let flat = SIMD3(-device.columns.2.x, 0, -device.columns.2.z)
+            let length = simd_length(flat)
+            return length > 1e-4 ? flat / length : SIMD3(0, 0, -1)
+        }
 
         var visibleSide: Double { (side * liveScale).clamped(to: Self.sideRange) }
         var visibleSpin: Double { spin + liveSpin }
@@ -171,6 +249,15 @@
         }
     }
 
+    /// Everything the entity's transform depends on, gathered in `body` so
+    /// Observation actually sees it change.
+    private struct SheetTransform {
+        let isVisible: Bool
+        let position: SIMD3<Float>
+        let scale: Float
+        let yaw: Float
+    }
+
     /// The immersive space: one sheet, lying flat, placed by hand.
     struct TableCanvasSpace: View {
         let model: ViewerModel
@@ -183,7 +270,21 @@
         private static let sheetName = "table-canvas"
 
         var body: some View {
-            RealityView { content in
+            // Read here, in `body`, and captured by the closure below.
+            //
+            // Observation only registers what a *view update* touches, and a
+            // `RealityView`'s `update:` closure runs outside that — properties
+            // read only in there never mark this view as needing an update, so
+            // the closure is called once and never again. The symptom is total:
+            // the sheet stays disabled at wherever the first frame put it, and
+            // ARKit deciding where the table is changes nothing on screen.
+            let sheet = SheetTransform(
+                isVisible: model.placement != .searching,
+                position: model.home + model.visibleOffset,
+                scale: model.entityScale,
+                yaw: model.homeYaw + Float(model.visibleSpin))
+
+            return RealityView { content in
                 let sheet = Entity()
                 sheet.name = Self.sheetName
                 sheet.components.set(
@@ -205,25 +306,29 @@
                         )
                     ]))
 
-                if model.sitsOnTable {
-                    content.add(
-                        AnchorEntity(
-                            .plane(.horizontal, classification: .table, minimumBounds: [0.2, 0.2])
-                        ).addingChild(sheet))
-                }
-                else {
-                    content.add(sheet)
-                }
+                // A plain entity in world space, **not** an `AnchorEntity`.
+                // Anchoring to a plane is one line and answers none of the
+                // three questions that matter: the system picks which surface,
+                // picks where on it, and never says when it succeeded. Running
+                // the providers directly is what buys "in front of your eyes",
+                // "turned to face you", and a wait the window can explain.
+                content.add(sheet)
             } update: { content in
-                guard let sheet = Self.sheet(in: content) else { return }
-                sheet.position = Self.home(onTable: model.sitsOnTable) + model.visibleOffset
-                sheet.scale = .init(repeating: model.entityScale)
-                // Lie flat first, then spin about the parent's vertical axis —
-                // the plane's normal when anchored, and up either way.
-                sheet.orientation =
-                    simd_quatf(angle: Float(model.visibleSpin), axis: [0, 1, 0])
+                guard let entity = Self.sheet(in: content) else { return }
+                print()
+                // Nothing to look at until there is somewhere to put it —
+                // better a considered wait than a sheet parked wherever the
+                // origin happens to be.
+                entity.isEnabled = sheet.isVisible
+                entity.position = sheet.position
+                entity.scale = .init(repeating: sheet.scale)
+                // Lie flat, then turn: the yaw the placement chose, plus
+                // whatever the wearer has twisted since.
+                entity.orientation =
+                    simd_quatf(angle: sheet.yaw, axis: [0, 1, 0])
                     * simd_quatf(angle: -.pi / 2, axis: [1, 0, 0])
             }
+            .task { await findSomewhereToPutIt() }
             // Only the placement mode rebuilds; size, spin and position are
             // transforms on the entity that is already there.
             .id(model.sitsOnTable)
@@ -236,11 +341,11 @@
                     .targetedToAnyEntity()
                     .onChanged {
                         model.liveOffset = Self.translation(
-                            of: $0, keepingOnPlane: model.sitsOnTable)
+                            of: $0, keepingOnPlane: model.placement == .onTable)
                     }
                     .onEnded {
                         model.commitOffset(
-                            Self.translation(of: $0, keepingOnPlane: model.sitsOnTable))
+                            Self.translation(of: $0, keepingOnPlane: model.placement == .onTable))
                     }
             )
             .simultaneousGesture(
@@ -261,28 +366,110 @@
             )
         }
 
-        /// Where the sheet sits before the wearer moves it.
+        /// Long enough for a table to turn up, short enough that nobody is left
+        /// staring at nothing wondering whether it is broken. Measured against
+        /// the ten-plus seconds plane detection actually took on device.
+        private static let searchTimeout: Duration = .seconds(15)
+
+        /// Finds a table, or gives up and floats — and either way ends with the
+        /// sheet in front of the wearer, turned to face them.
         ///
-        /// **An immersive space's origin is on the floor**, under where the
-        /// wearer started — not at eye level. Placing the fallback at a
-        /// negative height for "desk height, below the eyes" buries it under
-        /// the floor, which looks exactly like nothing rendering at all. The
-        /// anchored placement is the plane's own origin and needs no height of
-        /// its own.
-        private static func home(onTable: Bool) -> SIMD3<Float> {
-            onTable ? .zero : [0, 1.0, -1.2]
+        /// Note the heights are read against the **eyes**, not the floor: a
+        /// surface between 25cm and 1.4m below eye level is a table or a desk,
+        /// and that one test excludes the floor and the ceiling without
+        /// trusting the classifier, which reports `.undetermined` often enough
+        /// to matter.
+        private func findSomewhereToPutIt() async {
+            let session = ARKitSession()
+            let world = WorldTrackingProvider()
+            let planes = PlaneDetectionProvider(alignments: [.horizontal])
+            model.placement = .searching
+
+            do {
+                try await session.run(model.sitsOnTable ? [world, planes] : [world])
+            }
+            catch {
+                // A refused world-sensing prompt lands here, and it is not an
+                // error worth showing a child: floating is a perfectly good way
+                // to look at a drawing.
+                model.floatInFront(device: nil)
+                return
+            }
+
+            guard model.sitsOnTable else {
+                model.floatInFront(device: await Self.pose(from: world))
+                return
+            }
+
+            let giveUp = Task { @MainActor in
+                try? await Task.sleep(for: Self.searchTimeout)
+                guard !Task.isCancelled, model.placement == .searching else { return }
+                model.floatInFront(device: await Self.pose(from: world))
+            }
+            defer { giveUp.cancel() }
+
+            for await update in planes.anchorUpdates {
+                // Once something has been placed, a later plane must not move
+                // it — the wearer is already looking at the drawing.
+                guard model.placement == .searching else { return }
+                guard update.event != .removed else { continue }
+                guard let device = await Self.pose(from: world) else { continue }
+                let height = update.anchor.originFromAnchorTransform.columns.3.y
+                let belowEyes = device.columns.3.y - height
+                guard belowEyes > 0.25, belowEyes < 1.4 else { continue }
+                model.placeOnTable(atHeight: height, device: device)
+                return
+            }
         }
+
+        /// The head pose — **once world tracking is actually tracking**.
+        ///
+        /// `queryDeviceAnchor` answers straight away after `run`, and what it
+        /// answers with at first is an *untracked* anchor whose transform is the
+        /// identity. Aiming from that puts the sheet 35cm below the origin,
+        /// which is under the floor, which looks exactly like nothing rendering
+        /// at all — the same symptom, from a different cause, as the very first
+        /// placement bug in this file. `isTracked` is what separates a pose from
+        /// a placeholder.
+        private static func pose(from world: WorldTrackingProvider) async -> simd_float4x4? {
+            for _ in 0..<poseAttempts {
+                if let anchor = world.queryDeviceAnchor(atTimestamp: CACurrentMediaTime()),
+                    anchor.isTracked,
+                    anchor.originFromAnchorTransform.columns.3.y > minimumEyeHeight
+                {
+                    return anchor.originFromAnchorTransform
+                }
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            return nil
+        }
+
+        /// The height below which a "pose" is not one.
+        ///
+        /// An immersive space's origin is on the floor under the wearer, so a
+        /// head is about a metre and a half up. **The simulator reports the
+        /// identity transform and calls it tracked**, which reads as a head on
+        /// the floor and aims the sheet into the ground — so `isTracked` alone
+        /// is not enough to trust a pose by. 0.8m is under a seated child's
+        /// eyes and over anything that is really a placeholder; below it the
+        /// placement stops guessing and takes its fixed spot instead.
+
+        /// Three seconds' worth of 100ms tries. Long enough for tracking to
+        /// start, short enough that a headset which never tracks still gets a
+        /// drawing rather than a blank room.
+        private static let minimumEyeHeight: Float = 0.8
+
+        private static let poseAttempts = 30
 
         /// A drag's translation in the entity's parent space, which is where
         /// `position` is read. Converting to `.scene` instead would be wrong
         /// the moment the sheet hangs off a plane anchor.
         ///
         /// `keepingOnPlane` is what stops a drag lifting the sheet off the
-        /// table: on a plane anchor the parent's Y **is** the plane's normal,
-        /// so dropping that one component slides the drawing along the surface
-        /// instead of into the air. It is off in the floating placement, where
-        /// there is no surface to stay on and height is the only way to put the
-        /// sheet somewhere sensible.
+        /// table: the sheet is level, so dropping the Y component slides the
+        /// drawing along the surface instead of into the air. It is off in the
+        /// floating placement, where there is no surface to stay on and height
+        /// is the only way to put the sheet somewhere sensible.
         private static func translation(
             of value: EntityTargetValue<DragGesture.Value>, keepingOnPlane: Bool
         ) -> SIMD3<Float> {
@@ -316,16 +503,6 @@
                 // hit-testable, this view swallows them first and the sheet can
                 // never be moved at all.
                 .allowsHitTesting(false)
-        }
-    }
-
-    extension Entity {
-        /// `content.add(AnchorEntity(…).addingChild(sheet))` reads better than
-        /// the three statements it replaces, and this file has no other use for
-        /// a local variable holding the anchor.
-        fileprivate func addingChild(_ child: Entity) -> Entity {
-            addChild(child)
-            return self
         }
     }
 

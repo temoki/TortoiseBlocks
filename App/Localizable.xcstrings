@@ -504,6 +504,16 @@
         }
       }
     },
+    "Looking for a table…" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "つくえを さがしています…"
+          }
+        }
+      }
+    },
     "item %lld" : {
       "localizations" : {
         "ja" : {
@@ -650,6 +660,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "えが ありません"
+          }
+        }
+      }
+    },
+    "No table found, so it is floating in front of you." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "つくえが みつからないので、めのまえに だしているよ。"
           }
         }
       }
