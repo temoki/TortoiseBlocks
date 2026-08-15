@@ -23,21 +23,25 @@
 
         var body: some View {
             ScrollView {
-                BlockListView(
-                    blocks: model.blocks,
-                    address: .topLevel,
-                    workspace: Self.readOnly(model.blocks),
-                    // The highlight this window exists for. It costs nothing
-                    // extra: `RunnerModel.currentBlockID` is
-                    // `expandedBlockIDs[player.currentCommandIndex]`, and the
-                    // table draws through the very same `CommandPlayer`, so the
-                    // index alignment the whole app rests on is untouched by
-                    // the drawing having moved into an immersive space.
-                    highlightedID: model.runner.currentBlockID,
-                    usedVariableNames: BlockTree.usedVariableNames(in: model.blocks),
-                    usedFunctionNames: BlockTree.usedFunctionNames(in: model.blocks)
-                )
-                .padding()
+                // The list has to follow the playhead, or the feature only
+                // works for programs short enough to fit: on device the
+                // highlight was correct and *off screen* for everything past
+                // the first few rows.
+                //
+                // `scrollTo` with **no anchor** is the whole trick. Centring
+                // the running block would drag the list on nearly every
+                // command — a loop body cycling three rows would never sit
+                // still — while the default anchor scrolls the least amount
+                // that brings the row into view, and does nothing at all while
+                // it is already there. Unanimated for the same reason: at ten
+                // commands a second an animation only ever restarts itself.
+                ScrollViewReader { proxy in
+                    programList
+                        .onChange(of: model.runner.currentBlockID) { _, id in
+                            guard let id else { return }
+                            proxy.scrollTo(id)
+                        }
+                }
             }
             // Read-only twice over, and the belt matters more than the braces.
             //
@@ -63,6 +67,24 @@
                         description: Text("Open a drawing, or start from a sample."))
                 }
             }
+        }
+
+        private var programList: some View {
+            BlockListView(
+                blocks: model.blocks,
+                address: .topLevel,
+                workspace: Self.readOnly(model.blocks),
+                // The highlight this window exists for. It costs nothing
+                // extra: `RunnerModel.currentBlockID` is
+                // `expandedBlockIDs[player.currentCommandIndex]`, and the
+                // table draws through the very same `CommandPlayer`, so the
+                // index alignment the whole app rests on is untouched by
+                // the drawing having moved into an immersive space.
+                highlightedID: model.runner.currentBlockID,
+                usedVariableNames: BlockTree.usedVariableNames(in: model.blocks),
+                usedFunctionNames: BlockTree.usedFunctionNames(in: model.blocks)
+            )
+            .padding()
         }
 
         /// An editor that cannot edit: no undo manager to register with, fresh

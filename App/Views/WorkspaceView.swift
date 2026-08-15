@@ -637,12 +637,16 @@ struct ElseDividerRow: View {
                 // Inside the label, for the reason `RowControls` gives.
                 Label("More", systemImage: "ellipsis")
                     .labelStyle(.iconOnly)
+                    // On the glyph, not on the `Menu`. A tint set on the menu
+                    // reaches its *popup* too, and this ink is a fixed near-
+                    // black (#41) — which on macOS's dark menu background is a
+                    // row of black icons on black.
+                    .foregroundStyle(BlockCategory.ink)
                     .touchTarget()
             }
             .menuIndicator(.hidden)
             .buttonStyle(.borderless)
             .controlSize(.large)
-            .tint(BlockCategory.ink)
         }
         .blockChrome(
             BlockCategory.control.color, corners: .containerDivider,
@@ -880,12 +884,13 @@ struct RowControls: View {
             // thin band are not, which is exactly how it came out on iPad.
             Label("More", systemImage: "ellipsis")
                 .labelStyle(.iconOnly)
+                // On the glyph, not on the `Menu` — see `ElseDividerRow`.
+                .foregroundStyle(BlockCategory.ink)
                 .touchTarget()
         }
         .menuIndicator(.hidden)
         .buttonStyle(.borderless)
         .controlSize(.large)
-        .tint(BlockCategory.ink)
     }
 }
 
