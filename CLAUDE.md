@@ -419,6 +419,25 @@ Check a change here in the *built* product rather than in Xcode — `assetutil
 fails the same silent way a missing one does: the system's placeholder, which
 looks like a plain app that hasn't been styled yet.
 
+**The 3D tortoise is generated, not modelled** (#53).
+`App/Resources/Tortoise.usdz` — the sprite the immersive space will draw with —
+comes out of `Tools/tortoise-model/build_tortoise.py`, a Blender script whose
+constants *are* the three-view drawing's measurements. It is checked in
+alongside the script so no build step needs Blender. Four things about it are a
+contract app code will assume, and the reasoning for each is in
+`Tools/tortoise-model/README.md`: `upAxis = "Y"` with **forward at `-Z`** (the
+model is authored Z-up and the exporter puts `rotateXYZ = (-90, 0, 0)` on the
+root — wrong settings here are invisible until the tortoise drives sideways);
+**total length exactly 1.0** with `metersPerUnit = 1`, normalised rather than
+real-world because the canvas is a 0.2–2m gesture and the size is always
+computed anyway; the **origin is the ground point under the shell's centre**,
+the point it turns about, *not* the brush tip, so the drawn line trails behind
+the animal; and the whole thing rides in `App/` as a synchronized-folder
+resource, landing flat at `Contents/Resources/Tortoise.usdz` (verified in the
+built bundle, the only way that works — see the nested-CLAUDE.md note above).
+Blender rendering it proves nothing about RealityKit; `qlcheck.swift` in the
+same directory runs it through Apple's own USD stack instead.
+
 **Releasing, the store listing and the website are in the `release` skill.** Tags, Xcode Cloud, TestFlight, `appstore/`, fastlane, and `site/`.
 
 **Localization**: `en` is the source language; Japanese (kid-friendly
