@@ -89,7 +89,19 @@
                 // buttons (simctl sends no input), so `-TBPlace YES` loads a
                 // sample and puts it down at launch. It is the only way to see
                 // the immersive space without a headset on.
-                guard UserDefaults.standard.bool(forKey: "TBPlace"), !model.hasProgram else {
+                //
+                // Read off the launch arguments rather than through
+                // `UserDefaults`, which is where a `-flag value` pair normally
+                // arrives. **`UserDefaults` is one of Apple's required-reason
+                // APIs**, so touching it — even for a debug flag, even for a
+                // read — obliges the app to ship a `PrivacyInfo.xcprivacy`
+                // declaring `CA92.1`. This app has no privacy manifest and
+                // needs none, which is a property worth keeping for one line:
+                // nothing else here touches a required-reason API, and the
+                // launch command is unchanged either way.
+                guard ProcessInfo.processInfo.arguments.contains("-TBPlace"),
+                    !model.hasProgram
+                else {
                     return
                 }
                 model.load(SampleBlocks.spiral(), title: String(localized: "Spiral"))
