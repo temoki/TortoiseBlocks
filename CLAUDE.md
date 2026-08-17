@@ -22,6 +22,13 @@ xcodebuild -project TortoiseBlocks.xcodeproj -scheme TortoiseBlocks \
 # Manual verification loop (macOS):
 pkill -x TortoiseBlocks; open ~/Library/Developer/Xcode/DerivedData/TortoiseBlocks-*/Build/Products/Debug/TortoiseBlocks.app
 
+# visionOS. `-TBPlace` is the only way in: simctl sends no input, so without it
+# the run is a window of buttons nobody can press. It does NOT show the drawing
+# (see the tortoise note below) — it is for the load path, the USDZ, and the
+# program/code windows.
+xcrun simctl install <device> ~/Library/Developer/Xcode/DerivedData/TortoiseBlocks-*/Build/Products/Debug-xrsimulator/TortoiseBlocks.app
+xcrun simctl launch <device> space.hiraku.tortoiseblocks -TBPlace YES
+
 # The App Store listing (appstore/). The check needs no key and no bundle;
 # the other two need ASC_ISSUER_ID / ASC_KEY_ID / ASC_PRIVATE_KEY_PATH.
 ruby fastlane/metadata_check.rb            # what CI runs on every pull request

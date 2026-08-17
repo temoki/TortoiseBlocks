@@ -72,8 +72,22 @@
             .task {
                 // Development only: the simulator cannot press any of these
                 // buttons (simctl sends no input), so `-TBPlace YES` loads a
-                // sample and puts it down at launch. It is the only way to see
-                // the immersive space without a headset on.
+                // sample, opens the program window and puts the drawing down at
+                // launch. Without it a simulator run is a window of buttons
+                // nobody can reach, and the immersive space never opens at all.
+                //
+                // **It does not let you see the drawing.** The simulator hosts
+                // no `ViewAttachmentComponent` view, so the sheet's own SwiftUI
+                // body never runs, `TortoisePlayer` never attaches to a canvas,
+                // and `currentTortoiseState` stays nil — which looks exactly
+                // like a broken tortoise and has cost an afternoon once
+                // already (the root CLAUDE.md has the longer note). What the
+                // flag is actually good for is everything that is not the
+                // picture: that the USDZ loads in the real visionOS runtime
+                // with the bounds its contract promises, that the per-frame
+                // subscription fires, that load → run → place survives, and
+                // that the program and code windows draw with content in them.
+                // The picture itself is the headset's to judge.
                 //
                 // Read off the launch arguments rather than through
                 // `UserDefaults`, which is where a `-flag value` pair normally
