@@ -494,10 +494,15 @@ unchanged, which #11 had already made work here by taking it off
 colours left standing on nothing). The source is generated in
 `ViewerModel.load` rather than in the window's `body`: the iPad's pane is only
 in the hierarchy while its toggle says so, but a window redraws on its own
-schedule and nothing here can edit the program behind it. Export is the same
-`CanvasExportMenu` the iPad and Mac toolbar carries, and it cost one view —
-it renders `lastRunCommands`, so moving the drawing into an immersive space
-changed nothing about what comes out.
+schedule and nothing here can edit the program behind it.
+**SVG/PNG export was built here and then taken back out**, and the reason is
+worth keeping so it is not re-added as an oversight: it worked, and cost one
+view — `CanvasExportMenu` unchanged, rendering `lastRunCommands`, so moving the
+drawing into an immersive space changed nothing about what came out. It came
+out because a viewer cannot change a drawing, so the file it was handed is
+already the artifact, and writing a second one from it belongs where drawings
+are *made*. The window is a remote control, and its row had reached four
+buttons.
 
 **Releasing, the store listing and the website are in the `release` skill.** Tags, Xcode Cloud, TestFlight, `appstore/`, fastlane, and `site/`.
 
