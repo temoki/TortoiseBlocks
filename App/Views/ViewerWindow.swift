@@ -2,6 +2,7 @@
 
     import SwiftUI
     import TortoiseBlocksKit
+    import UniformTypeIdentifiers
 
     /// The visionOS viewer's one window (#53) — **controls only**.
     ///
@@ -25,11 +26,17 @@
         @Environment(\.openWindow) private var openWindow
 
         @State private var showsImporter = false
+        // One presentation state for both formats, for the reason `CanvasPane`
+        // has one: two `fileExporter`s on the same view and the later silently
+        // swallows the earlier. The `fileImporter` below is a different kind of
+        // modifier and does not collide with it.
+        @State private var exportFile: ExportFile?
+        @State private var exportType: UTType = .png
 
         var body: some View {
             @Bindable var model = model
             VStack(spacing: 24) {
-                DrawingChooser(model: model, showsImporter: $showsImporter)
+                DrawingChooser(model: model, showsImporter: $showsImporter, onExport: export)
 
                 if model.hasProgram {
                     PlaybackControls(
@@ -69,6 +76,14 @@
             } message: {
                 Text(model.openFailure ?? "")
             }
+            .fileExporter(
+                isPresented: Binding(
+                    get: { exportFile != nil }, set: { if !$0 { exportFile = nil } }),
+                document: exportFile, contentType: exportType,
+                defaultFilename: String(localized: "Drawing")
+            ) { _ in
+                exportFile = nil
+            }
             .task {
                 // Development only: the simulator cannot press any of these
                 // buttons (simctl sends no input), so `-TBPlace YES` loads a
@@ -93,6 +108,12 @@
                 model.isPlaced = true
             }
         }
+
+        private func export(_ data: Data?, as type: UTType) {
+            guard let data else { return }
+            exportType = type
+            exportFile = ExportFile(data: data)
+        }
     }
 
     /// Which drawing is on the table: a file, or one of the four samples the
@@ -104,9 +125,16 @@
     /// until something is AirDropped to it. `SampleBlocks` is already public
     /// and already what 「みほん」 uses, so this needs no bundled resources and
     /// no second set of names.
+    ///
+    /// It carries the way *out* as well (#53 Phase 3). Export sits beside Open
+    /// and Samples rather than with the placement controls because those two
+    /// rows answer different questions: this one is what picture is loaded and
+    /// what you can take away with you, the other is where it lies on the
+    /// table.
     private struct DrawingChooser: View {
         let model: ViewerModel
         @Binding var showsImporter: Bool
+        let onExport: (Data?, UTType) -> Void
 
         var body: some View {
             VStack(spacing: 12) {
@@ -134,6 +162,14 @@
                     } label: {
                         Label("Samples", systemImage: "sparkles")
                     }
+                    // The same menu the iPad and Mac canvas toolbar carries —
+                    // SVG, PNG at three scales, and a ShareLink for each. It
+                    // renders `RunnerModel.lastRunCommands`, which is the
+                    // stream the table is drawing from, so what comes out is
+                    // the picture on the table down to the rolled dice (#25);
+                    // moving the drawing into an immersive space changed
+                    // nothing about that, which is why this costs one view.
+                    CanvasExportMenu(runner: model.runner, onExport: onExport)
                 }
                 .buttonStyle(.bordered)
             }
@@ -190,9 +226,11 @@
         var body: some View {
             @Bindable var model = model
             VStack(spacing: 14) {
-                // The two places a drawing can be shown, side by side: on the
-                // table, and as the program that draws it. Neither replaces the
-                // other — having both open at once is the point (#53).
+                // The three places one drawing can be shown, side by side: on
+                // the table, as the program that draws it, and as the code that
+                // program stands for. None of them replaces another — having
+                // all three open at once is the point (#53), and is the one
+                // thing the iPad build cannot do.
                 HStack(spacing: 12) {
                     Button(
                         model.isPlaced ? "Put Away" : "Place on Table",
@@ -205,8 +243,11 @@
                     Button("Show Blocks", systemImage: "square.stack.3d.up") {
                         openWindow(id: ViewerModel.programWindowID)
                     }
-                    .buttonStyle(.bordered)
+                    Button("Show Code", systemImage: "curlybraces") {
+                        openWindow(id: ViewerModel.codeWindowID)
+                    }
                 }
+                .buttonStyle(.bordered)
 
                 // Size, spin and position are gestures on the sheet itself —
                 // there is nothing here for them. What is left is the choice a

@@ -39,6 +39,17 @@ struct TortoiseBlocksApp: App {
             }
             .defaultSize(width: 480, height: 700)
 
+            // And the code on a third (#53 Phase 3). Same reasoning one step
+            // further: iPad and Mac make the canvas and the code two states of
+            // one toggle because a window holds one of them, and a headset
+            // never has to choose.
+            WindowGroup(id: ViewerModel.codeWindowID) {
+                CodeWindow(model: viewer)
+            }
+            // Wider than the program's 480: source lines are longer than block
+            // rows, and the pane scrolls horizontally rather than wrapping.
+            .defaultSize(width: 620, height: 700)
+
             ImmersiveSpace(id: ViewerModel.spaceID) {
                 TableCanvasSpace(model: viewer)
             }

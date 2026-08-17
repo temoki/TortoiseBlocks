@@ -1174,6 +1174,16 @@
         }
       }
     },
+    "Show Code" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コードを みる"
+          }
+        }
+      }
+    },
     "Tap a palette block, or drag one here" : {
       "localizations" : {
         "ja" : {

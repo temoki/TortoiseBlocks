@@ -476,6 +476,21 @@ for is the two things that would otherwise be guesses: that the USDZ loads in
 the real visionOS runtime with the bounds the contract promises, and that the
 per-frame subscription fires. Everything else is the headset.
 
+**The viewer has three surfaces, and the third is the code** (#53 Phase 3).
+Table, program, code — a `WindowGroup` each, all open at once. That is the
+whole argument for the platform restated one step further: iPad and Mac make
+the canvas and the code two states of *one toggle* because a window holds one
+of them, and a headset never has to choose. The code window is `CodePane`
+unchanged, which #11 had already made work here by taking it off
+`.background.secondary` (translucent glass on this platform, with the syntax
+colours left standing on nothing). The source is generated in
+`ViewerModel.load` rather than in the window's `body`: the iPad's pane is only
+in the hierarchy while its toggle says so, but a window redraws on its own
+schedule and nothing here can edit the program behind it. Export is the same
+`CanvasExportMenu` the iPad and Mac toolbar carries, and it cost one view —
+it renders `lastRunCommands`, so moving the drawing into an immersive space
+changed nothing about what comes out.
+
 **Releasing, the store listing and the website are in the `release` skill.** Tags, Xcode Cloud, TestFlight, `appstore/`, fastlane, and `site/`.
 
 **Localization**: `en` is the source language; Japanese (kid-friendly
