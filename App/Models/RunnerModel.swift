@@ -22,6 +22,16 @@ final class RunnerModel {
     /// exports render exactly what is on screen.
     private(set) var lastRunCommands: [TortoiseCommand] = []
 
+    /// Bounding box of the last run's visible output, or nil when it drew
+    /// nothing. `nil` on an empty stream, exactly as `DrawingBounds` reports it.
+    ///
+    /// Computed once per run rather than per use, because both users want it
+    /// repeatedly and neither can afford the replay: the export sizes its
+    /// frame from it (once per export, previously replaying the stream again),
+    /// and the visionOS table maps the 3-D tortoise's position through the
+    /// same `autoFit` transform the canvas uses — *every display frame*.
+    private(set) var drawingBounds: DrawingBounds?
+
     /// Set when expansion fails; drives a kid-friendly alert.
     var showsExpansionError = false
 
@@ -114,6 +124,8 @@ final class RunnerModel {
             let expanded = try BlockExpander.expand(blocks)
             expandedBlockIDs = expanded.map(\.blockID)
             lastRunCommands = expanded.map(\.command)
+            drawingBounds = DrawingBounds.compute(
+                from: CommandPlayer.play(commands: lastRunCommands))
             lastRunTreeHash = blocks.hashValue
             player.isPaused = startPaused
             tortoise.reset()
@@ -182,7 +194,8 @@ final class RunnerModel {
     func pngData(scale: CGFloat = 2) -> Data? {
         if let cached = pngDataCache[scale] { return cached }
         guard canExport else { return nil }
-        let data = Self.renderPNG(lastRunCommands, longSide: 512, scale: scale)
+        let data = Self.renderPNG(
+            lastRunCommands, bounds: drawingBounds, longSide: 512, scale: scale)
         pngDataCache[scale] = data
         return data
     }
@@ -209,7 +222,8 @@ final class RunnerModel {
     /// putting the picture on the file in the first place.
     func thumbnailData() -> Data? {
         guard canExport else { return nil }
-        return Self.renderPNG(lastRunCommands, longSide: 256, scale: 1, onWhite: true)
+        return Self.renderPNG(
+            lastRunCommands, bounds: drawingBounds, longSide: 256, scale: 1, onWhite: true)
     }
 
     /// Renders a command stream to PNG, cropped tight to the drawing and
@@ -228,14 +242,15 @@ final class RunnerModel {
     /// exports transparent, because an export is a picture you place somewhere
     /// yourself, and the thumbnail white, because Finder places that one.
     private static func renderPNG(
-        _ commands: [TortoiseCommand], longSide: Double, scale: CGFloat, onWhite: Bool = false
+        _ commands: [TortoiseCommand], bounds: DrawingBounds?, longSide: Double, scale: CGFloat,
+        onWhite: Bool = false
     ) -> Data? {
         let export = Tortoise()
         export.speed = 0
         export.backgroundColor = onWhite ? .white : .clear
         export.apply(commands)
         export.hideTortoise()
-        let size = exportFrameSize(for: commands, longSide: longSide)
+        let size = exportFrameSize(for: bounds, longSide: longSide)
         let renderer = ImageRenderer(
             content: TortoiseCanvas(export)
                 .frame(width: size.width, height: size.height)
@@ -255,11 +270,10 @@ final class RunnerModel {
     /// an unusable sliver; an empty drawing (no bounds) falls back to a square,
     /// mirroring SVG's own "no visible output" fallback.
     private static func exportFrameSize(
-        for commands: [TortoiseCommand], longSide long: Double
+        for bounds: DrawingBounds?, longSide long: Double
     ) -> CGSize {
         let square = CGSize(width: long, height: long)
-        guard let bounds = DrawingBounds.compute(from: CommandPlayer.play(commands: commands))
-        else { return square }
+        guard let bounds else { return square }
         // Mirrors TortoiseUI's autoFit inset — the tortoise sprite's
         // half-extent × tortoiseScaleMax — so the drawing fills the frame with
         // a uniform margin instead of a lopsided one. 20 is the *triangle's*

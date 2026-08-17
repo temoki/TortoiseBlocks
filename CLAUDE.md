@@ -438,6 +438,44 @@ built bundle, the only way that works — see the nested-CLAUDE.md note above).
 Blender rendering it proves nothing about RealityKit; `qlcheck.swift` in the
 same directory runs it through Apple's own USD stack instead.
 
+**The tortoise on the table is drawn by us, and that took a library release**
+(#53 Phase 3, TortoiseGraphics2 2.1.0). The sheet is still the app's own
+`TortoiseCanvas` in a `ViewAttachmentComponent`; what changed is that it now
+draws everything *except* the tortoise (`.tortoiseSprite(.hidden)`), and the
+USDZ stands on the paper as a child of the sheet entity — so the pinch, twist
+and drag it inherits for free, and its own transform only ever says where on
+the page it is. Three upstream additions were needed and none of them had an
+honest app-side substitute. `.hidden` is a property of the *view*, unlike
+`hideTortoise()`, which records a command and would have followed the drawing
+into the SVG, the PNG, the thumbnail and the saved file.
+`TortoisePlayer.currentTortoiseState` is the pose **interpolated between
+commands**: `currentCommandIndex` — what every other surface in the app watches
+— changes about ten times a second, and a tortoise moved on that schedule
+teleports from command to command while the line it is drawing grows smoothly
+underneath it, which is the one thing this feature exists to show. And
+`ViewportMode.transform` is public so the placement asks for `autoFit`'s
+mapping rather than reimplementing it; a reimplementation agrees on the day it
+is written and drifts silently after. It is read once per *display frame*, from
+a `SceneEvents.Update` subscription — not from `body`, which would re-evaluate
+the view at the refresh rate — and the subscription has to be retained
+(`FrameTicker`), because one that nothing holds is cancelled at the end of
+`make` and looks exactly like a handler that is never called.
+Two numbers are judged on device and are the first things to change if it looks
+wrong: the tortoise is `1/12` of the sheet's side (deliberately larger than the
+2-D sprite's ~1/30 — on a screen it is a cursor, on a table it is the animal),
+and the paper keeps a 64pt margin, since a hidden sprite earns no `autoFit`
+inset and the drawing would otherwise run to the paper's edge with the tortoise
+hanging off it. The lift onto the paper is *measured* from the loaded model,
+not assumed: the feet reach ~6‰ of the body length below the origin, which is
+the ground point under the shell's centre.
+**The visionOS simulator cannot check any of this.** It does not host
+`ViewAttachmentComponent` views at all — the sheet's own `.task` never runs, so
+`TortoisePlayer` never attaches to a canvas and `currentTortoiseState` stays
+nil, which reads exactly like a broken tortoise. What the simulator *is* good
+for is the two things that would otherwise be guesses: that the USDZ loads in
+the real visionOS runtime with the bounds the contract promises, and that the
+per-frame subscription fires. Everything else is the headset.
+
 **Releasing, the store listing and the website are in the `release` skill.** Tags, Xcode Cloud, TestFlight, `appstore/`, fastlane, and `site/`.
 
 **Localization**: `en` is the source language; Japanese (kid-friendly

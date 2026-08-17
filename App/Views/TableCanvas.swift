@@ -31,6 +31,7 @@
     final class ViewerModel {
         static let spaceID = "table"
         static let programWindowID = "program"
+        static let codeWindowID = "code"
 
         // MARK: What is loaded
 
@@ -39,6 +40,16 @@
         private(set) var title = ""
         private(set) var blocks: [Block] = []
         let runner = RunnerModel()
+
+        /// The generated Swift, for the code window (#53 Phase 3).
+        ///
+        /// Built here, once per load, rather than in the window's `body` the
+        /// way `CanvasPane` does it. The iPad's code pane is only in the
+        /// hierarchy while the toggle says so, so generating there costs
+        /// nothing when it is hidden; a window is its own scene and redraws on
+        /// its own schedule, and the program behind it cannot change while it
+        /// is open — nothing here can edit.
+        private(set) var code = ""
 
         /// Set when opening a file fails, and shown as an alert. Kept as the
         /// message rather than the error so the version gate's wording
@@ -50,6 +61,7 @@
         func load(_ blocks: [Block], title: String) {
             self.blocks = blocks
             self.title = title
+            code = SwiftCodeGenerator.code(for: blocks)
             runner.run(blocks, startPaused: true)
         }
 
@@ -301,7 +313,22 @@
         /// what makes "60cm" mean 60cm instead of an arbitrary scale factor.
         @PhysicalMetric(from: .meters) private var pointsPerMeter: CGFloat = 1
 
+        /// Holds the per-frame subscription alive. A `RealityView`'s `make`
+        /// closure runs once, and an `EventSubscription` that nothing retains
+        /// is cancelled the moment it goes out of scope — which reads exactly
+        /// like the handler never being called.
+        @State private var frameTicker = FrameTicker()
+
         private static let sheetName = "table-canvas"
+
+        /// White paper around the drawing, in points at ``ViewerModel/builtSide``.
+        ///
+        /// It replaces the inset `autoFit` used to add for the sprite, which a
+        /// `.hidden` sprite no longer earns. Sized for the *tortoise* rather
+        /// than for looks: at `tortoiseLength` it is about half the animal, so
+        /// a tortoise standing at the far corner of its drawing still has all
+        /// four feet on the paper.
+        static let sheetMargin: CGFloat = 64
 
         var body: some View {
             // Read here, in `body`, and captured by the closure below.
@@ -347,9 +374,31 @@
                 // the providers directly is what buys "in front of your eyes",
                 // "turned to face you", and a wait the window can explain.
                 content.add(sheet)
+
+                // The tortoise, as a child of the sheet — so it inherits the
+                // pinch, the twist and the drag for free, and its own
+                // transform only ever has to say where on the *paper* it is.
+                //
+                // A failure here costs the tortoise and nothing else: the
+                // drawing still appears and still plays. An immersive space
+                // that shows no picture because a model would not load would
+                // be a much worse trade than a picture that draws itself.
+                if let tortoise = await Self.loadTortoise() {
+                    sheet.addChild(tortoise)
+                    // Per *display frame*, not per view update. The two differ
+                    // by two orders of magnitude here and the difference is the
+                    // feature: `currentCommandIndex` changes about ten times a
+                    // second, and a tortoise moved on that schedule jumps from
+                    // command to command while the line it is drawing grows
+                    // smoothly underneath it.
+                    frameTicker.subscription = content.subscribe(
+                        to: SceneEvents.Update.self, on: nil
+                    ) { _ in
+                        Self.walk(tortoise, with: model.runner, pointsPerMeter: pointsPerMeter)
+                    }
+                }
             } update: { content in
                 guard let entity = Self.sheet(in: content) else { return }
-                print()
                 // Nothing to look at until there is somewhere to put it —
                 // better a considered wait than a sheet parked wherever the
                 // origin happens to be.
@@ -587,20 +636,150 @@
             }
             return nil
         }
+
+        // MARK: - The tortoise on the paper
+
+        /// How long the tortoise is, as a fraction of the sheet's side — so it
+        /// keeps its size relative to the drawing however big the sheet is
+        /// pinched, and needs no rescaling of its own.
+        ///
+        /// A twelfth is deliberately larger than the 2-D sprite ever was
+        /// (23×32pt of a 1360pt sheet is nearer a thirtieth). On a screen the
+        /// tortoise is a *cursor* — the thing you track to see where the line
+        /// is going. On the table it is the animal, and the animal is the whole
+        /// argument for this platform existing (#53): a tortoise that walks
+        /// across your desk drawing a line is what tortoise graphics was before
+        /// there were screens. At 60cm — the default sheet — this is 5cm.
+        private static let tortoiseLength: Float = 1.0 / 12.0
+
+        /// Clear of the paper by a hair, so nothing the model owns is ever
+        /// exactly coplanar with the attachment's white ground — which
+        /// z-fights along the whole underside of a tortoise that lands on
+        /// zero. A tenth of a millimetre at the default sheet size, which is
+        /// far below anything the eye resolves and far above the depth
+        /// buffer's tie.
+        private static let hover: Float = 0.0002
+
+        /// Loads the generated tortoise (`Tools/tortoise-model/`), scaled to
+        /// `tortoiseLength` and stood upright on the paper.
+        ///
+        /// The model is authored to a contract this depends on: Y-up with
+        /// **forward at −Z**, total length exactly 1.0 so a scale is a length,
+        /// and its origin at the ground point under the shell's centre — the
+        /// point it turns about. Wrapped in a plain container entity so the
+        /// standing-up rotation lives here, once, and `walk` only ever has to
+        /// say where on the paper and which way round.
+        private static func loadTortoise() async -> Entity? {
+            guard let model = try? await Entity(named: "Tortoise", in: .main) else { return nil }
+            // +90° about X: the model's own up (+Y) becomes the sheet's +Z,
+            // which is up off the table, and its forward (−Z) becomes the
+            // sheet's +Y — the drawing's north, which is heading 0.
+            model.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0])
+            model.scale = .init(repeating: tortoiseLength)
+            let carrier = Entity()
+            carrier.addChild(model)
+            // Stand it *on* the paper rather than at its own origin. The origin
+            // is the ground point under the shell's centre — the point the
+            // animal turns about — and the feet reach a little below it (6‰ of
+            // the body length, measured off the loaded model rather than
+            // assumed, so a re-generated tortoise cannot quietly start sinking
+            // into the page).
+            model.position.z = -model.visualBounds(relativeTo: carrier).min.z + hover
+            return carrier
+        }
+
+        /// Puts the tortoise where the canvas would have drawn its sprite.
+        ///
+        /// Called once per display frame, which is what
+        /// `currentTortoiseState` is for: it interpolates *between* commands,
+        /// so the tortoise walks the line as it is drawn. Driving this from
+        /// `currentCommandIndex` instead — the value everything else in the app
+        /// watches — would teleport it once per command while the line grew
+        /// smoothly underneath.
+        @MainActor
+        private static func walk(
+            _ tortoise: Entity, with runner: RunnerModel, pointsPerMeter: CGFloat
+        ) {
+            guard let state = runner.player.currentTortoiseState, state.isVisible else {
+                tortoise.isEnabled = false
+                return
+            }
+            tortoise.isEnabled = true
+
+            // The same transform the canvas laid the drawing out with, asked
+            // for rather than reimplemented — `autoFit` centres on the drawing
+            // and scales to fill, and getting that subtly wrong would put the
+            // tortoise beside its own line rather than on it.
+            let side = ViewerModel.builtSide * pointsPerMeter
+            let inner = side - 2 * sheetMargin
+            let transform = ViewportMode.autoFit.transform(
+                canvasSize: runner.tortoise.canvasSize,
+                viewSize: CGSize(width: inner, height: inner),
+                drawingBounds: runner.drawingBounds,
+                spriteHalfExtent: TortoiseSprite.hidden.halfExtent)
+            let point = CGPoint(x: state.position.x, y: state.position.y).applying(transform)
+
+            // View points (top-left origin, Y down) to the sheet entity's own
+            // space (centre origin, Y up, 1 unit = 1 metre). The canvas is
+            // centred in the attachment, so the margin cancels and only the
+            // inner size matters.
+            // Z is the loader's business, not this function's: the model was
+            // lifted onto the paper once, and every frame after that is a slide
+            // across it.
+            tortoise.position = [
+                Float((point.x - inner / 2) / pointsPerMeter),
+                Float((inner / 2 - point.y) / pointsPerMeter),
+                0,
+            ]
+            // Heading is clockwise from north; a turn about the sheet's +Z,
+            // which points up out of the paper, is counter-clockwise seen from
+            // above. Hence the sign.
+            tortoise.orientation = simd_quatf(
+                angle: -Float(state.heading * .pi / 180), axis: [0, 0, 1])
+        }
     }
 
-    /// What actually lies on the table: the app's own canvas, unchanged.
+    /// Owns the scene-update subscription for as long as the view is on
+    /// screen. A `final class` in `@State` rather than the subscription in
+    /// `@State` directly, because `make` runs before the first update and
+    /// assigning state from there would be a write during view construction.
+    @MainActor
+    private final class FrameTicker {
+        var subscription: EventSubscription?
+    }
+
+    /// What actually lies on the table: the app's own canvas, drawing
+    /// everything **except** the tortoise.
+    ///
+    /// `.hidden` (TortoiseGraphics2 2.1.0) is the whole difference from the
+    /// iPad's pane. The tortoise here is not a picture on the paper, it is a
+    /// model standing on it, so the canvas has to stop drawing its own — and
+    /// this is the way to say that, rather than `hideTortoise()`, which
+    /// records a *command* and would travel into the SVG export, the PNG, the
+    /// thumbnail and the saved stream.
     private struct TableCanvasSheet: View {
         let runner: RunnerModel
         let side: CGFloat
 
         var body: some View {
             TortoiseCanvas(runner.tortoise, player: runner.player)
-                .tortoiseSprite(CanvasPane.sprite)
+                .tortoiseSprite(.hidden)
+                // The margin the sprite used to buy. `autoFit` insets by the
+                // sprite's half-diagonal so it can't clip at the edge, and a
+                // hidden sprite has no extent — so without this the drawing
+                // runs edge to edge, and the tortoise standing at its far
+                // corner hangs off the paper. Inner frame first, then the
+                // paper around it: that keeps the drawing centred on the
+                // sheet, which is what lets the mapping below be a single
+                // scale about the middle.
+                .frame(
+                    width: side - 2 * TableCanvasSpace.sheetMargin,
+                    height: side - 2 * TableCanvasSpace.sheetMargin
+                )
                 // Paper, for the same reason the pane paints it: the default
                 // pen is black and a table is not white.
-                .background(.white)
                 .frame(width: side, height: side)
+                .background(.white)
                 // The pinch, twist and drag belong to the entity. Left
                 // hit-testable, this view swallows them first and the sheet can
                 // never be moved at all.

@@ -100,9 +100,7 @@ struct CanvasPane: View {
     /// the triangle. The asset has to point *up*: `.image` rotates its top edge
     /// toward the heading. Deliberately not applied to the PNG export's canvas
     /// — see `RunnerModel.exportFrameSize`.
-    // Not private only so the #53 spike can put the same tortoise on the
-    // table; make it private again when `TableSpike.swift` goes.
-    static let sprite = TortoiseSprite.image(
+    private static let sprite = TortoiseSprite.image(
         Image(.tortoiseSprite), size: CGSize(width: 23, height: 32))
 
     /// The paper's outline: the same 8 a standalone block row rounds
