@@ -161,7 +161,26 @@ SHELL_RAMP_BIAS = 2.0
 WHITE = (0.980, 0.980, 0.980)
 BLACK = (0.055, 0.055, 0.060)
 
+# How much of its own colour each material gives off, on top of what the room
+# lends it.
+#
+# **This is not decoration, it is what makes the colours survive the room.** In
+# a `.mixed` immersive space RealityKit lights the model with the *real* room,
+# so a lamp-lit living room in the evening dims every one of these and tints
+# what is left — and the colours above are sampled from the three-view drawing,
+# which is the whole specification. Lightening them instead would move the
+# design to suit one room; emission leaves the design alone and lets it read at
+# its own value in any room.
+#
+# 0.35 rather than more: the shading is what makes a low-poly dome look faceted,
+# and emission is flat by definition, so all of it and the tortoise turns into a
+# sticker. At this level the facets still step and the pastels stop going grey.
+# Judged on the headset, in a room — a render cannot tell you this, because the
+# renderer's lights are not the room's.
+EMISSION = 0.35
+
 GRADIENT_PNG = "shell_gradient.png"
+EMISSION_PNG = "shell_gradient_emission.png"
 
 
 # --------------------------------------------------------------------------
@@ -173,11 +192,17 @@ def clear_scene():
     bpy.ops.wm.read_factory_settings(use_empty=True)
 
 
-def srgb_to_linear(c):
-    def one(u):
-        return u / 12.92 if u <= 0.04045 else ((u + 0.055) / 1.055) ** 2.4
+def srgb_to_linear_one(u):
+    return u / 12.92 if u <= 0.04045 else ((u + 0.055) / 1.055) ** 2.4
 
-    return tuple(one(x) for x in c)
+
+def linear_to_srgb(u):
+    u = min(max(u, 0.0), 1.0)
+    return 12.92 * u if u <= 0.0031308 else 1.055 * u ** (1 / 2.4) - 0.055
+
+
+def srgb_to_linear(c):
+    return tuple(srgb_to_linear_one(x) for x in c)
 
 
 def plain_material(name, colour, roughness=0.45):
@@ -190,11 +215,15 @@ def plain_material(name, colour, roughness=0.45):
     bsdf.inputs["Base Color"].default_value = (*lin, 1.0)
     bsdf.inputs["Roughness"].default_value = roughness
     bsdf.inputs["Metallic"].default_value = 0.0
+    # Its own colour, not white: emission at white would wash every part toward
+    # grey and take the pastels with it, which is the problem, not the fix.
+    bsdf.inputs["Emission Color"].default_value = (*lin, 1.0)
+    bsdf.inputs["Emission Strength"].default_value = EMISSION
     mat.diffuse_color = (*lin, 1.0)
     return mat
 
 
-def gradient_material(name, png_path, roughness=0.35):
+def gradient_material(name, png_path, emission_png_path, roughness=0.35):
     """The shell's blue-to-pink ramp, as an image texture.
 
     A texture rather than vertex colours on purpose: `primvars:displayColor`
@@ -214,16 +243,45 @@ def gradient_material(name, png_path, roughness=0.35):
     tex.interpolation = "Closest"
     tex.location = (-320, 260)
     tree.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
+
+    # The same ramp again, pre-dimmed — see `write_gradient_png`. A *ramp* and
+    # not one flat emissive tint, because a single colour here would drag the
+    # blue rim and the pink apex toward each other and flatten the gradient the
+    # dome exists to show.
+    emis = tree.nodes.new("ShaderNodeTexImage")
+    emis.image = bpy.data.images.load(emission_png_path)
+    emis.image.colorspace_settings.name = "sRGB"
+    emis.interpolation = "Closest"
+    emis.location = (-320, -80)
+    tree.links.new(emis.outputs["Color"], bsdf.inputs["Emission Color"])
+    # 1.0: the dimming is in the image, so a strength here would apply it twice.
+    bsdf.inputs["Emission Strength"].default_value = 1.0
     return mat
 
 
-def write_gradient_png(path):
+def write_gradient_png(path, scale=1.0):
     """A 8x256 strip: blue at the bottom (v=0, the rim), pink at the top.
 
     Written by hand out of `zlib` and `struct` because Blender ships its own
     Python and it has no Pillow.  A PNG is a signature plus three chunks, and
     the whole image is 2KB — pulling a dependency into the build for that
     would cost more than the twenty lines.
+
+    `scale` dims the whole ramp, and exists because the shell needs a *second*
+    copy of it for emission.  Everything else can say "my own colour times
+    EMISSION" in one shader input, but UsdPreviewSurface has no emissive
+    strength — only `emissiveColor` — so feeding the diffuse texture straight
+    into it makes the shell emit at full value while every other part emits at
+    a third, and the dome washes out.  A Blender multiply node in between does
+    not survive the export either: the preview-surface writer follows a fixed
+    set of node patterns and drops the rest, silently.  So the scaling is baked
+    into a second image.
+
+    It is done in **linear** light, not on the stored bytes.  These ramp
+    endpoints are sRGB, the texture is tagged sRGB, and the shader decodes it
+    before shading — so scaling the bytes would darken the shell well past the
+    third the other materials give off (0.35 of an sRGB byte is nearer 0.1 of
+    the light it stands for).
     """
     import struct
     import zlib
@@ -234,7 +292,17 @@ def write_gradient_png(path):
         # Row 0 is the top of the image, which is v = 1.
         t = 1.0 - row / (h - 1)
         rgb = bytes(
-            int(round(255 * (SHELL_LOW[i] + (SHELL_HIGH[i] - SHELL_LOW[i]) * t)))
+            int(
+                round(
+                    255
+                    * linear_to_srgb(
+                        srgb_to_linear_one(
+                            SHELL_LOW[i] + (SHELL_HIGH[i] - SHELL_LOW[i]) * t
+                        )
+                        * scale
+                    )
+                )
+            )
             for i in range(3)
         )
         raw.append(0)  # filter type 0 (None) for this scanline
@@ -555,6 +623,8 @@ def build_eyes(white, black):
 def build(out_dir):
     clear_scene()
     png = write_gradient_png(os.path.join(out_dir, GRADIENT_PNG))
+    emission_png = write_gradient_png(
+        os.path.join(out_dir, EMISSION_PNG), scale=EMISSION)
 
     gold = plain_material("Gold", GOLD, roughness=0.42)
     purple = plain_material("Purple", PURPLE, roughness=0.38)
@@ -563,7 +633,7 @@ def build(out_dir):
     # Matte rather than glossy: a tight highlight on a faceted dome blows one
     # or two facets to white and breaks the ramp exactly where it is meant to
     # be read.
-    shell_mat = gradient_material("Shell", png, roughness=0.52)
+    shell_mat = gradient_material("Shell", png, emission_png, roughness=0.52)
 
     parts = [
         build_shell(shell_mat),

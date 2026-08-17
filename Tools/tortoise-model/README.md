@@ -82,15 +82,45 @@ the app and not just to the asset.
   strange, and that trade was decided in favour of ordinary turning.
 - Bounds, for framing: `x ±0.309`, `y 0 .. 0.386` (height), `z -0.543` (nose)
   `.. +0.457` (brush). The brush tip is at `(0, 0.066, 0.457)`.
-- Fifteen named meshes under one `Tortoise` xform, five materials, one
-  915-byte texture; about 2,200 triangles.
+- Fifteen named meshes under one `Tortoise` xform, five materials, two small
+  textures (the shell's ramp, and the same ramp dimmed for emission); about
+  2,200 triangles.
+- **Every material emits a third of its own colour** (`EMISSION`). Not
+  decoration — see below.
 
-## Two things that look like mistakes and are not
+## Three things that look like mistakes and are not
 
 **The shell's ramp is squared** (`SHELL_RAMP_BIAS`). It runs blue at the rim
 to pink at the apex, by height — but the view that matters is from above,
 and a dome seen from above shows only `v²` of its projected area below height
 `v`. Mapped straight, three quarters of the top view comes out pink.
+
+**Every material has an `emissiveColor`, and the shell has a second texture
+for it.** A tortoise is not a lamp, so this looks like a mistake in the PBR
+setup, and removing it is a one-line change that will look correct and undo
+the reason it is here.
+
+In a `.mixed` immersive space RealityKit lights the model with the **real
+room**. Measured against the shipped no-emission build under a lamp-lit
+evening room, the pastels came out at 39 of 255 in luminance — the gold read
+brown, the blue-to-pink dome read muddy teal — which is the state the
+maintainer reported from the headset. At `EMISSION = 0.35` the same render is
+111, a factor of 2.8, and the facets still step (all of it, and the tortoise
+flattens into a sticker). Under QuickLook's bright studio lighting the same
+change is only +12%, which is the point: emission is a floor that a dark room
+cannot take away, not a brightness knob.
+
+Lightening the colours instead was the alternative and is wrong: they are
+sampled from the three-view drawing, which is the specification. Emission
+leaves the design alone and lets it read at its own value in any room.
+
+The shell needs a *second* PNG because `UsdPreviewSurface` has no emissive
+strength — only `emissiveColor` — so feeding it the diffuse texture makes the
+dome emit at full value while every other part emits at a third, and the shell
+washes out. A multiply node in Blender does not survive the export either: the
+preview-surface writer follows a fixed set of node patterns and drops the rest,
+silently. The dimming is baked in **linear** light, and the ratio is checked at
+three points along the ramp (0.347–0.354 against the flat materials' 0.35).
 
 **The brush tip is uneven.** Alternate hairs stop a third of the bundle
 short. Three level-tipped versions were built after this one — radial fluting,

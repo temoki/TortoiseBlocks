@@ -437,6 +437,14 @@ resource, landing flat at `Contents/Resources/Tortoise.usdz` (verified in the
 built bundle, the only way that works — see the nested-CLAUDE.md note above).
 Blender rendering it proves nothing about RealityKit; `qlcheck.swift` in the
 same directory runs it through Apple's own USD stack instead.
+A fifth thing is a contract with the *room* rather than with app code: **every
+material emits a third of its own colour**, because a `.mixed` immersive space
+lights the model with the real room and a lamp-lit evening one drained the
+pastels to mud (measured: luminance 39 of 255, gold reading brown — 111 with
+emission, and the facets still step). Do not "fix" it as a PBR error, and do
+not lighten the colours instead: those are sampled from the drawing, which is
+the specification. The reasoning and the shell's second texture are in the
+tool README.
 
 **The tortoise on the table is drawn by us, and that took a library release**
 (#53 Phase 3, TortoiseGraphics2 2.1.0). The sheet is still the app's own
