@@ -24,8 +24,12 @@ holds README assets and architecture notes and is *not* published;
 carries its own downscaled copies rather than linking those. The split
 is the reason `pages.yml` exists at all: GitHub's classic Pages builder accepts no source
 but the repository root or `/docs`, so publishing any other directory takes a
-workflow. It carries a `paths:` filter, so a commit that touches no page
-never redeploys the site, and `cancel-in-progress: false`, because a deploy
+workflow. **It runs on `workflow_dispatch` only** — publishing is a step of
+the release, not of the merge, so the page describing a version cannot go live
+before that version does; site changes land on main when they are ready and
+are deployed by hand (Actions tab, or `gh workflow run pages.yml`) once the
+release is out. Do not add a `push:` trigger back for convenience: that is the
+timing this replaced. And `cancel-in-progress: false`, because a deploy
 interrupted midway can leave the live site as a half-written artifact.
 The policy page states what was *measured* — no accounts, no analytics, no
 advertising or third-party SDK, no tracking, and no networking code anywhere
