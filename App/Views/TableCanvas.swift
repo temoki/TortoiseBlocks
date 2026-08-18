@@ -140,6 +140,47 @@
 
         var isPlaced = false
 
+        /// Where the drawing is, as one value (#53).
+        ///
+        /// The window used to ask this as two controls — a button that put the
+        /// drawing down or took it away, and a switch for whether to look for a
+        /// table — sitting in different rows with unrelated buttons between
+        /// them. But there are only ever **three** answers, and naming them is
+        /// what the window should be asking: nowhere, on a table, in the air.
+        /// One picker says that, and it retires two verbs that were almost the
+        /// same word for different things (「つくえに おく」 put the drawing
+        /// down, 「つくえに のせる」 look for a table at all).
+        ///
+        /// Read-only, and deliberately: `isPlaced` is only true once the system
+        /// has actually opened the immersive space, so this cannot be *set*
+        /// without waiting to find out. `ViewerWindow` drives it through an
+        /// async action instead, and a space that fails to open leaves the
+        /// picker showing `.away` — which is where the drawing is.
+        var placing: Placing {
+            guard isPlaced else { return .away }
+            return sitsOnTable ? .table : .inFront
+        }
+
+        enum Placing: Hashable, CaseIterable {
+            case away
+            case table
+            case inFront
+        }
+
+        // MARK: The other two surfaces
+
+        /// Whether each window is on screen, so the buttons that open them can
+        /// also close them.
+        ///
+        /// SwiftUI has no "is this window open" to read, so the windows report
+        /// it themselves as they come and go. Worth the two flags: without
+        /// them the control is a switch with one position — pressing it again
+        /// when the window is already up only brings it forward, and the way
+        /// back is the window's own close button, which is somewhere else
+        /// entirely.
+        var isProgramWindowOpen = false
+        var isCodeWindowOpen = false
+
         // MARK: Finding somewhere to put it
 
         /// How the sheet came to be where it is.

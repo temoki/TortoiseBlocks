@@ -14,6 +14,56 @@
         }
       }
     },
+    "Away" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ださない"
+          }
+        }
+      }
+    },
+    "Blocks" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブロック"
+          }
+        }
+      }
+    },
+    "In Front of You" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "めのまえ"
+          }
+        }
+      }
+    },
+    "On a Table" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "つくえ"
+          }
+        }
+      }
+    },
+    "Where should the drawing go?" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "えを どこに だす？"
+          }
+        }
+      }
+    },
     "🎲" : {
       "localizations" : {
         "ja" : {
@@ -854,16 +904,6 @@
         }
       }
     },
-    "Place on Table" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "つくえに おく"
-          }
-        }
-      }
-    },
     "Play" : {
       "localizations" : {
         "ja" : {
@@ -910,16 +950,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "むらさき"
-          }
-        }
-      }
-    },
-    "Put Away" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "しまう"
           }
         }
       }
@@ -1064,16 +1094,6 @@
         }
       }
     },
-    "Sit on a Table" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "つくえに のせる"
-          }
-        }
-      }
-    },
     "Speed" : {
       "localizations" : {
         "ja" : {
@@ -1160,26 +1180,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "SVG"
-          }
-        }
-      }
-    },
-    "Show Blocks" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ブロックを みる"
-          }
-        }
-      }
-    },
-    "Show Code" : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "コードを みる"
           }
         }
       }

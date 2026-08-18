@@ -21,20 +21,30 @@
         let model: ViewerModel
 
         var body: some View {
-            // An `if`, where `ProgramWindow` puts the empty state in an
-            // `.overlay`. Deliberate, and the difference is what is behind it:
-            // an empty block list is nothing, while an empty code pane is a
-            // sheet of white paper carrying a "Copy Code" button that would
-            // copy an empty string.
-            if model.hasProgram {
-                CodePane(code: model.code)
-                    .padding()
+            // A `Group`, so the lifecycle below reports the *window* rather
+            // than its content: the `if` swaps what is inside when a drawing
+            // loads, and the same modifiers on either branch would fire then
+            // too. SwiftUI offers nothing to read window state from, so the
+            // window telling the model is what lets the viewer's toggle show
+            // it as open and close it again.
+            Group {
+                // An `if`, where `ProgramWindow` puts the empty state in an
+                // `.overlay`. Deliberate, and the difference is what is behind
+                // it: an empty block list is nothing, while an empty code pane
+                // is a sheet of white paper carrying a "Copy Code" button that
+                // would copy an empty string.
+                if model.hasProgram {
+                    CodePane(code: model.code)
+                        .padding()
+                }
+                else {
+                    ContentUnavailableView(
+                        "No Drawing", systemImage: "curlybraces",
+                        description: Text("Open a drawing, or start from a sample."))
+                }
             }
-            else {
-                ContentUnavailableView(
-                    "No Drawing", systemImage: "curlybraces",
-                    description: Text("Open a drawing, or start from a sample."))
-            }
+            .onAppear { model.isCodeWindowOpen = true }
+            .onDisappear { model.isCodeWindowOpen = false }
         }
     }
 

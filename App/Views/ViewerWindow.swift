@@ -104,18 +104,29 @@
                     return
                 }
                 model.load(SampleBlocks.spiral(), title: String(localized: "Spiral"))
-                model.sitsOnTable = false
                 openWindow(id: ViewerModel.programWindowID)
-                await place()
+                await place(.inFront)
             }
         }
 
-        private func place() async {
-            if model.isPlaced {
+        /// Moves the drawing to `destination`, opening or closing the
+        /// immersive space as that requires.
+        ///
+        /// The table/in-front choice is set *before* the space opens, because
+        /// the space reads it as it starts looking for somewhere to put the
+        /// sheet. Changing it while already placed rebuilds the sheet and
+        /// starts that search again, which is the intent — it is the wearer
+        /// saying "not there, here".
+        private func place(_ destination: ViewerModel.Placing) async {
+            guard destination != model.placing else { return }
+            guard destination != .away else {
                 await dismissSpace()
                 model.isPlaced = false
+                return
             }
-            else if case .opened = await openSpace(id: ViewerModel.spaceID) {
+            model.sitsOnTable = destination == .table
+            guard !model.isPlaced else { return }
+            if case .opened = await openSpace(id: ViewerModel.spaceID) {
                 model.isPlaced = true
             }
         }
@@ -212,60 +223,114 @@
         }
     }
 
-    /// Putting the sheet down, and the two things about where it lands that
-    /// are worth a control rather than a gesture.
+    /// Where the drawing goes, and the two other surfaces it can be seen on.
+    ///
+    /// **Grouped by what a control does, not by what it looks like** (#53).
+    /// The row used to hold "put it on the table", "show blocks" and "show
+    /// code" side by side, whose only shared property was being buttons: one
+    /// was about placement and the other two opened windows, while placement's
+    /// own mode switch and reset sat in a *different* row underneath, with
+    /// those two wedged in between. Now placement is one group and the other
+    /// surfaces are another, with a divider saying so.
     private struct TablePlacementControls: View {
         let model: ViewerModel
-        let place: () async -> Void
-
-        @Environment(\.openWindow) private var openWindow
+        let place: (ViewerModel.Placing) async -> Void
 
         var body: some View {
-            @Bindable var model = model
             VStack(spacing: 14) {
-                // The three places one drawing can be shown, side by side: on
-                // the table, as the program that draws it, and as the code that
-                // program stands for. None of them replaces another — having
-                // all three open at once is the point (#53), and is the one
-                // thing the iPad build cannot do.
-                HStack(spacing: 12) {
-                    Button(
-                        model.isPlaced ? "Put Away" : "Place on Table",
-                        systemImage: model.isPlaced ? "xmark.circle" : "table.furniture"
-                    ) {
-                        Task { await place() }
-                    }
-                    .buttonStyle(.borderedProminent)
-
-                    Button("Show Blocks", systemImage: "square.stack.3d.up") {
-                        openWindow(id: ViewerModel.programWindowID)
-                    }
-                    Button("Show Code", systemImage: "curlybraces") {
-                        openWindow(id: ViewerModel.codeWindowID)
+                VStack(spacing: 6) {
+                    Text("Where should the drawing go?")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    HStack(spacing: 10) {
+                        PlacementPicker(placing: model.placing, place: place)
+                        // Inline, icon-only, and last. Size, spin and position
+                        // are gestures on the sheet itself, so all that is left
+                        // for a control is the way back from having dragged the
+                        // drawing out of reach — which is rare, and must not
+                        // read as louder than the question above it. On its own
+                        // row with a title it did exactly that.
+                        Button("Reset Position", systemImage: "arrow.counterclockwise") {
+                            model.resetPlacement()
+                        }
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.bordered)
+                        .disabled(!model.isPlaced)
                     }
                 }
-                .buttonStyle(.bordered)
-
-                // Size, spin and position are gestures on the sheet itself —
-                // there is nothing here for them. What is left is the choice a
-                // gesture cannot make (whether to look for a table at all) and
-                // the way back from having dragged the drawing out of reach.
-                HStack(spacing: 16) {
-                    Toggle("Sit on a Table", isOn: $model.sitsOnTable)
-                        .toggleStyle(.switch)
-                        .fixedSize()
-                    Button("Reset Position", systemImage: "arrow.counterclockwise") {
-                        model.resetPlacement()
-                    }
-                    .labelStyle(.iconOnly)
-                    .disabled(!model.isPlaced)
-                }
-                .font(.callout)
 
                 PlacementStatus(model: model)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                Divider()
+
+                SurfaceToggles(model: model)
             }
+        }
+    }
+
+    /// The one question the placement controls ask: where is the drawing?
+    ///
+    /// A picker rather than a button and a switch, because the answers are a
+    /// closed set of three and naming them is clearer than composing them —
+    /// see `ViewerModel.placing`. Selecting is asynchronous (opening an
+    /// immersive space can fail, and does in a room that refuses world
+    /// sensing), so the binding's setter starts the work and the picker
+    /// follows whatever actually happened rather than what was asked for.
+    private struct PlacementPicker: View {
+        let placing: ViewerModel.Placing
+        let place: (ViewerModel.Placing) async -> Void
+
+        var body: some View {
+            Picker(
+                "Where should the drawing go?",
+                selection: Binding(get: { placing }, set: { new in Task { await place(new) } })
+            ) {
+                Text("Away").tag(ViewerModel.Placing.away)
+                Text("On a Table").tag(ViewerModel.Placing.table)
+                Text("In Front of You").tag(ViewerModel.Placing.inFront)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+        }
+    }
+
+    /// The other two surfaces this drawing can be shown on.
+    ///
+    /// **Toggles, not buttons**, so the control that opens a window can also
+    /// close it. `openWindow` on a window that is already up only brings it
+    /// forward, which made these a switch with one position — the way back was
+    /// the window's own close button, somewhere else entirely. The windows
+    /// report whether they are on screen (`ViewerModel.isProgramWindowOpen` /
+    /// `isCodeWindowOpen`), since SwiftUI offers nothing to read that from.
+    ///
+    /// Short labels on purpose. Under a heading that has just said where the
+    /// drawing goes, 「ブロック」 and 「コード」 are the two other things it can
+    /// be, and "show" was a word every button in the row was already saying.
+    private struct SurfaceToggles: View {
+        let model: ViewerModel
+
+        @Environment(\.openWindow) private var openWindow
+        @Environment(\.dismissWindow) private var dismissWindow
+
+        var body: some View {
+            HStack(spacing: 12) {
+                Toggle(
+                    "Blocks", systemImage: "square.stack.3d.up",
+                    isOn: binding(model.isProgramWindowOpen, ViewerModel.programWindowID))
+                Toggle(
+                    "Code", systemImage: "curlybraces",
+                    isOn: binding(model.isCodeWindowOpen, ViewerModel.codeWindowID))
+            }
+            .toggleStyle(.button)
+            .buttonStyle(.bordered)
+        }
+
+        private func binding(_ isOpen: Bool, _ id: String) -> Binding<Bool> {
+            Binding(
+                get: { isOpen },
+                set: { $0 ? openWindow(id: id) : dismissWindow(id: id) })
         }
     }
 
@@ -280,16 +345,27 @@
         let model: ViewerModel
 
         var body: some View {
-            switch model.placement {
-            case .searching:
+            switch (model.isPlaced, model.placement) {
+            // Nothing is out, so there is nothing to report and nothing to
+            // pinch. The picker above has already said where the drawing is.
+            case (false, _):
+                EmptyView()
+            case (_, .searching):
                 HStack(spacing: 8) {
                     ProgressView()
                         .controlSize(.small)
                     Text("Looking for a table…")
                 }
-            case .floating:
-                Text("No table found, so it is floating in front of you.")
-            case .onTable:
+            // Floating is two different things now that it can be *chosen*
+            // (#53). Asking for a table and not getting one is news; asking for
+            // the air and getting it is not, and telling someone their choice
+            // failed when it did not is worse than saying nothing.
+            case (_, .floating):
+                Text(
+                    model.sitsOnTable
+                        ? "No table found, so it is floating in front of you."
+                        : "Pinch to resize, twist to turn, drag to move.")
+            case (_, .onTable):
                 Text("Pinch to resize, twist to turn, drag to move.")
             }
         }

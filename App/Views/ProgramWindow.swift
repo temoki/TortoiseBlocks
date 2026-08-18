@@ -48,6 +48,11 @@
             // and the mouths' "add here" toggle look pressable, do nothing, and
             // are the two things #53 says a read-only program must not offer.
             .environment(\.showsBlockEditing, false)
+            // Reported so the viewer's toggle can show this window as open and
+            // close it again — SwiftUI offers nothing to read window state
+            // from, so the window is the only thing that knows.
+            .onAppear { model.isProgramWindowOpen = true }
+            .onDisappear { model.isProgramWindowOpen = false }
             .overlay {
                 if !model.hasProgram {
                     ContentUnavailableView(

@@ -502,6 +502,27 @@ colours left standing on nothing). The source is generated in
 `ViewerModel.load` rather than in the window's `body`: the iPad's pane is only
 in the hierarchy while its toggle says so, but a window redraws on its own
 schedule and nothing here can edit the program behind it.
+**The remote's controls are grouped by what they do, not by what they are.**
+The row used to read 「つくえに おく」「ブロックを みる」「コードを みる」, whose
+only shared property was being buttons — one placed the drawing, two opened
+windows — while placement's own mode switch and reset sat in a *different* row
+underneath with those two wedged between. Placement is now one group with its
+own question over it, the other surfaces are another below a divider, and three
+things fell out of doing it. The two verbs went: 「つくえに おく」 (put the
+drawing down) and 「つくえに のせる」 (look for a table at all) were nearly the
+same words for different things, invisible while they sat apart and unbearable
+once grouped — so `ViewerModel.placing` names the **three** states the window
+actually has (away / table / in front) and one picker asks them. It stays
+read-only and the window drives it through an async action, because `isPlaced`
+is only true once the space has really opened and a refused world-sensing prompt
+must leave the picker showing where the drawing *is*. The window buttons became
+toggles, since `openWindow` on an open window only brings it forward — a switch
+with one position — so the windows report themselves through
+`isProgramWindowOpen` / `isCodeWindowOpen`, there being nothing in SwiftUI to
+read that from. And floating stopped being an error: it can now be *chosen*, so
+`PlacementStatus` says "no table found" only when a table was actually asked
+for.
+
 **SVG/PNG export was built here and then taken back out**, and the reason is
 worth keeping so it is not re-added as an oversight: it worked, and cost one
 view — `CanvasExportMenu` unchanged, rendering `lastRunCommands`, so moving the
