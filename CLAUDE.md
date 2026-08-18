@@ -515,9 +515,13 @@ once grouped — so `ViewerModel.placing` names the **three** states the window
 actually has (away / table / in front) and one picker asks them. It stays
 read-only and the window drives it through an async action, because `isPlaced`
 is only true once the space has really opened and a refused world-sensing prompt
-must leave the picker showing where the drawing *is*. The window buttons became
-toggles, since `openWindow` on an open window only brings it forward — a switch
-with one position — so the windows report themselves through
+must leave the picker showing where the drawing *is*. A visionOS **ornament** was the other candidate for those
+two — the platform's own place for "belongs to this window but is not its
+content" — and was turned down: it is always visible, so it hangs under the
+window even in the small "えが ありません" state and adds its height to every
+glance, and a divider already says the difference for nothing. The window
+buttons became toggles, since `openWindow` on an open window only brings it
+forward — a switch with one position — so the windows report themselves through
 `isProgramWindowOpen` / `isCodeWindowOpen`, there being nothing in SwiftUI to
 read that from. And floating stopped being an error: it can now be *chosen*, so
 `PlacementStatus` says "no table found" only when a table was actually asked
