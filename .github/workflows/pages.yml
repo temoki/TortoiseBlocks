@@ -6,15 +6,13 @@ name: Pages
 # /docs as its source, and docs/ belongs to the repository's own
 # documentation (README assets, architecture notes), not to the public site.
 #
-# The paths filter keeps ordinary code commits from redeploying a site they
-# did not touch.
+# It deploys on demand only. The site describes a released app — screenshots,
+# a version's feature list — so publishing belongs to the release, not to the
+# merge: site changes land on main whenever they are ready and go live when
+# the version they describe does. Run it from the Actions tab (or
+# `gh workflow run pages.yml`) after the release is out.
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "site/**"
-      - ".github/workflows/pages.yml"
   workflow_dispatch:
 
 permissions:
