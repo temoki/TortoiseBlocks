@@ -527,6 +527,25 @@ read that from. And floating stopped being an error: it can now be *chosen*, so
 `PlacementStatus` says "no table found" only when a table was actually asked
 for.
 
+**Opening a drawing puts it down**, and that is the placement group's last
+open question answered. Choosing a file used to change nothing but the window:
+the room stayed empty until the picker was touched, so the app read as one
+that had not opened the file — the state with the least to look at was the one
+reached by doing the thing the app is for. An alert asking "shall I put it on
+the table?" was the obvious fix and is the wrong one twice over: the answer is
+always yes, and the first placement already raises the world-sensing prompt, so
+it would be two modals in a row before anything appeared. So a load *is* a
+placement, through `ViewerModel.loadGeneration` — a counter rather than a flag,
+because `blocks` cannot say "chosen again" when the same drawing is picked
+twice, and because the five call sites (the importer and the four samples)
+should not each have to remember. Where it goes is `sitsOnTable`, which is
+therefore now a *remembered* preference rather than only the space's own
+question: someone who has once said 「めのまえ」 is not asked again on the next
+file. Nothing about it is a special case — the picker moves to wherever the
+load put it, 「ださない」 takes it away, and a second file opened while one is
+already out leaves the sheet exactly where it was dragged to, because `place`
+sees the drawing is already there and returns.
+
 **SVG/PNG export was built here and then taken back out**, and the reason is
 worth keeping so it is not re-added as an oversight: it worked, and cost one
 view — `CanvasExportMenu` unchanged, rendering `lastRunCommands`, so moving the

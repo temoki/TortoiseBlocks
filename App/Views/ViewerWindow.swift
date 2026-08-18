@@ -69,6 +69,26 @@
             } message: {
                 Text(model.openFailure ?? "")
             }
+            // **Opening a drawing puts it down.** The viewer has exactly one
+            // job, so choosing a drawing and then being asked where to put it
+            // is a question with one sensible answer — and until it is
+            // answered the room stays empty and nothing on screen says why,
+            // which reads as an app that did not open the file. An alert
+            // ("shall I put it on the table?") was the other candidate and
+            // fails for the same reason twice over: a modal whose answer is
+            // always yes, stacked in front of the world-sensing prompt that
+            // the first placement already brings with it.
+            //
+            // It stays an ordinary *placement*, not a special case. The picker
+            // below moves to wherever this put it and 「ださない」 takes it
+            // away again, so nothing here is a state the wearer cannot get
+            // out of. Opening a second drawing while one is already out
+            // changes what is on the sheet and leaves the sheet where it was
+            // dragged to — `place` sees the drawing is already there and
+            // returns.
+            .onChange(of: model.loadGeneration) {
+                Task { await place(model.sitsOnTable ? .table : .inFront) }
+            }
             .task {
                 // Development only: the simulator cannot press any of these
                 // buttons (simctl sends no input), so `-TBPlace YES` loads a
@@ -103,9 +123,14 @@
                 else {
                     return
                 }
+                // Loading is what places it now, so the destination is
+                // chosen by setting the preference first. In front rather
+                // than on a table because the simulator finds no planes at
+                // all, and a table search there only spends its fifteen
+                // seconds before falling back to exactly this.
+                model.sitsOnTable = false
                 model.load(SampleBlocks.spiral(), title: String(localized: "Spiral"))
                 openWindow(id: ViewerModel.programWindowID)
-                await place(.inFront)
             }
         }
 

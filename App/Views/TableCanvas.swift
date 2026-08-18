@@ -58,11 +58,22 @@
 
         var hasProgram: Bool { !blocks.isEmpty }
 
+        /// Bumped by every load, so the window can put the new drawing down
+        /// without each of the five call sites — the file importer and the
+        /// four samples — having to remember to.
+        ///
+        /// A counter rather than a flag, for the same reason
+        /// `RunnerModel.runGeneration` is one: `blocks` alone cannot say
+        /// "loaded again" when the same drawing is chosen twice, and it is the
+        /// *choosing* that means "show me this".
+        private(set) var loadGeneration = 0
+
         func load(_ blocks: [Block], title: String) {
             self.blocks = blocks
             self.title = title
             code = SwiftCodeGenerator.code(for: blocks)
             runner.run(blocks, startPaused: true)
+            loadGeneration += 1
         }
 
         /// Opens a `.tortoise` from the file importer. The URL comes from
@@ -136,6 +147,10 @@
         /// wearer. The second is the fallback #53 asks for — a room with no
         /// table, a refused world-sensing prompt, and the simulator, where
         /// ARKit finds no planes at all.
+        ///
+        /// It is also the *remembered* choice: opening a drawing places it
+        /// (see `ViewerWindow`), and this is what says where. Someone who has
+        /// once said "in the air" is not asked again on the next file.
         var sitsOnTable = true
 
         var isPlaced = false
