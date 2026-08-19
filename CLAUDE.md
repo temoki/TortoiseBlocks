@@ -31,6 +31,7 @@ xcrun simctl launch <device> space.hiraku.tortoiseblocks -TBPlace YES
 
 # The App Store listing (appstore/). The check needs no key and no bundle;
 # the other two need ASC_ISSUER_ID / ASC_KEY_ID / ASC_PRIVATE_KEY_PATH.
+ruby Tools/screenshots.rb                  # after ANY reshoot: strip alpha, optimise, rebuild site/shots
 ruby fastlane/metadata_check.rb            # what CI runs on every pull request
 bundle exec fastlane ios metadata_diff     # live listing vs what is written
 bundle exec fastlane ios metadata_push     # upload (mac for the other listing)

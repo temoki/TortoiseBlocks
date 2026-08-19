@@ -57,6 +57,17 @@ module MetadataCheck
       (text_problems(root) + shared_problems(root) + screenshot_problems(root)).sort
     end
 
+    # Whether App Store Connect would refuse this PNG for its alpha channel.
+    #
+    # Public because Tools/screenshots.rb is the thing that *fixes* this, and a
+    # fixer that disagrees with the gate about what counts as alpha is worse
+    # than no fixer at all — it would report success on a file this still
+    # rejects.
+    def alpha?(path)
+      info = png_info(Pathname.new(path))
+      info && info[2]
+    end
+
     # Prints and returns true when the tree is clean. `annotate` turns each
     # line into a GitHub Actions error.
     def report(root: DEFAULT_ROOT, annotate: false)

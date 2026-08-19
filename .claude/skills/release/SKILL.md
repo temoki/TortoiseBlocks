@@ -96,6 +96,21 @@ number in the filename, and the sizes are the ones Apple accepts as-is (iPad
 13-inch landscape 2752×2064, Mac 2880×1800), so a reshoot has to keep the
 window sizes that produced them. The two documents the captures were shot from
 sit in `appstore/screenshot-sources/`, deliberately *outside* `screenshots/`.
+
+**After any reshoot, run `ruby Tools/screenshots.rb`** — it is not a
+convenience, it is the step that makes a capture sendable at all. Every source
+this project shoots from writes an alpha channel and none of them can be told
+not to: the Mac shots are composed in Figma, the iPad ones come from the
+simulator's screenshot button, the visionOS ones from `simctl io`. App Store
+Connect refuses all of them. The channel has always been fully opaque, so the
+script drops it losslessly (`-alpha off`, never a composite — it stops instead
+if a capture has real transparency, since choosing a background would change
+the picture), runs the oxipng pass, and regenerates `site/shots/`. That last
+part is why it exists as a script rather than a paragraph: the site copies are
+derived from seven of the captures, and stopping at `appstore/` leaves the
+website showing the previous build's UI — which happened twice before the
+script did. `MetadataCheck.alpha?` is what it asks about the channel, the same
+predicate the CI gate uses, so the fixer and the gate cannot disagree.
 The text is `appstore/metadata/<locale>/`, one file per field — **except
 visionOS**, which is pushed from `appstore/metadata-visionos/` instead (#53).
 That split is not tidiness: the App Store shows a Vision Pro shopper the
