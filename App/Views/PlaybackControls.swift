@@ -11,7 +11,10 @@ import TortoiseUI
 /// "roll the dice again" lives on the canvas itself (`CanvasRollAgainButton`)
 /// because it re-runs the program rather than moving the playhead.
 struct PlaybackControls: View {
-    let workspace: WorkspaceEditor
+    /// The program the run button runs. Deliberately the blocks and not the
+    /// `WorkspaceEditor` they came from: the transport never edited anything,
+    /// and the visionOS viewer (#53) has a program with no editor behind it.
+    let blocks: [Block]
     @Bindable var runner: RunnerModel
     /// Whether the workspace has been edited since the run on screen.
     /// Hoisted to the pane rather than computed here: deciding it hashes the
@@ -85,7 +88,7 @@ struct PlaybackControls: View {
 
     private func perform() {
         switch action {
-        case .run: runner.run(workspace.blocks)
+        case .run: runner.run(blocks)
         case .pause: runner.player.isPaused = true
         case .play, .resume: runner.player.isPaused = false
         case .replay: runner.replay()

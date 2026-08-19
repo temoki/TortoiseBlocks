@@ -22,6 +22,13 @@ xcodebuild -project TortoiseBlocks.xcodeproj -scheme TortoiseBlocks \
 # Manual verification loop (macOS):
 pkill -x TortoiseBlocks; open ~/Library/Developer/Xcode/DerivedData/TortoiseBlocks-*/Build/Products/Debug/TortoiseBlocks.app
 
+# visionOS. `-TBPlace` is the only way in: simctl sends no input, so without it
+# the run is a window of buttons nobody can press. It does NOT show the drawing
+# (see the tortoise note below) — it is for the load path, the USDZ, and the
+# program/code windows.
+xcrun simctl install <device> ~/Library/Developer/Xcode/DerivedData/TortoiseBlocks-*/Build/Products/Debug-xrsimulator/TortoiseBlocks.app
+xcrun simctl launch <device> space.hiraku.tortoiseblocks -TBPlace YES
+
 # The App Store listing (appstore/). The check needs no key and no bundle;
 # the other two need ASC_ISSUER_ID / ASC_KEY_ID / ASC_PRIVATE_KEY_PATH.
 ruby fastlane/metadata_check.rb            # what CI runs on every pull request
@@ -303,7 +310,8 @@ And a macOS QuickLook extension has to be sandboxed to be loaded, so it carries
 even though the app itself has none. `pluginkit -mAvvv | grep -i tortoise`
 confirms registration — the `-p com.apple.quicklook.thumbnail` filter does not
 match it and will make a working extension look missing.
-`TARGETED_DEVICE_FAMILY` is `"2"` — iPad and Mac, no iPhone (#29).
+`TARGETED_DEVICE_FAMILY` is `"2,7"` — iPad, Mac and Vision Pro, no iPhone
+(#29, #11).
 Documents are `.tortoise` files, but the exported UTI keeps the
 `tortoiseblocks` spelling (`space.hiraku.tortoiseblocks.project`, and
 `.block` for the drag payload), which is also the bundle ID's — the
@@ -356,8 +364,18 @@ greps `project.pbxproj` for the setting, because a build setting cannot
 enforce its own absence and Xcode writes one there the moment a team is
 picked in Signing & Capabilities.
 The everyday loop needs no team because **Debug ad-hoc-signs**
-(`CODE_SIGN_IDENTITY = "-"` on macOS for both targets). Release does not, and
-must not: those pins used to sit in Release too, which quietly made the
+(`CODE_SIGN_IDENTITY = "-"` on macOS for both targets). Note *on macOS* — the
+identity is `[sdk=macosx*]`-conditional, and it has to be written that way
+round. The extension had it as a bare `CODE_SIGN_IDENTITY = "-"` with an
+`[sdk=iphoneos*]` exception naming a real certificate, which reads the same
+until a platform arrives that the exception doesn't name: a visionOS *device*
+build then fell into the ad-hoc default and stopped with "has entitlements
+that require signing with a development certificate" (both targets are
+sandboxed, so ad-hoc is never enough on a device). Simulators hid it, because
+they ad-hoc sign whatever they are given. Name the platform that wants ad-hoc,
+never the ones that don't — the same rule as `#if !os(macOS)` in
+`PlatformModifiers`, and the same silent failure when it is inverted.
+Release does not ad-hoc sign, and must not: those pins used to sit in Release too, which quietly made the
 distribution configuration unable to archive at all — an ad-hoc macOS app
 cannot go to App Store Connect. Release is left to automatic signing, which
 is what Xcode Cloud's cloud signing then takes over; that is the whole reason
@@ -369,6 +387,173 @@ rules apply. The app takes `files.user-selected.read-write` for the
 `DocumentGroup`'s open/save panels and the exporter; the extension keeps
 `read-only` and is sandboxed for a different reason (a macOS QuickLook
 extension is not loaded otherwise).
+
+**visionOS runs the iPad app, not a port** (#11). `SUPPORTED_PLATFORMS` gains
+`xros xrsimulator`, `XROS_DEPLOYMENT_TARGET` is 26.0, and the same three-pane
+`NavigationSplitView` fills the window — the scene is regular width, so nothing
+in the layout is platform-conditional and no ornament or volumetric anything is
+declared. Both packages already shipped `.visionOS(.v26)`. What the platform
+actually costs is the `#if`s, in both directions. **A guard written
+`#if os(iOS)` stops applying** — it still compiles everywhere, so `LaunchScene`
+(`DocumentGroupLaunchScene` is unavailable on *macOS* only) and the numeric
+keyboard and touch targets in `PlatformModifiers` were silently dropped until
+they were rewritten as `#if !os(macOS)`. And some UIKit-era API is genuinely
+gone: `ToolbarSpacer` — the Liquid Glass grouping separator — is unavailable,
+which is the only reason `CanvasToolbar` exists as a `ToolbarContent` type of
+its own. That is also why CI builds visionOS: nothing else catches an `#if`
+that quietly does nothing.
+One layout constant *is* load-bearing here, though the layout itself isn't
+conditional: visionOS has **no draggable split-view divider** — macOS and
+iPadOS 26 both do — so the workspace column is stuck at its `ideal` for good
+while the canvas takes the rest of a wide window. That is what set the ideal at
+440; the measurement is in `App/Views/CLAUDE.md`.
+One thing is known-missing rather than done: **`hoverEffect` crashes** there —
+`.automatic` as well as `.highlight`, a `swift_release` segfault inside
+SwiftUI's update of `PaletteEntryButton.body`, before a window appears — so
+`pointerHover()` stays iOS-only and says so.
+
+**The app icon comes from a second, differently-shaped source.** visionOS wants
+a circular layered icon and Icon Composer writes only squares (plus watchOS
+circles), so `AppIcon.icon` produces nothing for it —
+`Assets.xcassets/AppIcon.solidimagestack` does, three
+`.solidimagestacklayer`s (Front / Middle / Back) of 1024×1024 at the `vision`
+idiom. The two carry the same name on purpose and do **not** collide:
+`ASSETCATALOG_COMPILER_APPICON_NAME` is `AppIcon` for every platform and actool
+routes by idiom, so the visionOS `Assets.car` gets a `SolidImageStack` and no
+`IconImageStack`, iOS gets the reverse, and macOS still gets `AppIcon.icns`.
+Check a change here in the *built* product rather than in Xcode — `assetutil
+--info` on each platform's `Assets.car` — because a stack that never made it in
+fails the same silent way a missing one does: the system's placeholder, which
+looks like a plain app that hasn't been styled yet.
+
+**The 3D tortoise is generated, not modelled** (#53).
+`App/Resources/Tortoise.usdz` — the sprite the immersive space will draw with —
+comes out of `Tools/tortoise-model/build_tortoise.py`, a Blender script whose
+constants *are* the three-view drawing's measurements. It is checked in
+alongside the script so no build step needs Blender. Four things about it are a
+contract app code will assume, and the reasoning for each is in
+`Tools/tortoise-model/README.md`: `upAxis = "Y"` with **forward at `-Z`** (the
+model is authored Z-up and the exporter puts `rotateXYZ = (-90, 0, 0)` on the
+root — wrong settings here are invisible until the tortoise drives sideways);
+**total length exactly 1.0** with `metersPerUnit = 1`, normalised rather than
+real-world because the canvas is a 0.2–2m gesture and the size is always
+computed anyway; the **origin is the ground point under the shell's centre**,
+the point it turns about, *not* the brush tip, so the drawn line trails behind
+the animal; and the whole thing rides in `App/` as a synchronized-folder
+resource, landing flat at `Contents/Resources/Tortoise.usdz` (verified in the
+built bundle, the only way that works — see the nested-CLAUDE.md note above).
+Blender rendering it proves nothing about RealityKit; `qlcheck.swift` in the
+same directory runs it through Apple's own USD stack instead.
+A fifth thing is a contract with the *room* rather than with app code: **every
+material emits a third of its own colour**, because a `.mixed` immersive space
+lights the model with the real room and a lamp-lit evening one drained the
+pastels to mud (measured: luminance 39 of 255, gold reading brown — 111 with
+emission, and the facets still step). Do not "fix" it as a PBR error, and do
+not lighten the colours instead: those are sampled from the drawing, which is
+the specification. The reasoning and the shell's second texture are in the
+tool README.
+
+**The tortoise on the table is drawn by us, and that took a library release**
+(#53 Phase 3, TortoiseGraphics2 2.1.0). The sheet is still the app's own
+`TortoiseCanvas` in a `ViewAttachmentComponent`; what changed is that it now
+draws everything *except* the tortoise (`.tortoiseSprite(.hidden)`), and the
+USDZ stands on the paper as a child of the sheet entity — so the pinch, twist
+and drag it inherits for free, and its own transform only ever says where on
+the page it is. Three upstream additions were needed and none of them had an
+honest app-side substitute. `.hidden` is a property of the *view*, unlike
+`hideTortoise()`, which records a command and would have followed the drawing
+into the SVG, the PNG, the thumbnail and the saved file.
+`TortoisePlayer.currentTortoiseState` is the pose **interpolated between
+commands**: `currentCommandIndex` — what every other surface in the app watches
+— changes about ten times a second, and a tortoise moved on that schedule
+teleports from command to command while the line it is drawing grows smoothly
+underneath it, which is the one thing this feature exists to show. And
+`ViewportMode.transform` is public so the placement asks for `autoFit`'s
+mapping rather than reimplementing it; a reimplementation agrees on the day it
+is written and drifts silently after. It is read once per *display frame*, from
+a `SceneEvents.Update` subscription — not from `body`, which would re-evaluate
+the view at the refresh rate — and the subscription has to be retained
+(`FrameTicker`), because one that nothing holds is cancelled at the end of
+`make` and looks exactly like a handler that is never called.
+Two numbers are judged on device and are the first things to change if it looks
+wrong: the tortoise is `1/12` of the sheet's side (deliberately larger than the
+2-D sprite's ~1/30 — on a screen it is a cursor, on a table it is the animal),
+and the paper keeps a 64pt margin, since a hidden sprite earns no `autoFit`
+inset and the drawing would otherwise run to the paper's edge with the tortoise
+hanging off it. The lift onto the paper is *measured* from the loaded model,
+not assumed: the feet reach ~6‰ of the body length below the origin, which is
+the ground point under the shell's centre.
+**The visionOS simulator cannot check any of this.** It does not host
+`ViewAttachmentComponent` views at all — the sheet's own `.task` never runs, so
+`TortoisePlayer` never attaches to a canvas and `currentTortoiseState` stays
+nil, which reads exactly like a broken tortoise. What the simulator *is* good
+for is the two things that would otherwise be guesses: that the USDZ loads in
+the real visionOS runtime with the bounds the contract promises, and that the
+per-frame subscription fires. Everything else is the headset.
+
+**The viewer has three surfaces, and the third is the code** (#53 Phase 3).
+Table, program, code — a `WindowGroup` each, all open at once. That is the
+whole argument for the platform restated one step further: iPad and Mac make
+the canvas and the code two states of *one toggle* because a window holds one
+of them, and a headset never has to choose. The code window is `CodePane`
+unchanged, which #11 had already made work here by taking it off
+`.background.secondary` (translucent glass on this platform, with the syntax
+colours left standing on nothing). The source is generated in
+`ViewerModel.load` rather than in the window's `body`: the iPad's pane is only
+in the hierarchy while its toggle says so, but a window redraws on its own
+schedule and nothing here can edit the program behind it.
+**The remote's controls are grouped by what they do, not by what they are.**
+The row used to read 「つくえに おく」「ブロックを みる」「コードを みる」, whose
+only shared property was being buttons — one placed the drawing, two opened
+windows — while placement's own mode switch and reset sat in a *different* row
+underneath with those two wedged between. Placement is now one group with its
+own question over it, the other surfaces are another below a divider, and three
+things fell out of doing it. The two verbs went: 「つくえに おく」 (put the
+drawing down) and 「つくえに のせる」 (look for a table at all) were nearly the
+same words for different things, invisible while they sat apart and unbearable
+once grouped — so `ViewerModel.placing` names the **three** states the window
+actually has (away / table / in front) and one picker asks them. It stays
+read-only and the window drives it through an async action, because `isPlaced`
+is only true once the space has really opened and a refused world-sensing prompt
+must leave the picker showing where the drawing *is*. A visionOS **ornament** was the other candidate for those
+two — the platform's own place for "belongs to this window but is not its
+content" — and was turned down: it is always visible, so it hangs under the
+window even in the small "えが ありません" state and adds its height to every
+glance, and a divider already says the difference for nothing. The window
+buttons became toggles, since `openWindow` on an open window only brings it
+forward — a switch with one position — so the windows report themselves through
+`isProgramWindowOpen` / `isCodeWindowOpen`, there being nothing in SwiftUI to
+read that from. And floating stopped being an error: it can now be *chosen*, so
+`PlacementStatus` says "no table found" only when a table was actually asked
+for.
+
+**Opening a drawing puts it down**, and that is the placement group's last
+open question answered. Choosing a file used to change nothing but the window:
+the room stayed empty until the picker was touched, so the app read as one
+that had not opened the file — the state with the least to look at was the one
+reached by doing the thing the app is for. An alert asking "shall I put it on
+the table?" was the obvious fix and is the wrong one twice over: the answer is
+always yes, and the first placement already raises the world-sensing prompt, so
+it would be two modals in a row before anything appeared. So a load *is* a
+placement, through `ViewerModel.loadGeneration` — a counter rather than a flag,
+because `blocks` cannot say "chosen again" when the same drawing is picked
+twice, and because the five call sites (the importer and the four samples)
+should not each have to remember. Where it goes is `sitsOnTable`, which is
+therefore now a *remembered* preference rather than only the space's own
+question: someone who has once said 「めのまえ」 is not asked again on the next
+file. Nothing about it is a special case — the picker moves to wherever the
+load put it, 「ださない」 takes it away, and a second file opened while one is
+already out leaves the sheet exactly where it was dragged to, because `place`
+sees the drawing is already there and returns.
+
+**SVG/PNG export was built here and then taken back out**, and the reason is
+worth keeping so it is not re-added as an oversight: it worked, and cost one
+view — `CanvasExportMenu` unchanged, rendering `lastRunCommands`, so moving the
+drawing into an immersive space changed nothing about what came out. It came
+out because a viewer cannot change a drawing, so the file it was handed is
+already the artifact, and writing a second one from it belongs where drawings
+are *made*. The window is a remote control, and its row had reached four
+buttons.
 
 **Releasing, the store listing and the website are in the `release` skill.** Tags, Xcode Cloud, TestFlight, `appstore/`, fastlane, and `site/`.
 

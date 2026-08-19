@@ -30,6 +30,18 @@
         }
       }
     },
+    "NSWorldSensingUsageDescription" : {
+      "comment" : "Privacy - World Sensing Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Used to place your drawing on a real table."
+          }
+        }
+      }
+    },
     "Tortoise Blocks Block" : {
 
     },

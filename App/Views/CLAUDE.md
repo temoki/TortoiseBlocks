@@ -66,6 +66,60 @@ with `.toolbar(removing: .title)` (#31). The back chevron beside it is not
 ours to remove — neither dropping that column's toolbar nor
 `navigationBarBackButtonHidden` touches it.
 
+**visionOS needs three things the other two get for free** (#11), and all three
+are `#if os(visionOS)` rather than shared, because on iPadOS and macOS each
+would be a second copy of something that already exists.
+
+*A way back to the browser.* iPadOS puts a chevron beside the document title
+and macOS has File ▸ Open with a window per document; visionOS has neither, so
+the window carries the drawing it was opened with and the only route to another
+was to close it and launch again. `documentBrowserToolbar()` puts a folder
+button in the sidebar's bar, and `dismiss` — what a `DocumentGroup` document
+closes itself with — is what it calls. **Where `dismiss` is read from decides
+whether it does anything.** Read inside the toolbar item's own view, which is
+the obvious place, it resolves against the toolbar's context and the button is
+inert: it highlights on press and nothing happens. It has to come from the
+environment of the *content* the toolbar is attached to, which is why this is a
+`ViewModifier` and not a view inside the `toolbar` block. Nothing warns you —
+the code compiles and the button draws.
+
+*The name is deliberately in one place.* The sidebar carries the
+DocumentGroup's own title with its rename chevron, and `CanvasPane` still drops
+its copy with `.toolbar(removing: .title)` (#31). A second, self-drawn label in
+the canvas pane was tried — `\.documentConfiguration`'s `fileURL`, which unlike
+the system chrome is right from the first frame — and taken back out: on a
+window this wide the two read as one name printed twice rather than as a title
+and a reminder.
+
+*A hover effect, but never on a drag source.* visionOS does not give a button
+with a custom `ButtonStyle` the system hover treatment, so without
+`pointerHover()` a palette block is the one thing on screen that never lights
+up when looked at — and gaze feedback is the whole targeting affordance there.
+The catch is that a hover effect and `draggable` **on the same view** segfault
+(a `swift_release` inside SwiftUI's update of that view's body, before a window
+appears). The palette entry is a drag source, so its hover lives inside
+`PaletteBlockButtonStyle` — one level below the `Button` that carries
+`draggable` — while every other call site applies it directly. The crash blames
+the body, not the modifier, which is why this first read as "`hoverEffect`
+crashes on visionOS": it does not, the pairing does.
+
+**The code pane is paper, not a semantic surface** (#11). It sat on
+`.background.secondary`, which resolves to near-white or near-black on iPad and
+Mac but to light translucent glass on visionOS — and the syntax colors had
+nowhere to stand: system `.purple` and `.blue` are tuned for an opaque backdrop
+and `.plain` was `Color.primary`, which is *white* there, so the plain text and
+its ground were both light. It is now white, opaque, the same in both
+appearances, rounded the same 8 as the canvas — the two swap places inside one
+`ZStack`, so pressing the toggle should change the content and nothing else.
+The token colors are fixed values measured against white (8.6:1, 8.4:1, 5.1:1,
+16.9:1) for the reason the block fills are fixed (#41). Two traps came with it.
+The copy button stays *outside* the paper: on it, it needed the ink as a tint
+to be legible, and on visionOS the tint went to the button's capsule instead of
+its label, leaving a black lozenge with invisible text. And a program narrower
+than the pane sat in the middle of it — in a scroll view that scrolls both ways
+the content is offered no width to fill, so a `.leading` frame does nothing and
+`defaultScrollAnchor(.topLeading)` is what places it.
+
 **A block row is one VoiceOver element, a container header is not** (#1).
 Swiping a program should say "まえへ、かず 100、じっこうちゅう" once per block,
 not stop three times, so a simple row is `.accessibilityElement(children:
@@ -123,10 +177,24 @@ damage rather than fixing it: with the label served first, `0.6` in the next row
 broke as "0." over "6", which is worse — a chip holds a number, a name or a
 colour, all atomic. So `WorkspaceChipButtonStyle` pins its label with
 `.fixedSize(horizontal: true, vertical: false)`. Priority rather than
-`fixedSize` on the *label*, deliberately: a row two levels deep with a long name
-(「はこにかける」) genuinely runs out of room, and there the label should still
-wrap instead of overflowing its block. Each level of nesting costs 18pt, so no
-column width wins that race — the wrap is accepted there.
+`fixedSize` on the *label*, deliberately: a row deep enough with a long name
+genuinely runs out of room, and there the label should still wrap instead of
+overflowing its block. Each level of nesting costs 18pt, so no column width wins
+that race for ever — the wrap is the correct last resort, not the working state.
+
+**And `ideal` is not a starting point on every platform.** macOS and iPadOS 26
+both let the split view's divider be dragged, so there the ideal is only where
+the workspace column *opens*. **visionOS has no draggable divider**, so there
+the ideal is the width, for good, and the *detail* column absorbs every extra
+point the window has. On a 1280pt visionOS window that used to read 360 here
+and ~690 on the canvas (#11) — with 「くりかえす 10 かい」 wrapping か/い at the
+**top** level, no nesting involved, and 「はこにかける」 splitting in the middle
+three levels down. The ideal is now 440, measured against exactly that program:
+every row fits on one line at three levels, and the canvas still clears its own
+420 ideal. `max` (560) has to stay above `ideal`, or the two platforms that can
+drag could only ever drag narrower. Judge a change to it on a *nested Japanese*
+program — English fits where 「はこにかける」 does not, and the top-level wrap is
+invisible in a flat one.
 
 **Drop model**: a `DropGap` between rows carries `(BodyAddress, index)`, so
 insertion semantics need no y-coordinate math and every mouth — an if's else

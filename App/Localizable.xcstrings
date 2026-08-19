@@ -14,6 +14,56 @@
         }
       }
     },
+    "Away" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ださない"
+          }
+        }
+      }
+    },
+    "Blocks" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブロック"
+          }
+        }
+      }
+    },
+    "In Front of You" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "めのまえ"
+          }
+        }
+      }
+    },
+    "On a Table" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "つくえ"
+          }
+        }
+      }
+    },
+    "Where should the drawing go?" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "えを どこに だす？"
+          }
+        }
+      }
+    },
     "🎲" : {
       "localizations" : {
         "ja" : {
@@ -180,6 +230,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ブロックをよぶ"
+          }
+        }
+      }
+    },
+    "Can't Open This" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "これは ひらけません"
           }
         }
       }
@@ -494,6 +554,16 @@
         }
       }
     },
+    "Looking for a table…" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "つくえを さがしています…"
+          }
+        }
+      }
+    },
     "item %lld" : {
       "localizations" : {
         "ja" : {
@@ -634,6 +704,26 @@
         }
       }
     },
+    "No Drawing" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "えが ありません"
+          }
+        }
+      }
+    },
+    "No table found, so it is floating in front of you." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "つくえが みつからないので、めのまえに だしているよ。"
+          }
+        }
+      }
+    },
     "Nothing to play" : {
       "localizations" : {
         "ja" : {
@@ -670,6 +760,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "わかった"
+          }
+        }
+      }
+    },
+    "Open" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ひらく"
+          }
+        }
+      }
+    },
+    "Open a drawing, or start from a sample." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "えを ひらくか、サンプルから はじめてね。"
           }
         }
       }
@@ -784,6 +894,16 @@
         }
       }
     },
+    "Pinch to resize, twist to turn, drag to move." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "つまむと おおきさ、ひねると むき、うごかすと ばしょが かわるよ。"
+          }
+        }
+      }
+    },
     "Play" : {
       "localizations" : {
         "ja" : {
@@ -880,6 +1000,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "くりかえす"
+          }
+        }
+      }
+    },
+    "Reset Position" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "もとの ばしょに もどす"
           }
         }
       }

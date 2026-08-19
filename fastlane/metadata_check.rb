@@ -28,10 +28,13 @@ module MetadataCheck
   REQUIRED = (LIMITS.keys + URLS).sort.freeze
 
   # Sizes Apple accepts for the display types this app ships. An unexpected
-  # size is a mistake worth stopping on, not a shape to guess at.
+  # size is a mistake worth stopping on, not a shape to guess at. A platform
+  # missing from this table is not checked at all, so a new screenshots
+  # directory has to be added here to be seen.
   SIZES = {
     "ios" => [[2064, 2752], [2752, 2064]],                       # iPad 13-inch
-    "macos" => [[1280, 800], [1440, 900], [2560, 1600], [2880, 1800]]
+    "macos" => [[1280, 800], [1440, 900], [2560, 1600], [2880, 1800]],
+    "visionos" => [[3840, 2160]]                                 # Apple Vision Pro
   }.freeze
 
   DEFAULT_ROOT = Pathname.new(__dir__).parent / "appstore"

@@ -2,10 +2,13 @@
 
     import SwiftUI
 
-    /// The screen in front of the system document browser (#32).
+    /// The screen in front of the system document browser (#32) — iPadOS only.
     ///
     /// `DocumentGroupLaunchScene` is `@available(macOS, unavailable)`, so this
-    /// whole file is iOS-only and the Mac keeps the standard open panel.
+    /// once covered visionOS too. It never actually appeared there — visionOS
+    /// shows the system document browser straight away — and #53 took the
+    /// DocumentGroup off that platform entirely, leaving this nothing to sit in
+    /// front of. The Mac keeps the standard open panel.
     struct LaunchScene: Scene {
         var body: some Scene {
             DocumentGroupLaunchScene(

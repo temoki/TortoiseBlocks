@@ -35,8 +35,18 @@ The policy page states what was *measured* — no accounts, no analytics, no
 advertising or third-party SDK, no tracking, and no networking code anywhere
 in the app or in TortoiseGraphics2 — which is also why no
 `PrivacyInfo.xcprivacy` is needed: nothing here touches a required-reason
-API, not even `UserDefaults`. Re-check that if a dependency or an
-`@AppStorage` ever arrives. **Both pages read in one language**, chosen by
+API, not even `UserDefaults`. That last one is **held on purpose and has
+already had to be defended once**: #53's viewer read a debug launch flag with
+`UserDefaults.standard.bool(forKey:)`, which is where a `-flag value` pair
+normally arrives, and one debug read of it obliges the whole app to ship a
+manifest declaring `CA92.1`. It now reads `ProcessInfo.processInfo.arguments`
+instead — same launch command, no manifest. So the thing to re-check is not
+only "a dependency or an `@AppStorage`": *any* `UserDefaults` call counts,
+including a read, including one that only fires in development, because it is
+compiled into the shipping binary. `NSWorldSensingUsageDescription` (#53) is
+**not** on that list — a usage description is a permission, not a
+required-reason API, and it changes the policy page rather than the manifest.
+**Both pages read in one language**, chosen by
 `?lang=` first, then `navigator.languages` in the reader's own order, falling
 back to English; adding a language is a code in `LANGS`, an `<option>`, and a
 translated `<section>`. Two rules hold it together: the site stores nothing (a
@@ -130,8 +140,29 @@ One more vocabulary mismatch to remember: deliver says `osx`, the Connect API
 says `MAC_OS`, and passing the former to spaceship reports a missing version
 that plainly exists.
 
+**visionOS is a third listing, spelled three different ways** (#11). It is a
+native app on the xrOS SDK, not "Designed for iPad", so App Store Connect gives
+it its own platform version — which the app record must carry *before* either
+lane will run (`get_edit_app_store_version` returns nil otherwise, and
+`metadata_diff` stops with "No editable xros version"). The text is shared with
+the other two, as it already was between iOS and macOS; only the screenshots
+are per-platform. Then the vocabulary: **`visionos` names the screenshots
+directory, `xros` goes to deliver, `VISION_OS` goes to spaceship**, and the
+first of those is not a style choice. A Vision Pro capture is 3840×2160, the
+same size as an Apple TV one, so deliver cannot resolve the display type from
+the size and falls back to asking whether the *path* contains `vision`
+(downcased) — name the directory after deliver's own platform value and every
+screenshot is filed as `APP_APPLE_TV` on an app with no tvOS listing.
+The captures need no staging: `xcrun simctl io <device> screenshot` on the
+visionOS simulator writes exactly 3840×2160, the simulated room and all, which
+is what visionOS screenshots look like anyway. They do carry an alpha channel,
+so `-alpha off` applies here like everywhere else. And no new identifier is
+needed — spaceship maps `xros` onto the **iOS** `BundleIdPlatform`, so the App
+IDs the iPhone/iPad build already registered are the ones visionOS signs
+against.
+
 **A release is a `v*` tag** (#4). Xcode Cloud runs one `Release` workflow off
-it — two Archive actions, iOS and macOS, each with a TestFlight internal
+it — an Archive action per platform, each with a TestFlight internal
 post-action bound to its own archive artifact. It carries no Build or Test
 action: GitHub Actions has already run the lint, the Kit tests and both
 platform builds on the way to main, and Xcode Cloud's 25 free compute

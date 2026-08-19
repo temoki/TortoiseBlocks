@@ -24,4 +24,4 @@ Drawings are ordinary documents in Files and Finder, and each one shows its own 
 FOR PARENTS AND TEACHERS
 There is no sign-in and no account. There is nothing to type but numbers. There is no advertising, no analytics, no third-party SDK, and no network connection of any kind — the app contains no networking code at all. Drawings stay on the device and in whatever location you choose to save them.
 
-Tortoise Blocks runs on iPad and Mac, speaks English and Japanese, and is free and open source under the MIT license.
+Tortoise Blocks runs on iPad, Mac and Apple Vision Pro, speaks English and Japanese, and is free and open source under the MIT license.

@@ -632,7 +632,10 @@ struct ElseDividerRow: View {
             // either by the ⋯ or by long-press. The mouth is removed from
             // inside it, so "けす" means the same thing wherever it is found.
             Menu {
+                // See `RowControls.editingMenu`: the tint below belongs to the
+                // glyph, and a menu hands its tint to the popup as well.
                 removeButton
+                    .tint(nil)
             } label: {
                 // Inside the label, for the reason `RowControls` gives.
                 Label("More", systemImage: "ellipsis")
@@ -642,7 +645,7 @@ struct ElseDividerRow: View {
             .menuIndicator(.hidden)
             .buttonStyle(.borderless)
             .controlSize(.large)
-            .tint(BlockCategory.ink)
+            .blockMenuInk()
         }
         .blockChrome(
             BlockCategory.control.color, corners: .containerDivider,
@@ -787,9 +790,19 @@ struct InsertionTargetButton: View {
     let address: BodyAddress
     let workspace: WorkspaceEditor
 
+    @Environment(\.showsBlockEditing) private var showsBlockEditing
+
     private var isTarget: Bool { workspace.insertionTarget == address }
 
     var body: some View {
+        // Gone entirely when the program is only being read (#53). This is the
+        // palette's aim, and a viewer has no palette to aim.
+        if showsBlockEditing {
+            targetToggle
+        }
+    }
+
+    private var targetToggle: some View {
         Toggle(
             "Add Here",
             systemImage: isTarget ? "arrow.down.to.line.circle.fill" : "arrow.down.to.line.circle",
@@ -830,26 +843,49 @@ struct RowControls: View {
     /// The if block's "add an otherwise mouth", when this row has one.
     var addElseAction: (() -> Void)? = nil
 
+    @Environment(\.showsBlockEditing) private var showsBlockEditing
+
     var body: some View {
+        // Absent, not disabled, where the program is only being read (#53):
+        // the visionOS viewer's constant document binding already makes this
+        // menu incapable of changing anything, and a control that looks
+        // pressable and does nothing is worse than no control.
+        if showsBlockEditing {
+            editingMenu
+        }
+    }
+
+    private var editingMenu: some View {
         Menu {
-            Button("Move Up", systemImage: "chevron.up") {
-                workspace.move(blockID, by: -1)
-            }
-            Button("Move Down", systemImage: "chevron.down") {
-                workspace.move(blockID, by: 1)
-            }
-            if let addElseAction {
-                Button("Add Otherwise", systemImage: "arrow.triangle.branch", action: addElseAction)
+            // The popup keeps the system's own colours. `blockMenuInk()` below
+            // is a *tint*, and a tint reaches a menu's items as well as its
+            // glyph — which put a fixed near-black (#41) on macOS's dark menu
+            // background. Resetting it here is what lets the glyph keep the
+            // ink it needs against a pastel block.
+            Group {
+                Button("Move Up", systemImage: "chevron.up") {
+                    workspace.move(blockID, by: -1)
+                }
+                Button("Move Down", systemImage: "chevron.down") {
+                    workspace.move(blockID, by: 1)
+                }
+                if let addElseAction {
+                    Button(
+                        "Add Otherwise", systemImage: "arrow.triangle.branch",
+                        action: addElseAction
+                    )
                     // The hint the button on the header used to carry: what an
                     // else mouth *is* still needs saying, and a menu entry is
                     // where it is now read.
                     .accessibilityHint(
                         Text("Adds an otherwise mouth that runs when the condition fails"))
+                }
+                Divider()
+                Button("Delete", systemImage: "xmark.circle", role: .destructive) {
+                    workspace.delete(blockID)
+                }
             }
-            Divider()
-            Button("Delete", systemImage: "xmark.circle", role: .destructive) {
-                workspace.delete(blockID)
-            }
+            .tint(nil)
         } label: {
             // The finger target belongs *inside* the label: a `Menu` hit-tests
             // what it was handed to draw, so a `frame` wrapped around the menu
@@ -863,7 +899,7 @@ struct RowControls: View {
         .menuIndicator(.hidden)
         .buttonStyle(.borderless)
         .controlSize(.large)
-        .tint(BlockCategory.ink)
+        .blockMenuInk()
     }
 }
 
@@ -1055,5 +1091,41 @@ extension View {
             BlockChrome(
                 color: color, corners: corners, isHighlighted: isHighlighted,
                 isDropTargeted: isDropTargeted))
+    }
+}
+
+extension EnvironmentValues {
+    /// Whether block rows draw the controls that *change* the program — the
+    /// row menu (⋯) and the container mouths' "add here" target toggle.
+    ///
+    /// True everywhere the workspace is an editor, and false in the visionOS
+    /// viewer's program window (#53), which shows the same rows for reading
+    /// only. It is an environment value rather than a parameter because the
+    /// two views that read it sit several layers below the one that knows —
+    /// threading a flag through `BlockListView`, `BlockRowView` and
+    /// `ContainerBlockRow` would put an argument on every one of them for the
+    /// benefit of two leaves.
+    ///
+    /// Hiding is not what enforces read-only — a constant document binding is
+    /// (see `ProgramWindow`). This is about not *offering* what cannot happen.
+    @Entry var showsBlockEditing = true
+}
+
+extension View {
+    /// The ⋯ glyph's colour, on the two menus a block row can carry.
+    ///
+    /// Every row this appears on is a filled pastel block, so the glyph takes
+    /// the same fixed near-black the label does (#41) rather than the system
+    /// accent — white on a pastel is the control nobody can see.
+    ///
+    /// It is a `tint` because that is what a `borderless` menu reads for its
+    /// label; `foregroundStyle` on the label is ignored there, which is how the
+    /// first attempt at this ended up with a white ⋯ in dark mode. The cost is
+    /// that the tint reaches the *popup* too, so each menu's content resets it
+    /// with `.tint(nil)` — a fixed dark ink is right against a pastel block and
+    /// wrong against macOS's dark menu background, which is the whole of the
+    /// bug this pair exists to hold apart.
+    fileprivate func blockMenuInk() -> some View {
+        tint(BlockCategory.ink)
     }
 }
