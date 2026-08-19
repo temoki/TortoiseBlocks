@@ -5,8 +5,19 @@
 # upload a binary — skip_binary_upload is on.
 #
 # iOS, macOS and visionOS are separate versions in App Store Connect, so each
-# takes its own run against its own screenshots directory. The text is shared:
-# one directory of files per locale, which is deliver's own layout.
+# takes its own run against its own screenshots directory — and, for visionOS,
+# its own text. iOS and macOS share appstore/metadata; visionOS is pushed from
+# appstore/metadata-visionos, because the App Store shows a Vision Pro shopper
+# the visionOS description and nothing else, and the app is a different thing
+# there: a viewer for drawings made on the other two, with no editing in it at
+# all. A shared description would open by telling that shopper to drag blocks
+# into a program, which is the one thing they cannot do.
+#
+# Three of the fields in those directories are **app**-level in App Store
+# Connect — name, subtitle and privacy URL belong to the app, not to a
+# platform's version — so every lane writes the same ones and the last run
+# wins. They are therefore kept identical between the two directories, and
+# metadata_check fails the build if they drift.
 
 require_relative "metadata_check"
 
@@ -21,31 +32,37 @@ APP_IDENTIFIER = "space.hiraku.tortoiseblocks"
 # Absolute, and deliberately so. deliver resolves a relative path against the
 # repository root — its working directory — not against this file, so
 # "../appstore/metadata" pointed one level above the checkout. It did not fail:
-# it found no locales there, uploaded nothing, and reported success.
-METADATA_PATH = File.expand_path("../appstore/metadata", __dir__)
+# it found no locales there, uploaded nothing, and reported success. The lanes
+# name a directory under this root rather than a path, so there is one place
+# that resolution happens.
+METADATA_ROOT = File.expand_path("../appstore", __dir__)
 SCREENSHOTS_ROOT = File.expand_path("../appstore/screenshots", __dir__)
+
+def metadata_path(directory)
+  File.join(METADATA_ROOT, directory)
+end
 
 platform :ios do
   desc "Diff the live iOS listing against appstore/metadata"
   lane :metadata_diff do
-    diff_metadata(platform: "ios")
+    diff_metadata(platform: "ios", metadata: "metadata")
   end
 
   desc "Push appstore/ to the iOS listing"
   lane :metadata_push do
-    push_metadata(platform: "ios", screenshots: "ios")
+    push_metadata(platform: "ios", screenshots: "ios", metadata: "metadata")
   end
 end
 
 platform :mac do
   desc "Diff the live macOS listing against appstore/metadata"
   lane :metadata_diff do
-    diff_metadata(platform: "osx")
+    diff_metadata(platform: "osx", metadata: "metadata")
   end
 
   desc "Push appstore/ to the macOS listing"
   lane :metadata_push do
-    push_metadata(platform: "osx", screenshots: "macos")
+    push_metadata(platform: "osx", screenshots: "macos", metadata: "metadata")
   end
 end
 
@@ -56,14 +73,14 @@ end
 # directory "xros" to match deliver's platform value and every screenshot is
 # filed under APP_APPLE_TV instead, on an app that has no tvOS listing at all.
 platform :visionos do
-  desc "Diff the live visionOS listing against appstore/metadata"
+  desc "Diff the live visionOS listing against appstore/metadata-visionos"
   lane :metadata_diff do
-    diff_metadata(platform: "xros")
+    diff_metadata(platform: "xros", metadata: "metadata-visionos")
   end
 
   desc "Push appstore/ to the visionOS listing"
   lane :metadata_push do
-    push_metadata(platform: "xros", screenshots: "visionos")
+    push_metadata(platform: "xros", screenshots: "visionos", metadata: "metadata-visionos")
   end
 end
 
@@ -101,7 +118,8 @@ private_lane :push_metadata do |options|
   # An empty or missing directory is the one failure deliver does not report:
   # it uploads nothing and says it succeeded. Refuse to run instead.
   screenshots_path = File.join(SCREENSHOTS_ROOT, options[:screenshots])
-  [METADATA_PATH, screenshots_path].each do |path|
+  metadata = metadata_path(options[:metadata])
+  [metadata, screenshots_path].each do |path|
     locales = Dir.glob(File.join(path, "*")).select { |entry| File.directory?(entry) }
     UI.user_error!("No locale directories under #{path}") if locales.empty?
     UI.message("#{path}: #{locales.map { |l| File.basename(l) }.sort.join(', ')}")
@@ -111,7 +129,7 @@ private_lane :push_metadata do |options|
     api_key: asc_api_key,
     app_identifier: APP_IDENTIFIER,
     platform: options[:platform],
-    metadata_path: METADATA_PATH,
+    metadata_path: metadata,
     screenshots_path: screenshots_path,
     skip_binary_upload: true,
     skip_app_version_update: true,
@@ -237,7 +255,7 @@ private_lane :diff_metadata do |options|
   end
 
   changes = 0
-  Dir.glob(File.join(METADATA_PATH, "*")).sort.each do |directory|
+  Dir.glob(File.join(metadata_path(options[:metadata]), "*")).sort.each do |directory|
     next unless File.directory?(directory)
 
     locale = File.basename(directory)

@@ -96,7 +96,21 @@ number in the filename, and the sizes are the ones Apple accepts as-is (iPad
 13-inch landscape 2752×2064, Mac 2880×1800), so a reshoot has to keep the
 window sizes that produced them. The two documents the captures were shot from
 sit in `appstore/screenshot-sources/`, deliberately *outside* `screenshots/`.
-The text is `appstore/metadata/<locale>/`, one file per field.
+The text is `appstore/metadata/<locale>/`, one file per field — **except
+visionOS**, which is pushed from `appstore/metadata-visionos/` instead (#53).
+That split is not tidiness: the App Store shows a Vision Pro shopper the
+visionOS description and nothing else, and the app is a different product
+there — a viewer for drawings made on iPad and Mac, with no editing in it at
+all — so the shared description would open by telling that shopper to drag
+blocks into a program, the one thing they cannot do. Three fields in those
+directories are **app**-level in App Store Connect rather than version-level
+(`name.txt`, `subtitle.txt`, `privacy_url.txt`), so every lane writes the same
+ones and whichever runs last decides them for all three listings; they are kept
+byte-identical between the two directories and `metadata_check` fails if they
+drift. A platform's text is also the first thing to go stale when the app
+changes shape: the visionOS copy described "the same three panes in a window"
+for as long as visionOS was the iPad app in a window (#11), and stayed that way
+through the rewrite that made it a viewer.
 
 **fastlane pushes it, and a self-written tool did not.** The uploader was
 designed as a zero-dependency Swift executable (#42) and abandoned about 900
