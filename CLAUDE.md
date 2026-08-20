@@ -10,8 +10,8 @@ cd TortoiseBlocksKit && swift test        # Kit unit tests (fast, UI-independent
 # Format / lint (config: /.swift-format, upstream-mirrored; Xcode 26's `swift format`).
 # Note: `~/.swiftly/bin/swift-format` is a legacy binary that ignores the config —
 # always use the `swift format` subcommand.
-swift format --in-place --recursive App ThumbnailExtension TortoiseBlocksKit/Sources TortoiseBlocksKit/Tests
-swift format lint --strict --recursive App ThumbnailExtension TortoiseBlocksKit/Sources TortoiseBlocksKit/Tests   # CI gate
+swift format --in-place --recursive App ThumbnailExtension TortoiseBlocksUITests TortoiseBlocksKit/Sources TortoiseBlocksKit/Tests
+swift format lint --strict --recursive App ThumbnailExtension TortoiseBlocksUITests TortoiseBlocksKit/Sources TortoiseBlocksKit/Tests   # CI gate
 
 # App builds (both must stay green):
 xcodebuild -project TortoiseBlocks.xcodeproj -scheme TortoiseBlocks \
