@@ -1,5 +1,8 @@
-import UIKit
 import XCTest
+
+#if canImport(UIKit)
+    import UIKit
+#endif
 
 /// Produces the iPad App Store captures. Driven by `Tools/ipad-shots.rb`,
 /// which is where the shot list lives; this is only the hands.
@@ -73,7 +76,11 @@ final class ScreenshotTests: XCTestCase {
         // in front comes back portrait when one arrives, so an orientation set
         // first is silently undone and every capture lands 2064×2752 — the
         // wrong way round for a listing whose other captures are landscape.
-        XCUIDevice.shared.orientation = .landscapeLeft
+        //
+        // A Mac has no orientation, and `XCUIDevice` has no such member there.
+        #if os(iOS)
+            XCUIDevice.shared.orientation = .landscapeLeft
+        #endif
 
         // Straight to the drawing, rather than tapping through the document
         // browser: the browser's own layout is not ours to depend on, and it
@@ -148,13 +155,23 @@ final class ScreenshotTests: XCTestCase {
             screenshot.image.size.width, screenshot.image.size.height,
             "\(locale)/\(shot.name): the device did not rotate")
 
-        let attachment = XCTAttachment(
-            data: Self.png(of: screenshot), uniformTypeIdentifier: "public.png")
+        let attachment = Self.attachment(for: screenshot)
         attachment.name = "\(locale)|\(shot.name)"
         attachment.lifetime = .keepAlways
         add(attachment)
 
         app.terminate()
+    }
+
+    /// The screenshot as an attachment, the right way up.
+    ///
+    /// Only iOS needs the redraw below; a Mac window is never held sideways.
+    private static func attachment(for screenshot: XCUIScreenshot) -> XCTAttachment {
+        #if os(iOS)
+            XCTAttachment(data: png(of: screenshot), uniformTypeIdentifier: "public.png")
+        #else
+            XCTAttachment(screenshot: screenshot)
+        #endif
     }
 
     /// The screenshot as a PNG the right way up.
@@ -165,17 +182,19 @@ final class ScreenshotTests: XCTestCase {
     /// rotation is baked in here instead, by drawing the image once: `UIImage`
     /// reports the *displayed* size, so the redraw comes out 2752×2064 with
     /// the pixels to match.
-    private static func png(of screenshot: XCUIScreenshot) -> Data {
-        let image = screenshot.image
-        let format = UIGraphicsImageRendererFormat.default()
-        format.scale = image.scale
-        format.opaque = true
+    #if os(iOS)
+        private static func png(of screenshot: XCUIScreenshot) -> Data {
+            let image = screenshot.image
+            let format = UIGraphicsImageRendererFormat.default()
+            format.scale = image.scale
+            format.opaque = true
 
-        let renderer = UIGraphicsImageRenderer(size: image.size, format: format)
-        return renderer.image { _ in
-            image.draw(in: CGRect(origin: .zero, size: image.size))
-        }.pngData()!
-    }
+            let renderer = UIGraphicsImageRenderer(size: image.size, format: format)
+            return renderer.image { _ in
+                image.draw(in: CGRect(origin: .zero, size: image.size))
+            }.pngData()!
+        }
+    #endif
 
     /// Passed in by the driver as `TEST_RUNNER_<name>` — **set on xcodebuild's
     /// own environment, not as a build setting after the command**, which is
