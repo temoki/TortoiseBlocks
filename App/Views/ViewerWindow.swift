@@ -91,23 +91,33 @@
             }
             .task {
                 // Development only: the simulator cannot press any of these
-                // buttons (simctl sends no input), so `-TBPlace YES` loads a
-                // sample, opens the program window and puts the drawing down at
-                // launch. Without it a simulator run is a window of buttons
-                // nobody can reach, and the immersive space never opens at all.
+                // buttons (simctl sends no input), so the launch arguments
+                // stand in for the hands.
                 //
-                // **It does not let you see the drawing.** The simulator hosts
-                // no `ViewAttachmentComponent` view, so the sheet's own SwiftUI
-                // body never runs, `TortoisePlayer` never attaches to a canvas,
-                // and `currentTortoiseState` stays nil — which looks exactly
-                // like a broken tortoise and has cost an afternoon once
-                // already (the root CLAUDE.md has the longer note). What the
-                // flag is actually good for is everything that is not the
-                // picture: that the USDZ loads in the real visionOS runtime
-                // with the bounds its contract promises, that the per-frame
-                // subscription fires, that load → run → place survives, and
-                // that the program and code windows draw with content in them.
-                // The picture itself is the headset's to judge.
+                //   -TBPlace YES      load a sample, open the program window,
+                //                     put the drawing down
+                //   -TBSample <name>  square | star | spiral | tree
+                //   -TBDraw <0…1>     run the drawing that far and stop
+                //
+                // Without the first one a simulator run is a window of buttons
+                // nobody can reach, and the immersive space never opens at all.
+                // The other two exist because App Store screenshots are shot
+                // here rather than on a headset: a real room cannot be framed
+                // the same way twice and is somebody's home besides, while
+                // these three arguments describe a picture exactly.
+                //
+                // **The simulator does show the drawing.** This comment said
+                // the opposite for a while, and the mistake is worth recording
+                // rather than quietly deleting: what was actually broken was
+                // that `-TBPlace` placed by calling `place(.inFront)` *after*
+                // the load, which flipped `sitsOnTable` and so changed the
+                // `.id()` on the immersive space's `RealityView` — tearing the
+                // scene down and rebuilding it, with the attachment failing to
+                // come back. The sheet stayed blank, `currentTortoiseState`
+                // stayed nil, and that looked exactly like a platform that
+                // hosts no `ViewAttachmentComponent`. Setting the preference
+                // before the load leaves the id alone, and the paper, the
+                // drawing and the tortoise all render.
                 //
                 // Read off the launch arguments rather than through
                 // `UserDefaults`, which is where a `-flag value` pair normally
@@ -118,20 +128,65 @@
                 // needs none, which is a property worth keeping for one line:
                 // nothing else here touches a required-reason API, and the
                 // launch command is unchanged either way.
-                guard ProcessInfo.processInfo.arguments.contains("-TBPlace"),
-                    !model.hasProgram
-                else {
-                    return
-                }
+                let arguments = ProcessInfo.processInfo.arguments
+                guard arguments.contains("-TBPlace"), !model.hasProgram else { return }
+
                 // Loading is what places it now, so the destination is
                 // chosen by setting the preference first. In front rather
                 // than on a table because the simulator finds no planes at
                 // all, and a table search there only spends its fifteen
                 // seconds before falling back to exactly this.
                 model.sitsOnTable = false
-                model.load(SampleBlocks.spiral(), title: String(localized: "Spiral"))
+                let (blocks, title) = Self.sample(named: Self.value(of: "-TBSample", in: arguments))
+                model.load(blocks, title: title)
                 openWindow(id: ViewerModel.programWindowID)
+
+                if let fraction = Self.value(of: "-TBDraw", in: arguments).flatMap(Double.init) {
+                    await draw(upTo: fraction)
+                }
             }
+        }
+
+        /// The value of a `-flag value` pair on the command line.
+        private static func value(of flag: String, in arguments: [String]) -> String? {
+            guard let flagIndex = arguments.firstIndex(of: flag),
+                arguments.index(after: flagIndex) < arguments.endIndex
+            else {
+                return nil
+            }
+            return arguments[arguments.index(after: flagIndex)]
+        }
+
+        /// The sample `-TBSample` names, defaulting to the spiral.
+        private static func sample(named name: String?) -> ([Block], String) {
+            switch name?.lowercased() {
+            case "square": (SampleBlocks.filledSquare(), String(localized: "Filled Square"))
+            case "star": (SampleBlocks.star(), String(localized: "Star"))
+            case "tree": (SampleBlocks.fractalTree(), String(localized: "Tree"))
+            default: (SampleBlocks.spiral(), String(localized: "Spiral"))
+            }
+        }
+
+        /// Draws `fraction` of the program and stops there.
+        ///
+        /// The seek cannot go out until the sheet's canvas has attached itself
+        /// to the player: `TortoisePlayer.seek` is a no-op before that, and the
+        /// attachment cannot happen until the immersive space has opened and
+        /// its view has rendered. `currentTortoiseState` turning non-nil *is*
+        /// that moment and there is nothing to await on, so this waits for it —
+        /// with a deadline, since a run where the space never opens should end
+        /// rather than spin.
+        private func draw(upTo fraction: Double) async {
+            let clock = ContinuousClock()
+            let deadline = clock.now + .seconds(20)
+            while model.runner.player.currentTortoiseState == nil, clock.now < deadline {
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            let commands = model.runner.lastRunCommands.count
+            guard commands > 0 else { return }
+
+            let clamped = min(max(fraction, 0), 1)
+            model.runner.seek(to: Int((Double(commands - 1) * clamped).rounded()))
         }
 
         /// Moves the drawing to `destination`, opening or closing the

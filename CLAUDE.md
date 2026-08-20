@@ -22,12 +22,14 @@ xcodebuild -project TortoiseBlocks.xcodeproj -scheme TortoiseBlocks \
 # Manual verification loop (macOS):
 pkill -x TortoiseBlocks; open ~/Library/Developer/Xcode/DerivedData/TortoiseBlocks-*/Build/Products/Debug/TortoiseBlocks.app
 
-# visionOS. `-TBPlace` is the only way in: simctl sends no input, so without it
-# the run is a window of buttons nobody can press. It does NOT show the drawing
-# (see the tortoise note below) — it is for the load path, the USDZ, and the
-# program/code windows.
+# visionOS. Launch arguments are the only way in: simctl sends no input, so
+# without them the run is a window of buttons nobody can press. `-TBPlace`
+# loads a sample and puts it down, `-TBSample` picks which (square|star|
+# spiral|tree), `-TBDraw` runs the drawing that far (0…1) and stops. The sheet
+# lands 1.2m ahead of the space's *origin*, so shoot from a fresh boot or it
+# will be out of frame.
 xcrun simctl install <device> ~/Library/Developer/Xcode/DerivedData/TortoiseBlocks-*/Build/Products/Debug-xrsimulator/TortoiseBlocks.app
-xcrun simctl launch <device> space.hiraku.tortoiseblocks -TBPlace YES
+xcrun simctl launch <device> space.hiraku.tortoiseblocks -TBPlace YES -TBSample star -TBDraw 1
 
 # The App Store listing (appstore/). The check needs no key and no bundle;
 # the other two need ASC_ISSUER_ID / ASC_KEY_ID / ASC_PRIVATE_KEY_PATH.
@@ -484,13 +486,26 @@ inset and the drawing would otherwise run to the paper's edge with the tortoise
 hanging off it. The lift onto the paper is *measured* from the loaded model,
 not assumed: the feet reach ~6‰ of the body length below the origin, which is
 the ground point under the shell's centre.
-**The visionOS simulator cannot check any of this.** It does not host
-`ViewAttachmentComponent` views at all — the sheet's own `.task` never runs, so
-`TortoisePlayer` never attaches to a canvas and `currentTortoiseState` stays
-nil, which reads exactly like a broken tortoise. What the simulator *is* good
-for is the two things that would otherwise be guesses: that the USDZ loads in
-the real visionOS runtime with the bounds the contract promises, and that the
-per-frame subscription fires. Everything else is the headset.
+**The visionOS simulator shows all of this** — paper, drawing and tortoise —
+and this note said the opposite for a while, which is worth keeping as a
+correction rather than an edit. The symptom was real: a blank sheet, a nil
+`currentTortoiseState`, a tortoise that never appeared. The diagnosis was not.
+`ViewAttachmentComponent` hosts fine here; what was broken is that `-TBPlace`
+used to place by calling `place(.inFront)` *after* the load, which flips
+`sitsOnTable`, which is the `.id()` on the immersive space's `RealityView` — so
+the scene was torn down and rebuilt at launch and the attachment did not come
+back. Setting the preference before the load (which is what "opening a drawing
+puts it down" made natural) leaves the id alone and the sheet renders. The
+lesson generalises: `.id()` on a `RealityView` is a demolition order, and an
+attachment that fails to return from one is indistinguishable from a platform
+that never supported attachments.
+One thing about the simulator is still true and matters for screenshots:
+`queryDeviceAnchor` reports the **identity transform and calls it tracked**, so
+`pose` rejects it (a head at floor height) and placement takes its fixed
+fallback, 1.2m along −Z from the space's origin. That lands in front of the
+camera only when the camera is at the origin — which is what a **fresh boot**
+gives and a simulator that has been flown around does not. Shutdown, boot,
+launch, capture.
 
 **The viewer has three surfaces, and the third is the code** (#53 Phase 3).
 Table, program, code — a `WindowGroup` each, all open at once. That is the
