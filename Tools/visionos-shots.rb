@@ -44,14 +44,9 @@ LOCALES = { "en-US" => "en", "ja" => "ja" }.freeze
 # the paper is nearer than the windows, so a larger one occludes them. 0.8
 # ate the bottom of both the blocks and the code, which is the arrangement
 # these captures exist to show.
-#
-# The spiral stops partway on purpose. A finished picture is what the iPad and
-# Mac shots already say; what only this platform can say is that the tortoise
-# is *standing on the paper drawing it*, and that needs a line still being
-# drawn under its feet.
 SHOTS = [
   { name: "1_star_table", sample: "star", draw: 1.0, sheet: "0.7,1.2,0.38" },
-  { name: "2_spiral_table", sample: "spiral", draw: 0.55, sheet: "0.7,1.2,0.38" },
+  { name: "2_spiral_table", sample: "spiral", draw: 1.0, sheet: "0.7,1.2,0.38" },
   { name: "3_tree_table", sample: "tree", draw: 1.0, sheet: "0.7,1.2,0.38" }
 ].freeze
 
@@ -105,9 +100,18 @@ def ready?(udid, pid)
   false
 end
 
+# Reinstalled before every attempt, not once before the run.
+#
+# visionOS restores an app's windows, so a launch inherits wherever the last
+# one left them — and then opens its own on top. That is two blocks windows in
+# the frame, one of them near the ceiling, and it is what made the framing
+# wander between captures that were supposed to be identical. Uninstalling
+# takes the scene state with it, so every shot starts from the same room.
 def capture(udid, shot, locale, language)
   ATTEMPTS.times do |attempt|
     simctl("terminate", udid, BUNDLE_ID)
+    simctl("uninstall", udid, BUNDLE_ID)
+    simctl("install", udid, APP_BUNDLE.to_s)
     sleep(2)
     launched = simctl(
       "launch", udid, BUNDLE_ID,
@@ -140,8 +144,9 @@ shots = wanted.empty? ? SHOTS : SHOTS.select { |shot| wanted.any? { |w| shot[:na
 abort("Nothing matches #{wanted.join(', ')}") if shots.empty?
 
 udid = device
+APP_BUNDLE = app_bundle
 puts "device #{udid}"
-simctl("install", udid, app_bundle.to_s)
+puts "app    #{APP_BUNDLE}"
 
 LOCALES.each do |locale, language|
   shots.each do |shot|
