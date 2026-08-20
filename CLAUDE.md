@@ -25,11 +25,14 @@ pkill -x TortoiseBlocks; open ~/Library/Developer/Xcode/DerivedData/TortoiseBloc
 # visionOS. Launch arguments are the only way in: simctl sends no input, so
 # without them the run is a window of buttons nobody can press. `-TBPlace`
 # loads a sample and puts it down, `-TBSample` picks which (square|star|
-# spiral|tree), `-TBDraw` runs the drawing that far (0…1) and stops. The sheet
-# lands 1.2m ahead of the space's *origin*, so shoot from a fresh boot or it
-# will be out of frame.
+# spiral|tree), `-TBDraw` runs the drawing that far (0…1) and stops, and
+# `-TBSheet side,reach,drop` frames it (metres). The sheet is aimed at the
+# camera, so no recentring — but a run occasionally comes up without it, so
+# look at the capture.
 xcrun simctl install <device> ~/Library/Developer/Xcode/DerivedData/TortoiseBlocks-*/Build/Products/Debug-xrsimulator/TortoiseBlocks.app
-xcrun simctl launch <device> space.hiraku.tortoiseblocks -TBPlace YES -TBSample star -TBDraw 1
+xcrun simctl launch <device> space.hiraku.tortoiseblocks \
+  -TBPlace YES -TBSample star -TBDraw 1 -TBSheet 0.5,0.95,0.42
+xcrun simctl io <device> screenshot shot.png     # 3840x2160, with an alpha channel
 
 # The App Store listing (appstore/). The check needs no key and no bundle;
 # the other two need ASC_ISSUER_ID / ASC_KEY_ID / ASC_PRIVATE_KEY_PATH.
@@ -499,13 +502,20 @@ puts it down" made natural) leaves the id alone and the sheet renders. The
 lesson generalises: `.id()` on a `RealityView` is a demolition order, and an
 attachment that fails to return from one is indistinguishable from a platform
 that never supported attachments.
-One thing about the simulator is still true and matters for screenshots:
-`queryDeviceAnchor` reports the **identity transform and calls it tracked**, so
-`pose` rejects it (a head at floor height) and placement takes its fixed
-fallback, 1.2m along −Z from the space's origin. That lands in front of the
-camera only when the camera is at the origin — which is what a **fresh boot**
-gives and a simulator that has been flown around does not. Shutdown, boot,
-launch, capture.
+**Screenshots are shot here, not on a headset** — a room cannot be framed the
+same way twice and is someone's home besides — so the launch line describes the
+picture: `-TBSample` picks the drawing, `-TBDraw` runs it to a fraction of its
+length and stops, `-TBSheet side,reach,drop` frames it. The simulator does
+report a usable head pose (`queryDeviceAnchor` starts at the identity transform,
+which is what `minimumEyeHeight` is guarding against, but `pose` retries for
+three seconds and gets a real one), so placement takes the **aimed** branch here
+exactly as a headset does and the sheet lands in front of the camera whatever
+the camera is doing. No recentring, no fresh boot. That is also why `-TBSheet`
+overrides `reach` and `floatingDrop` rather than the position they produce: an
+override written against the no-pose fallback compiles, runs, and does nothing.
+What it does *not* do is come out the same every launch — some runs open with no
+sheet at all, and relaunching fixes it — so look at every capture rather than
+trusting the command.
 
 **The viewer has three surfaces, and the third is the code** (#53 Phase 3).
 Table, program, code — a `WindowGroup` each, all open at once. That is the

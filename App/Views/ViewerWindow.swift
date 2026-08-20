@@ -98,13 +98,27 @@
                 //                     put the drawing down
                 //   -TBSample <name>  square | star | spiral | tree
                 //   -TBDraw <0…1>     run the drawing that far and stop
+                //   -TBSheet s,r,d    the sheet's side, how far ahead of the
+                //                     eyes it lands, and how far below them
                 //
                 // Without the first one a simulator run is a window of buttons
                 // nobody can reach, and the immersive space never opens at all.
                 // The other two exist because App Store screenshots are shot
                 // here rather than on a headset: a real room cannot be framed
                 // the same way twice and is somebody's home besides, while
-                // these three arguments describe a picture exactly.
+                // these four arguments describe a picture exactly.
+                //
+                // `-TBSheet` is the framing one, and it exists because
+                // nothing in the simulator can reach out and pinch the sheet
+                // bigger or drag it further off. It moves the two constants
+                // the placement is built from — reach and drop — rather than
+                // the position they produce, so a forced framing still lands
+                // in front of the camera and turned to face it.
+                //
+                // Worth knowing, since it was got wrong first: the simulator
+                // *does* report a usable head pose, so placement takes the
+                // aimed branch here exactly as a headset does, and an override
+                // written against the no-pose fallback silently does nothing.
                 //
                 // **The simulator does show the drawing.** This comment said
                 // the opposite for a while, and the mistake is worth recording
@@ -137,6 +151,10 @@
                 // all, and a table search there only spends its fifteen
                 // seconds before falling back to exactly this.
                 model.sitsOnTable = false
+                if let framing = Self.framing(from: Self.value(of: "-TBSheet", in: arguments)) {
+                    model.side = framing.side
+                    model.framing = framing
+                }
                 let (blocks, title) = Self.sample(named: Self.value(of: "-TBSample", in: arguments))
                 model.load(blocks, title: title)
                 openWindow(id: ViewerModel.programWindowID)
@@ -155,6 +173,20 @@
                 return nil
             }
             return arguments[arguments.index(after: flagIndex)]
+        }
+
+        /// `side,reach,drop` in metres — how big the sheet is, how far ahead
+        /// of the eyes it lands, and how far below them.
+        ///
+        /// All three or nothing: a partial list would leave some of the
+        /// framing to a default and the rest to the argument, which is the one
+        /// thing a reproducible capture cannot have.
+        private static func framing(from value: String?) -> ViewerModel.Framing? {
+            let numbers = (value ?? "").split(separator: ",").compactMap { Double($0) }
+            guard numbers.count == 3 else { return nil }
+
+            return ViewerModel.Framing(
+                side: numbers[0], reach: Float(numbers[1]), drop: Float(numbers[2]))
         }
 
         /// The sample `-TBSample` names, defaulting to the spiral.
