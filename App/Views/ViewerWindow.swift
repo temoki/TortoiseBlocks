@@ -1,5 +1,6 @@
 #if os(visionOS)
 
+    import OSLog
     import SwiftUI
     import TortoiseBlocksKit
 
@@ -159,9 +160,8 @@
                 model.load(blocks, title: title)
                 openWindow(id: ViewerModel.programWindowID)
 
-                if let fraction = Self.value(of: "-TBDraw", in: arguments).flatMap(Double.init) {
-                    await draw(upTo: fraction)
-                }
+                await settle(
+                    drawingTo: Self.value(of: "-TBDraw", in: arguments).flatMap(Double.init))
             }
         }
 
@@ -199,27 +199,46 @@
             }
         }
 
-        /// Draws `fraction` of the program and stops there.
+        /// Waits until the drawing is really on the paper, draws `fraction` of
+        /// it, and says so in the log.
         ///
-        /// The seek cannot go out until the sheet's canvas has attached itself
-        /// to the player: `TortoisePlayer.seek` is a no-op before that, and the
-        /// attachment cannot happen until the immersive space has opened and
-        /// its view has rendered. `currentTortoiseState` turning non-nil *is*
-        /// that moment and there is nothing to await on, so this waits for it —
-        /// with a deadline, since a run where the space never opens should end
-        /// rather than spin.
-        private func draw(upTo fraction: Double) async {
+        /// Two things need the same wait. The seek cannot go out until the
+        /// sheet's canvas has attached itself to the player —
+        /// `TortoisePlayer.seek` is a no-op before that, and the attachment
+        /// cannot happen until the immersive space has opened and its view has
+        /// rendered. And `Tools/visionos-shots.rb` needs to know when to press
+        /// the shutter, which is the same moment. `currentTortoiseState`
+        /// turning non-nil *is* it, and there is nothing to await on, so this
+        /// polls.
+        ///
+        /// The failure is worth a line of its own rather than a timeout the
+        /// script has to infer: a run occasionally comes up with no sheet at
+        /// all, and from the outside that is indistinguishable from one that is
+        /// merely slow. Told which it is, the script can relaunch instead of
+        /// filing a picture of an empty room.
+        private func settle(drawingTo fraction: Double?) async {
             let clock = ContinuousClock()
             let deadline = clock.now + .seconds(20)
             while model.runner.player.currentTortoiseState == nil, clock.now < deadline {
                 try? await Task.sleep(for: .milliseconds(100))
             }
-            let commands = model.runner.lastRunCommands.count
-            guard commands > 0 else { return }
+            guard model.runner.player.currentTortoiseState != nil else {
+                Self.shoot.error("TBNotReady")
+                return
+            }
 
-            let clamped = min(max(fraction, 0), 1)
-            model.runner.seek(to: Int((Double(commands - 1) * clamped).rounded()))
+            let commands = model.runner.lastRunCommands.count
+            if let fraction, commands > 0 {
+                let clamped = min(max(fraction, 0), 1)
+                model.runner.seek(to: Int((Double(commands - 1) * clamped).rounded()))
+            }
+            Self.shoot.notice("TBReady")
         }
+
+        /// Only ever written to under `-TBPlace`, and read only by the
+        /// screenshot script.
+        private static let shoot = Logger(
+            subsystem: "space.hiraku.tortoiseblocks", category: "shoot")
 
         /// Moves the drawing to `destination`, opening or closing the
         /// immersive space as that requires.
