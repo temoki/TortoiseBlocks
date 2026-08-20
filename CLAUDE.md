@@ -598,6 +598,7 @@ are *made*. The window is a remote control, and its row had reached four
 buttons.
 
 **Releasing, the store listing and the website are in the `release` skill.** Tags, Xcode Cloud, TestFlight, `appstore/`, fastlane, and `site/`.
+**Making the pictures is the `screenshots` skill** — the capture rigs for iPad and Vision Pro, the pass every reshoot ends with (`ruby Tools/screenshots.rb`), and the traps that hand back a perfectly well-made capture of the wrong thing.
 
 **Localization**: `en` is the source language; Japanese (kid-friendly
 hiragana) lives in `App/Localizable.xcstrings`. Palette titles are
