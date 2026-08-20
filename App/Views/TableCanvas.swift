@@ -30,6 +30,12 @@
     @MainActor
     final class ViewerModel {
         static let spaceID = "table"
+
+        /// The remote itself. Named, unlike an app's usual first window,
+        /// because the other two are placed *relative to it* and
+        /// `WindowPlacement` needs a way to pick it out of
+        /// `WindowPlacementContext.windows`.
+        static let remoteWindowID = "remote"
         static let programWindowID = "program"
         static let codeWindowID = "code"
 

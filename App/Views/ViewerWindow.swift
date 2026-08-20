@@ -158,7 +158,13 @@
                 }
                 let (blocks, title) = Self.sample(named: Self.value(of: "-TBSample", in: arguments))
                 model.load(blocks, title: title)
+                // Both, because that is what the platform's argument looks
+                // like when it is working: the drawing on the table, the
+                // blocks it is made from, and the code they become, all at
+                // once. They open beside the remote rather than over it — see
+                // `defaultWindowPlacement` in `TortoiseBlocksApp`.
                 openWindow(id: ViewerModel.programWindowID)
+                openWindow(id: ViewerModel.codeWindowID)
 
                 await settle(
                     drawingTo: Self.value(of: "-TBDraw", in: arguments).flatMap(Double.init))

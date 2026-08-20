@@ -37,11 +37,22 @@ LOCALES = { "en-US" => "en", "ja" => "ja" }.freeze
 # how far ahead of the eyes it lands, how far below them — and `draw` is how
 # far through the program to stop, so a value under 1 catches the tortoise
 # mid-line with the drawing still growing under it.
+# The same three drawings the iPad and Mac listings show — star, spiral, tree —
+# so a shopper comparing the platforms sees the same app rather than three.
+#
+# One sheet size for all three, and it is a ceiling rather than a preference:
+# the paper is nearer than the windows, so a larger one occludes them. 0.8
+# ate the bottom of both the blocks and the code, which is the arrangement
+# these captures exist to show.
+#
+# The spiral stops partway on purpose. A finished picture is what the iPad and
+# Mac shots already say; what only this platform can say is that the tortoise
+# is *standing on the paper drawing it*, and that needs a line still being
+# drawn under its feet.
 SHOTS = [
-  { name: "1_star_table", sample: "star", draw: 1.0, sheet: "0.5,0.95,0.42" },
-  { name: "2_spiral_drawing", sample: "spiral", draw: 0.55, sheet: "0.5,0.95,0.42" },
-  { name: "3_tree_table", sample: "tree", draw: 1.0, sheet: "0.5,0.95,0.42" },
-  { name: "4_square_table", sample: "square", draw: 1.0, sheet: "0.5,0.95,0.42" }
+  { name: "1_star_table", sample: "star", draw: 1.0, sheet: "0.7,1.2,0.38" },
+  { name: "2_spiral_table", sample: "spiral", draw: 0.55, sheet: "0.7,1.2,0.38" },
+  { name: "3_tree_table", sample: "tree", draw: 1.0, sheet: "0.7,1.2,0.38" }
 ].freeze
 
 # How long to give a launch before calling it a failure, and how many times to

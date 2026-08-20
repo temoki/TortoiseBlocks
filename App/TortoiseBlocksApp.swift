@@ -1,5 +1,34 @@
 import SwiftUI
 
+#if os(visionOS)
+    /// Which side of the remote a window opens on.
+    ///
+    /// An enum rather than passing `WindowPlacement.Position.leading` around:
+    /// those are static *methods* taking the window to be beside, so they
+    /// cannot be named without one, and the whole point here is to name the
+    /// side before the window is known to be open.
+    private enum WindowSide {
+        case leading
+        case trailing
+    }
+
+    /// A placement beside the window with `id` — or the system's own choice
+    /// when there is no such window to be beside, which is what a restored
+    /// window meets when it comes back before the remote does.
+    private func placement(
+        _ side: WindowSide, of id: String, in context: WindowPlacementContext
+    ) -> WindowPlacement {
+        guard let relative = context.windows.first(where: { $0.id == id }) else {
+            return WindowPlacement()
+        }
+
+        switch side {
+        case .leading: return WindowPlacement(.leading(relative))
+        case .trailing: return WindowPlacement(.trailing(relative))
+        }
+    }
+#endif
+
 @main
 struct TortoiseBlocksApp: App {
     // The viewer's whole state, shared by its two scenes (#53). One `Scene`
@@ -21,7 +50,7 @@ struct TortoiseBlocksApp: App {
         // and that is what makes a visionOS build worth having at all instead
         // of an iPad app in a window.
         #if os(visionOS)
-            WindowGroup {
+            WindowGroup(id: ViewerModel.remoteWindowID) {
                 ViewerWindow(model: viewer)
             }
             // The window is its contents, not a canvas they sit in — so no
@@ -38,6 +67,22 @@ struct TortoiseBlocksApp: App {
                 ProgramWindow(model: viewer)
             }
             .defaultSize(width: 480, height: 700)
+            // **Beside the remote, not on top of it.** Left the system opens
+            // every window in the same place — straight ahead — so asking for
+            // the program put it over the controls that asked, and asking for
+            // the code put it over both. Three surfaces at once is the entire
+            // argument for this platform (#53), and stacking them is the one
+            // arrangement that does not deliver it.
+            //
+            // Reading order decides which side: the blocks are what the
+            // drawing is made *from*, so they sit to the left of the remote,
+            // and the code — what the blocks become — to its right. On
+            // visionOS a placement can only name another window and a side;
+            // the absolute initialisers are all unavailable there, which is
+            // exactly enough for this and nothing more.
+            .defaultWindowPlacement { _, context in
+                placement(.leading, of: ViewerModel.remoteWindowID, in: context)
+            }
 
             // And the code on a third (#53 Phase 3). Same reasoning one step
             // further: iPad and Mac make the canvas and the code two states of
@@ -49,6 +94,9 @@ struct TortoiseBlocksApp: App {
             // Wider than the program's 480: source lines are longer than block
             // rows, and the pane scrolls horizontally rather than wrapping.
             .defaultSize(width: 620, height: 700)
+            .defaultWindowPlacement { _, context in
+                placement(.trailing, of: ViewerModel.remoteWindowID, in: context)
+            }
 
             ImmersiveSpace(id: ViewerModel.spaceID) {
                 TableCanvasSpace(model: viewer)

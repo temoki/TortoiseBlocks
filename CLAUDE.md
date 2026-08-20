@@ -528,6 +528,22 @@ colours left standing on nothing). The source is generated in
 `ViewerModel.load` rather than in the window's `body`: the iPad's pane is only
 in the hierarchy while its toggle says so, but a window redraws on its own
 schedule and nothing here can edit the program behind it.
+**The three windows open beside each other, not on top** (#53). Left the
+system, every window opens in the same place — straight ahead — so asking for
+the blocks put them over the controls that asked, and asking for the code put
+it over both. Three surfaces at once is the entire argument for this platform,
+and stacking them is the one arrangement that does not deliver it, so the
+program and code groups carry `defaultWindowPlacement`: blocks to the remote's
+`.leading`, code to its `.trailing`, reading order deciding which side, since
+the blocks are what the drawing is made *from* and the code is what they
+become. The remote therefore has an id of its own (`remoteWindowID`) — unusual
+for an app's first window, and the only way `WindowPlacementContext.windows`
+can be asked which one to sit beside. On visionOS a placement can name another
+window and a side and nothing else: every absolute initialiser is
+`@available(visionOS, unavailable)`. That is exactly enough here, and it is
+also why this was nearly written off as impossible — the App Store captures
+were going to be shot around the overlap before the API was checked.
+
 **The remote's controls are grouped by what they do, not by what they are.**
 The row used to read 「つくえに おく」「ブロックを みる」「コードを みる」, whose
 only shared property was being buttons — one placed the drawing, two opened
