@@ -70,7 +70,28 @@ final class ScreenshotTests: XCTestCase {
             "-AppleLanguages", "(\(language))",
             "-AppleLocale", language == "ja" ? "ja_JP" : "en_US",
         ]
+        // **macOS reopens the windows it had when it quit.** Each shot ends by
+        // terminating the app, so without this the next launch restores the
+        // previous drawing *and* then opens the new one — two windows, two
+        // transports, and `play.fill` stops being a single element ("Multiple
+        // matching elements found", which does not mention restoration at
+        // all). iOS has no equivalent and needs no equivalent.
+        #if os(macOS)
+            app.launchArguments += ["-NSQuitAlwaysKeepsWindows", "NO"]
+        #endif
         app.launch()
+
+        // **Close whatever came back with it.** A shot ends by terminating the
+        // app, and macOS reopens the windows it had when it quit — so the
+        // second shot's launch restores the first shot's drawing and then
+        // opens its own beside it. Two windows means two transports, and
+        // `play.fill` stops being a single element; the failure says "Multiple
+        // matching elements found" and nothing about restoration.
+        #if os(macOS)
+            for window in app.windows.allElementsBoundByIndex where window.exists {
+                window.buttons[XCUIIdentifierCloseWindow].click()
+            }
+        #endif
 
         // **After the launch, not before.** A device rotated while no app is
         // in front comes back portrait when one arrives, so an orientation set
@@ -136,24 +157,48 @@ final class ScreenshotTests: XCTestCase {
         }
 
         if shot.pane == .code {
-            // Canvas is the first segment and Code the second
+            // Canvas is the first choice and Code the second
             // (`CanvasViewToggle`) — an order, not a label.
-            let toggle = app.segmentedControls.firstMatch
-            XCTAssertTrue(
-                toggle.waitForExistence(timeout: 10), "\(locale)/\(shot.name): no pane toggle")
-            toggle.buttons.element(boundBy: 1).tap()
+            //
+            // **The same `Picker(.segmented)` is a different element on each
+            // platform**: a `SegmentedControl` of buttons on iOS, a
+            // `RadioGroup` of radio buttons in the toolbar on macOS. Looking
+            // for the iOS one on a Mac finds nothing and times out saying only
+            // that there is no toggle.
+            #if os(macOS)
+                let toggle = app.radioGroups.firstMatch
+                XCTAssertTrue(
+                    toggle.waitForExistence(timeout: 10),
+                    "\(locale)/\(shot.name): no pane toggle")
+                toggle.radioButtons.element(boundBy: 1).click()
+            #else
+                let toggle = app.segmentedControls.firstMatch
+                XCTAssertTrue(
+                    toggle.waitForExistence(timeout: 10),
+                    "\(locale)/\(shot.name): no pane toggle")
+                toggle.buttons.element(boundBy: 1).tap()
+            #endif
         }
 
         // The canvas flushes its frames on the next redraw; a capture taken in
         // the same runloop turn catches the drawing half-made.
         Thread.sleep(forTimeInterval: 2)
 
-        let screenshot = XCUIScreen.main.screenshot()
-        // Cheap, and it has already caught the one failure that produces a
-        // perfectly good picture of the wrong thing.
-        XCTAssertGreaterThan(
-            screenshot.image.size.width, screenshot.image.size.height,
-            "\(locale)/\(shot.name): the device did not rotate")
+        // **The Mac captures the window, not the screen.** What is around it —
+        // the desktop and the menu bar — is a plate prepared once per language
+        // and composited under this by the driver, so the capture does not
+        // depend on what the machine's own desktop happens to look like. On
+        // iPad the screen *is* the picture.
+        #if os(macOS)
+            let screenshot = app.windows.firstMatch.screenshot()
+        #else
+            let screenshot = XCUIScreen.main.screenshot()
+            // Cheap, and it has already caught the one failure that produces a
+            // perfectly good picture of the wrong thing.
+            XCTAssertGreaterThan(
+                screenshot.image.size.width, screenshot.image.size.height,
+                "\(locale)/\(shot.name): the device did not rotate")
+        #endif
 
         let attachment = Self.attachment(for: screenshot)
         attachment.name = "\(locale)|\(shot.name)"
