@@ -18,12 +18,12 @@ only evidence that counts.
 
 ```bash
 ruby Tools/ipad-shots.rb                 # iPad: 4 shots × 2 languages, ~8 min
+ruby Tools/macos-shots.rb                # Mac: 4 shots × 2 languages
 ruby Tools/visionos-shots.rb             # Vision Pro: 3 shots × 2 languages
-# macOS: composed by hand in Figma, exported to appstore/screenshots/macos/<locale>/
 ruby Tools/screenshots.rb                # always: strip alpha, optimise, rebuild site/shots
 ```
 
-Both rigs take a name filter (`ruby Tools/ipad-shots.rb star`) and end by
+All three take a name filter (`ruby Tools/ipad-shots.rb star`) and end by
 calling `Tools/screenshots.rb` themselves. Build the scheme first; they install
 whatever is in DerivedData.
 
@@ -45,8 +45,8 @@ look.
 ## The flatten-and-optimise pass
 
 **Every source this project shoots from writes an alpha channel and none can be
-told not to**: the Mac shots are composed in Figma, the iPad ones come out of
-XCUITest, the visionOS ones from `simctl io`. The channel has always been fully
+told not to**: the iPad and Mac captures come out of XCUITest, the visionOS
+ones from `simctl io`. The channel has always been fully
 opaque, so `Tools/screenshots.rb` drops it losslessly — `-alpha off`, never a
 composite. A capture with *real* transparency stops the run instead, because
 choosing a background would change the picture and that is a person's decision.
@@ -151,17 +151,41 @@ come out of one run with nothing left switched on the device.
   relaunches rather than photographing an empty room. Waiting on `EntityLoad`,
   which is only the USDZ arriving, files pictures of empty rooms.
 
-## macOS — by hand
+## macOS — a UI test and a plate
 
-Composed in Figma and exported to `appstore/screenshots/macos/<locale>/`. Not
-automated, and the export always carries an alpha channel, so
-`Tools/screenshots.rb` is the required next step.
+`Tools/macos-shots.rb`, sharing `ScreenshotTests.swift` with the iPad. The
+capture is the **window alone** (`XCUIElement.screenshot()`); the desktop and
+menu bar around it come from `appstore/screenshot-sources/macos-plate-{en,ja}.png`,
+drawn once per language. That is what keeps the picture independent of the
+machine — no wallpaper, menu extra or clock of the Mac's own reaches it.
 
-Keep the **window size** that produced the existing set: 2880×1800 is a
-1280×800pt window at a 2× backing scale, which is why the app declares that
-`defaultSize` — a capture at any other size needs cropping or resampling. Keep
-the framing too: all eight put the window at the same four edges, and one shot
-14px off was visible enough to reshoot.
+**The plates carry no shadow.** It is generated at composite time, so the
+window can move or change size without the artwork being redrawn. The window
+is centred under the menu bar and fully in frame.
+
+**macOS UI testing needs Xcode to hold the Accessibility permission** (System
+Settings ▸ Privacy & Security ▸ Accessibility). Without it every run fails
+with "Timed out while enabling automation mode", which mentions neither Xcode
+nor permissions.
+
+Four ways the Mac differs from the iPad, all handled but all worth knowing:
+
+- **The window screenshot is fully opaque, with the rounded corners filled
+  near-black.** Composite it as-is and the window wears four black wedges. The
+  corners are flood-filled to transparent rather than masked with a drawn
+  radius — the shape is macOS's own continuous curve, not a circle.
+- **macOS reopens the windows it had when it quit**, so the second shot's
+  launch restores the first shot's drawing and opens its own beside it. Two
+  windows means two transports, and `play.fill` stops being a single element:
+  "Multiple matching elements found", which says nothing about restoration.
+  Every window is closed after the launch.
+- **The same `Picker(.segmented)` is a different element**: a
+  `SegmentedControl` of buttons on iOS, a `RadioGroup` of radio buttons in the
+  toolbar on macOS.
+- **The saved window state is thrown away before each run.** macOS restores a
+  window's frame in preference to the app's `defaultSize`, and that default is
+  what makes 1280×800pt — 2560×1600px — reproducible. Keep that `defaultSize`:
+  a capture at any other size would need cropping or resampling.
 
 ## Judging the result
 
