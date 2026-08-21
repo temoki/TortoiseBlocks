@@ -4,7 +4,8 @@ description: >-
   Producing every picture of the app that ships: the App Store captures in
   appstore/screenshots/ for iPad, Mac and Vision Pro, and the downscaled copies
   the website uses in site/shots/. Covers the capture rigs
-  (Tools/ipad-shots.rb, Tools/visionos-shots.rb), the flatten-and-optimise pass
+  (Tools/ipad-shots.rb, Tools/macos-shots.rb, Tools/visionos-shots.rb), the
+  flatten-and-optimise pass
   (Tools/screenshots.rb), what a sendable capture has to be, and the traps that
   make a screenshot tool fail silently. Load this before reshooting, before
   adding a shot or a platform, and whenever a capture looks wrong.
