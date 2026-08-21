@@ -55,7 +55,17 @@ DERIVED = {
     prefix: "mac",
     size: "1400x875",
     locales: { "en-US" => "en", "ja" => "ja" },
-    shots: { "1_star_canvas" => "1", "3_spiral_code" => "3" }
+    # The star went to the Vision Pro row when the platform section got a
+    # picture of its own; the code pane is the Mac's remaining job on the page.
+    shots: { "3_spiral_code" => "3" }
+  },
+  # One is enough: the drawing on the table is the whole of what this platform
+  # adds, and every visitor downloads both languages' images.
+  "visionos" => {
+    prefix: "vision",
+    size: "1400x788",
+    locales: { "en-US" => "en", "ja" => "ja" },
+    shots: { "1_star_table" => "1" }
   }
 }.freeze
 
