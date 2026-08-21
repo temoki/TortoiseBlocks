@@ -1,0 +1,23 @@
+Tortoise Blocks is a visual programming app for children. Blocks snap together, a tortoise draws the picture one line at a time, and every drawing is an ordinary document.
+
+On Apple Vision Pro, Tortoise Blocks is the viewer. Drawings are built on iPad and Mac; this is where you put one down and look at it.
+
+A DRAWING ON YOUR TABLE
+Open a drawing and the app looks for a real surface in the room and lays a sheet of paper on it. Pinch to resize it, twist to turn it, drag it where you want it. If there is no table, it hangs in front of you instead — and you can ask for that on purpose.
+
+A TORTOISE THAT STANDS ON THE PAPER
+The tortoise is a model on the table, not a cursor on a screen. It turns where the line turns, stops where the line stops, and you can lean in and watch it from any side you like.
+
+WATCH IT DRAW
+Play, pause, step forward one command at a time, scrub back and forth, change the speed while it runs.
+
+THE BLOCKS AND THE CODE, BOTH AT ONCE
+Two more windows open beside the drawing: the program it was made from, block by block, and that same program as real Swift code. On iPad and Mac these take turns in one pane, because a screen has to choose. Here nothing has to be put away to see something else.
+
+SOMETHING TO LOOK AT ON THE FIRST DAY
+Four ready-made drawings are built in, so there is a picture for the table before the first file arrives. Drawings are ordinary documents — AirDrop one from an iPad, or open it from Files.
+
+FOR PARENTS AND TEACHERS
+There is no sign-in and no account. There is no advertising, no analytics, no third-party SDK, and no network connection of any kind — the app contains no networking code at all. Nothing about your room is recorded or sent anywhere; the app is told where a surface is so that it can put the paper on it, and that is all.
+
+Tortoise Blocks runs on iPad, Mac and Apple Vision Pro, speaks English and Japanese, and is free and open source under the MIT license.

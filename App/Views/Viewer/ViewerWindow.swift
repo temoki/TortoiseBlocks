@@ -1,5 +1,6 @@
 #if os(visionOS)
 
+    import OSLog
     import SwiftUI
     import TortoiseBlocksKit
 
@@ -91,23 +92,47 @@
             }
             .task {
                 // Development only: the simulator cannot press any of these
-                // buttons (simctl sends no input), so `-TBPlace YES` loads a
-                // sample, opens the program window and puts the drawing down at
-                // launch. Without it a simulator run is a window of buttons
-                // nobody can reach, and the immersive space never opens at all.
+                // buttons (simctl sends no input), so the launch arguments
+                // stand in for the hands.
                 //
-                // **It does not let you see the drawing.** The simulator hosts
-                // no `ViewAttachmentComponent` view, so the sheet's own SwiftUI
-                // body never runs, `TortoisePlayer` never attaches to a canvas,
-                // and `currentTortoiseState` stays nil — which looks exactly
-                // like a broken tortoise and has cost an afternoon once
-                // already (the root CLAUDE.md has the longer note). What the
-                // flag is actually good for is everything that is not the
-                // picture: that the USDZ loads in the real visionOS runtime
-                // with the bounds its contract promises, that the per-frame
-                // subscription fires, that load → run → place survives, and
-                // that the program and code windows draw with content in them.
-                // The picture itself is the headset's to judge.
+                //   -TBPlace YES      load a sample, open the program window,
+                //                     put the drawing down
+                //   -TBSample <name>  square | star | spiral | tree
+                //   -TBDraw <0…1>     run the drawing that far and stop
+                //   -TBSheet s,r,d    the sheet's side, how far ahead of the
+                //                     eyes it lands, and how far below them
+                //
+                // Without the first one a simulator run is a window of buttons
+                // nobody can reach, and the immersive space never opens at all.
+                // The other two exist because App Store screenshots are shot
+                // here rather than on a headset: a real room cannot be framed
+                // the same way twice and is somebody's home besides, while
+                // these four arguments describe a picture exactly.
+                //
+                // `-TBSheet` is the framing one, and it exists because
+                // nothing in the simulator can reach out and pinch the sheet
+                // bigger or drag it further off. It moves the two constants
+                // the placement is built from — reach and drop — rather than
+                // the position they produce, so a forced framing still lands
+                // in front of the camera and turned to face it.
+                //
+                // Worth knowing, since it was got wrong first: the simulator
+                // *does* report a usable head pose, so placement takes the
+                // aimed branch here exactly as a headset does, and an override
+                // written against the no-pose fallback silently does nothing.
+                //
+                // **The simulator does show the drawing.** This comment said
+                // the opposite for a while, and the mistake is worth recording
+                // rather than quietly deleting: what was actually broken was
+                // that `-TBPlace` placed by calling `place(.inFront)` *after*
+                // the load, which flipped `sitsOnTable` and so changed the
+                // `.id()` on the immersive space's `RealityView` — tearing the
+                // scene down and rebuilding it, with the attachment failing to
+                // come back. The sheet stayed blank, `currentTortoiseState`
+                // stayed nil, and that looked exactly like a platform that
+                // hosts no `ViewAttachmentComponent`. Setting the preference
+                // before the load leaves the id alone, and the paper, the
+                // drawing and the tortoise all render.
                 //
                 // Read off the launch arguments rather than through
                 // `UserDefaults`, which is where a `-flag value` pair normally
@@ -118,21 +143,108 @@
                 // needs none, which is a property worth keeping for one line:
                 // nothing else here touches a required-reason API, and the
                 // launch command is unchanged either way.
-                guard ProcessInfo.processInfo.arguments.contains("-TBPlace"),
-                    !model.hasProgram
-                else {
-                    return
-                }
+                let arguments = ProcessInfo.processInfo.arguments
+                guard arguments.contains("-TBPlace"), !model.hasProgram else { return }
+
                 // Loading is what places it now, so the destination is
                 // chosen by setting the preference first. In front rather
                 // than on a table because the simulator finds no planes at
                 // all, and a table search there only spends its fifteen
                 // seconds before falling back to exactly this.
                 model.sitsOnTable = false
-                model.load(SampleBlocks.spiral(), title: String(localized: "Spiral"))
+                if let framing = Self.framing(from: Self.value(of: "-TBSheet", in: arguments)) {
+                    model.side = framing.side
+                    model.framing = framing
+                }
+                let (blocks, title) = Self.sample(named: Self.value(of: "-TBSample", in: arguments))
+                model.load(blocks, title: title)
+                // Both, because that is what the platform's argument looks
+                // like when it is working: the drawing on the table, the
+                // blocks it is made from, and the code they become, all at
+                // once. They open beside the remote rather than over it — see
+                // `defaultWindowPlacement` in `TortoiseBlocksApp`.
                 openWindow(id: ViewerModel.programWindowID)
+                openWindow(id: ViewerModel.codeWindowID)
+
+                await settle(
+                    drawingTo: Self.value(of: "-TBDraw", in: arguments).flatMap(Double.init))
             }
         }
+
+        /// The value of a `-flag value` pair on the command line.
+        private static func value(of flag: String, in arguments: [String]) -> String? {
+            guard let flagIndex = arguments.firstIndex(of: flag),
+                arguments.index(after: flagIndex) < arguments.endIndex
+            else {
+                return nil
+            }
+            return arguments[arguments.index(after: flagIndex)]
+        }
+
+        /// `side,reach,drop` in metres — how big the sheet is, how far ahead
+        /// of the eyes it lands, and how far below them.
+        ///
+        /// All three or nothing: a partial list would leave some of the
+        /// framing to a default and the rest to the argument, which is the one
+        /// thing a reproducible capture cannot have.
+        private static func framing(from value: String?) -> ViewerModel.Framing? {
+            let numbers = (value ?? "").split(separator: ",").compactMap { Double($0) }
+            guard numbers.count == 3 else { return nil }
+
+            return ViewerModel.Framing(
+                side: numbers[0], reach: Float(numbers[1]), drop: Float(numbers[2]))
+        }
+
+        /// The sample `-TBSample` names, defaulting to the spiral.
+        private static func sample(named name: String?) -> ([Block], String) {
+            switch name?.lowercased() {
+            case "square": (SampleBlocks.filledSquare(), String(localized: "Filled Square"))
+            case "star": (SampleBlocks.star(), String(localized: "Star"))
+            case "tree": (SampleBlocks.fractalTree(), String(localized: "Tree"))
+            default: (SampleBlocks.spiral(), String(localized: "Spiral"))
+            }
+        }
+
+        /// Waits until the drawing is really on the paper, draws `fraction` of
+        /// it, and says so in the log.
+        ///
+        /// Two things need the same wait. The seek cannot go out until the
+        /// sheet's canvas has attached itself to the player —
+        /// `TortoisePlayer.seek` is a no-op before that, and the attachment
+        /// cannot happen until the immersive space has opened and its view has
+        /// rendered. And `Tools/visionos-shots.rb` needs to know when to press
+        /// the shutter, which is the same moment. `currentTortoiseState`
+        /// turning non-nil *is* it, and there is nothing to await on, so this
+        /// polls.
+        ///
+        /// The failure is worth a line of its own rather than a timeout the
+        /// script has to infer: a run occasionally comes up with no sheet at
+        /// all, and from the outside that is indistinguishable from one that is
+        /// merely slow. Told which it is, the script can relaunch instead of
+        /// filing a picture of an empty room.
+        private func settle(drawingTo fraction: Double?) async {
+            let clock = ContinuousClock()
+            let deadline = clock.now + .seconds(20)
+            while model.runner.player.currentTortoiseState == nil, clock.now < deadline {
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            guard model.runner.player.currentTortoiseState != nil else {
+                Self.shoot.error("TBNotReady")
+                return
+            }
+
+            let commands = model.runner.lastRunCommands.count
+            if let fraction, commands > 0 {
+                let clamped = min(max(fraction, 0), 1)
+                model.runner.seek(to: Int((Double(commands - 1) * clamped).rounded()))
+            }
+            Self.shoot.notice("TBReady")
+        }
+
+        /// Only ever written to under `-TBPlace`, and read only by the
+        /// screenshot script.
+        private static let shoot = Logger(
+            subsystem: "space.hiraku.tortoiseblocks", category: "shoot")
 
         /// Moves the drawing to `destination`, opening or closing the
         /// immersive space as that requires.

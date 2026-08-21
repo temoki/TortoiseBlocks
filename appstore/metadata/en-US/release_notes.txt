@@ -9,4 +9,4 @@ Give a block a name, put whatever you like inside it, and call it from anywhere 
 
 ON APPLE VISION PRO
 
-Tortoise Blocks now runs on Apple Vision Pro, with the same three panes in a window: the blocks to pick from, the program you are building, and the tortoise drawing it. Your drawings are the same documents on every device.
+Tortoise Blocks now runs on Apple Vision Pro, as a viewer for the drawings you make here. Open one and it goes on the table in front of you, at whatever size you like, with the tortoise walking across the paper as the picture appears. Your drawings are the same documents on every device.

@@ -27,6 +27,18 @@ module MetadataCheck
   URLS = ["privacy_url.txt", "support_url.txt", "marketing_url.txt"].freeze
   REQUIRED = (LIMITS.keys + URLS).sort.freeze
 
+  # The listing text, and there are two sets of it. iOS and macOS share one;
+  # visionOS has its own, because a Vision Pro shopper is shown the visionOS
+  # description and nothing else, and the app is a different thing there — a
+  # viewer for drawings made on the other two, with no editing in it at all.
+  METADATA_DIRECTORIES = ["metadata", "metadata-visionos"].freeze
+
+  # These three are **app**-level fields in App Store Connect: they belong to
+  # the app, not to a platform's version, so whichever lane runs last decides
+  # them for all three listings. Two directories that disagree would make the
+  # app's name depend on lane order, silently. They have to match.
+  SHARED = ["name.txt", "subtitle.txt", "privacy_url.txt"].freeze
+
   # Sizes Apple accepts for the display types this app ships. An unexpected
   # size is a mistake worth stopping on, not a shape to guess at. A platform
   # missing from this table is not checked at all, so a new screenshots
@@ -42,7 +54,18 @@ module MetadataCheck
   class << self
     # Every problem as [where, what], sorted. Empty means sendable.
     def problems(root: DEFAULT_ROOT)
-      (text_problems(root) + screenshot_problems(root)).sort
+      (text_problems(root) + shared_problems(root) + screenshot_problems(root)).sort
+    end
+
+    # Whether App Store Connect would refuse this PNG for its alpha channel.
+    #
+    # Public because Tools/screenshots.rb is the thing that *fixes* this, and a
+    # fixer that disagrees with the gate about what counts as alpha is worse
+    # than no fixer at all — it would report success on a file this still
+    # rejects.
+    def alpha?(path)
+      info = png_info(Pathname.new(path))
+      info && info[2]
     end
 
     # Prints and returns true when the tree is clean. `annotate` turns each
@@ -70,9 +93,35 @@ module MetadataCheck
     end
 
     def text_problems(root)
-      locale_directories(root / "metadata").flat_map do |directory|
-        locale = directory.basename.to_s
-        REQUIRED.flat_map { |name| field_problems(directory / name, "metadata/#{locale}/#{name}") }
+      METADATA_DIRECTORIES.flat_map do |metadata|
+        locale_directories(root / metadata).flat_map do |directory|
+          locale = directory.basename.to_s
+          REQUIRED.flat_map { |name| field_problems(directory / name, "#{metadata}/#{locale}/#{name}") }
+        end
+      end
+    end
+
+    # An app-level field that differs between the two directories, reported
+    # against the one that is not the first — the shared set is the reference,
+    # since it is what two of the three listings are pushed from.
+    def shared_problems(root)
+      reference, *others = METADATA_DIRECTORIES
+      others.flat_map do |metadata|
+        locale_directories(root / metadata).flat_map do |directory|
+          locale = directory.basename.to_s
+          SHARED.filter_map do |name|
+            here = directory / name
+            there = root / reference / locale / name
+            next unless here.exist? && there.exist?
+
+            a = here.read(encoding: "UTF-8").strip
+            b = there.read(encoding: "UTF-8").strip
+            next if a == b
+
+            ["#{metadata}/#{locale}/#{name}", "differs from #{reference}/#{locale}/#{name}, " \
+             "but App Store Connect keeps this field on the app rather than the version"]
+          end
+        end
       end
     end
 

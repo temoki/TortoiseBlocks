@@ -30,6 +30,12 @@
     @MainActor
     final class ViewerModel {
         static let spaceID = "table"
+
+        /// The remote itself. Named, unlike an app's usual first window,
+        /// because the other two are placed *relative to it* and
+        /// `WindowPlacement` needs a way to pick it out of
+        /// `WindowPlacementContext.windows`.
+        static let remoteWindowID = "remote"
         static let programWindowID = "program"
         static let codeWindowID = "code"
 
@@ -228,6 +234,25 @@
         /// desk would be if there were one.
         private static let floatingDrop: Float = 0.35
 
+        /// How the sheet is framed, when something is dictating it.
+        ///
+        /// Nil in the app. Set from `-TBSheet` while App Store screenshots are
+        /// being shot, which is the one situation where the framing has to be
+        /// described rather than arrived at: the simulator has no hands, so
+        /// nothing there can pinch the sheet bigger or drag it further off.
+        ///
+        /// It overrides the two constants the *aimed* placement uses rather
+        /// than the position it computes, so a forced framing still lands in
+        /// front of the camera and turned to face it — which is the part of
+        /// the placement worth keeping.
+        struct Framing {
+            var side: Double
+            var reach: Float
+            var drop: Float
+        }
+
+        var framing: Framing?
+
         func placeOnTable(atHeight y: Float, device: simd_float4x4) {
             aim(from: device, height: y)
             placement = .onTable
@@ -238,7 +263,7 @@
         /// takes a fixed spot ahead of the origin instead.
         func floatInFront(device: simd_float4x4?) {
             if let device {
-                aim(from: device, height: device.columns.3.y - Self.floatingDrop)
+                aim(from: device, height: device.columns.3.y - (framing?.drop ?? Self.floatingDrop))
             }
             else {
                 home = [0, 1.0, -1.2]
@@ -256,7 +281,7 @@
         /// stand, the far edge is the top, which is the way a sheet of paper on
         /// a desk is oriented without anyone thinking about it.
         private func aim(from device: simd_float4x4, height y: Float) {
-            let target = Self.gazeTarget(from: device)
+            let target = Self.gazeTarget(from: device, distance: framing?.reach ?? Self.reach)
             home = [target.x, y, target.z]
             homeYaw = Self.yaw(from: device)
         }
@@ -264,10 +289,11 @@
         /// The spot the sheet aims for: `reach` metres ahead of the eyes, at
         /// eye height. Shared with surface picking, so "the table I am looking
         /// at" and "where on it the drawing goes" are the same point.
-        static func gazeTarget(from device: simd_float4x4) -> SIMD3<Float> {
+        static func gazeTarget(from device: simd_float4x4, distance: Float = reach) -> SIMD3<Float>
+        {
             let eye = SIMD3(device.columns.3.x, device.columns.3.y, device.columns.3.z)
             let ahead = forward(of: device)
-            return eye + ahead * reach
+            return eye + ahead * distance
         }
 
         static func yaw(from device: simd_float4x4) -> Float {

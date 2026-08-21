@@ -3,11 +3,12 @@ name: release
 description: >-
   Everything about shipping Tortoise Blocks and everything the public sees:
   cutting a v* tag, Xcode Cloud archives and TestFlight, the App Store Connect
-  listing in appstore/ and the fastlane lanes that push it, screenshots,
-  accessibility nutrition labels, bundle identifiers and build audience, and
-  the published website in site/ (the landing page and the privacy policy).
-  Load this before tagging a release, editing the store text or screenshots,
-  running fastlane, or touching site/.
+  listing in appstore/ and the fastlane lanes that push it, accessibility
+  nutrition labels, bundle identifiers and build audience, and the published
+  website in site/ (the landing page and the privacy policy). Load this before
+  tagging a release, editing the store text, running fastlane, or touching
+  site/. **Making** the screenshots is the `screenshots` skill; this one covers
+  pushing them.
 ---
 
 # Releasing Tortoise Blocks
@@ -71,16 +72,10 @@ artwork, served from `site/` rather than Apple's CDN (a site that promises no
 tracking should make no third-party request), and its `href` is *the* single
 place the store URL lands: `apps.apple.com/app/id6798677334`, with no country
 code, so Apple sends each visitor to their own storefront. Its screenshots are downscaled
-copies of `appstore/screenshots/`, quantized to 256 colors (`magick -dither None
--colors 256 -strip`) and then run through `oxipng -o max --strip safe`: flat app
-UI loses nothing visible and the page drops from ~4.7MB to ~1MB — but check a
-re-quantized shot by eye, since dithering *on* leaves visible speckle in the
-toolbar shadows. The oxipng pass is a third of that saving and it is *lossless*,
-so it goes over the store captures and `docs/` too (18.6% off everything, pixels
-proved identical by hashing the decoded images before and after). Without it,
-`magick` alone lands about 25% high: the 1.0.0 files were plainly made with some
-such pass, so a set regenerated on a machine that has none comes out heavier for
-no visible reason. And each Japanese paragraph is one
+copies of `appstore/screenshots/`, produced by `Tools/screenshots.rb` — see the
+`screenshots` skill, which owns that pipeline and the reasons behind it; what
+matters here is that the page weighs ~1MB rather than ~4.7MB because of it.
+And each Japanese paragraph is one
 source line: a newline between two CJK characters is not reliably collapsed
 away, and shows up as a gap mid-sentence.
 
@@ -96,7 +91,27 @@ number in the filename, and the sizes are the ones Apple accepts as-is (iPad
 13-inch landscape 2752×2064, Mac 2880×1800), so a reshoot has to keep the
 window sizes that produced them. The two documents the captures were shot from
 sit in `appstore/screenshot-sources/`, deliberately *outside* `screenshots/`.
-The text is `appstore/metadata/<locale>/`, one file per field.
+
+**Making the captures is the `screenshots` skill** — the rigs
+(`Tools/ipad-shots.rb`, `Tools/visionos-shots.rb`), the flatten-and-optimise
+pass every reshoot has to end with, and the traps that produce a picture of the
+wrong thing. Nothing reaches App Store Connect without going through it: every
+source this project shoots from writes an alpha channel, which Apple refuses.
+The text is `appstore/metadata/<locale>/`, one file per field — **except
+visionOS**, which is pushed from `appstore/metadata-visionos/` instead (#53).
+That split is not tidiness: the App Store shows a Vision Pro shopper the
+visionOS description and nothing else, and the app is a different product
+there — a viewer for drawings made on iPad and Mac, with no editing in it at
+all — so the shared description would open by telling that shopper to drag
+blocks into a program, the one thing they cannot do. Three fields in those
+directories are **app**-level in App Store Connect rather than version-level
+(`name.txt`, `subtitle.txt`, `privacy_url.txt`), so every lane writes the same
+ones and whichever runs last decides them for all three listings; they are kept
+byte-identical between the two directories and `metadata_check` fails if they
+drift. A platform's text is also the first thing to go stale when the app
+changes shape: the visionOS copy described "the same three panes in a window"
+for as long as visionOS was the iPad app in a window (#11), and stayed that way
+through the rewrite that made it a viewer.
 
 **fastlane pushes it, and a self-written tool did not.** The uploader was
 designed as a zero-dependency Swift executable (#42) and abandoned about 900
@@ -153,11 +168,9 @@ same size as an Apple TV one, so deliver cannot resolve the display type from
 the size and falls back to asking whether the *path* contains `vision`
 (downcased) — name the directory after deliver's own platform value and every
 screenshot is filed as `APP_APPLE_TV` on an app with no tvOS listing.
-The captures need no staging: `xcrun simctl io <device> screenshot` on the
-visionOS simulator writes exactly 3840×2160, the simulated room and all, which
-is what visionOS screenshots look like anyway. They do carry an alpha channel,
-so `-alpha off` applies here like everywhere else. And no new identifier is
-needed — spaceship maps `xros` onto the **iOS** `BundleIdPlatform`, so the App
+The captures come from the simulator at exactly 3840×2160, the simulated room
+and all, which is what visionOS screenshots look like anyway (the `screenshots`
+skill has the rig). And no new identifier is needed — spaceship maps `xros` onto the **iOS** `BundleIdPlatform`, so the App
 IDs the iPhone/iPad build already registered are the ones visionOS signs
 against.
 
