@@ -58,6 +58,8 @@ graphics engine written in Swift.
 - **English / Japanese** — Japanese uses kid-friendly hiragana; adding a
   language is a single string-catalog edit
 
+<img src="docs/Viewer.png" width="640" alt="A drawing open on Apple Vision Pro: the blocks in a window on the left, the transport in the middle, the generated Swift on the right, and the star itself on a sheet on the table with the tortoise standing on it." />
+
 ## Requirements
 
 - **Xcode** 26+ (Swift 6.2)

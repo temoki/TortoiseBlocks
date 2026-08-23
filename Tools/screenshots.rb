@@ -40,6 +40,7 @@ require_relative "../fastlane/metadata_check"
 ROOT = Pathname.new(__dir__).parent
 SCREENSHOTS = ROOT / "appstore" / "screenshots"
 SITE_SHOTS = ROOT / "site" / "shots"
+DOCS = ROOT / "docs"
 
 # Which captures the website uses, and how big. A curated subset rather than a
 # rule — the code pane is on the Mac half of the page and not the iPad half —
@@ -67,6 +68,20 @@ DERIVED = {
     locales: { "en-US" => "en", "ja" => "ja" },
     shots: { "1_star_table" => "1" }
   }
+}.freeze
+
+# The README's picture of the Vision Pro app, on the same terms as the site
+# copies and for the same reason: what a reshoot silently leaves behind is the
+# picture nobody has open while shooting. Same recipe, too — quantised to 256
+# colours — which is what makes rerunning this reproduce the committed file
+# rather than rewrite it.
+#
+# `docs/Screenshot.png` is deliberately *not* here. It is a composition of its
+# own, a Mac window over a desktop with the palette open, and no App Store
+# capture matches it; deriving it would replace the picture rather than refresh
+# it.
+DOCS_DERIVED = {
+  "visionos/en-US/1_star_table" => { target: "Viewer.png", size: "1600x900" }
 }.freeze
 
 def run(*command)
@@ -133,5 +148,16 @@ DERIVED.each do |platform, spec|
 end
 run("oxipng", "-q", "-o", "max", "--strip", "safe", *Pathname.glob(SITE_SHOTS / "*.png").map(&:to_s))
 puts "site/shots regenerated"
+
+DOCS_DERIVED.each do |capture, spec|
+  source = SCREENSHOTS / "#{capture}.png"
+  next warn("missing #{relative(source)}, skipping docs/#{spec[:target]}") unless source.exist?
+
+  target = DOCS / spec[:target]
+  run("magick", source.to_s, "-resize", spec[:size], "-dither", "None",
+      "-colors", "256", "-strip", target.to_s)
+  run("oxipng", "-q", "-o", "max", "--strip", "safe", target.to_s)
+end
+puts "docs images regenerated"
 
 exit(MetadataCheck.report ? 0 : 1)
