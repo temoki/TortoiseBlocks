@@ -15,7 +15,7 @@ graphics engine written in Swift.
 [**App Store**](https://apps.apple.com/app/id6798677334) ·
 [Privacy](https://temoki.github.io/TortoiseBlocks/privacy.html)
 
-<img src="docs/Screenshot.png" width="640" alt="TortoiseBlocks on macOS" />
+<img src="docs/Screenshot.png" width="640" alt="Tortoise Blocks on macOS: a block named 🌳 that calls itself twice, and the fractal tree it draws." />
 
 ## Features
 

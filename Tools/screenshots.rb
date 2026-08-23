@@ -70,17 +70,20 @@ DERIVED = {
   }
 }.freeze
 
-# The README's picture of the Vision Pro app, on the same terms as the site
-# copies and for the same reason: what a reshoot silently leaves behind is the
-# picture nobody has open while shooting. Same recipe, too — quantised to 256
-# colours — which is what makes rerunning this reproduce the committed file
-# rather than rewrite it.
+# The README's two pictures, on the same terms as the site copies and for the
+# same reason: what a reshoot silently leaves behind is the picture nobody has
+# open while shooting. Same recipe, too — quantised to 256 colours — which is
+# what makes rerunning this reproduce the committed files rather than rewrite
+# them.
 #
-# `docs/Screenshot.png` is deliberately *not* here. It is a composition of its
-# own, a Mac window over a desktop with the palette open, and no App Store
-# capture matches it; deriving it would replace the picture rather than refresh
-# it.
+# The Mac one is the *tree* on purpose. It is the only capture in the set that
+# shows a block calling itself, which is what the README spends its longest
+# bullet on, and the platform section is the Mac's other job on the page
+# already. Both README images were composed by hand before the rigs existed —
+# the same scenes, shot separately — so this refreshes them rather than
+# replacing them, and the window sits a little differently for it.
 DOCS_DERIVED = {
+  "macos/en-US/4_tree_canvas" => { target: "Screenshot.png", size: "2560x1600" },
   "visionos/en-US/1_star_table" => { target: "Viewer.png", size: "1600x900" }
 }.freeze
 
