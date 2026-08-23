@@ -15,7 +15,7 @@ graphics engine written in Swift.
 [**App Store**](https://apps.apple.com/app/id6798677334) ·
 [Privacy](https://temoki.github.io/TortoiseBlocks/privacy.html)
 
-<img src="docs/Screenshot.png" width="640" alt="TortoiseBlocks on macOS" />
+<img src="docs/Screenshot.png" width="640" alt="Tortoise Blocks on macOS: a block named 🌳 that calls itself twice, and the fractal tree it draws." />
 
 ## Features
 
@@ -41,6 +41,11 @@ graphics engine written in Swift.
 - **Blocks → Swift** — a syntax-colored code pane shows the equivalent
   [Tortoise API](https://github.com/temoki/TortoiseGraphics2) program, as a
   bridge from blocks to text programming
+- **A viewer on Apple Vision Pro** — drawings are made on iPad and Mac; open
+  one on Vision Pro and it lies on a real table in front of you, at whatever
+  size you like, with a 3D tortoise standing on the paper walking the line as
+  it appears. The blocks and the generated Swift open in windows either side of
+  it, so a headset never has to choose between them the way one screen does
 - **Documents** — a standard document app: `.tortoise` files (JSON),
   iCloud Drive / Files integration, its own folder under On My iPad, autosave,
   system undo; a new document can start from a sample program
@@ -53,11 +58,14 @@ graphics engine written in Swift.
 - **English / Japanese** — Japanese uses kid-friendly hiragana; adding a
   language is a single string-catalog edit
 
+<img src="docs/Viewer.png" width="640" alt="A drawing open on Apple Vision Pro: the blocks in a window on the left, the transport in the middle, the generated Swift on the right, and the star itself on a sheet on the table with the tortoise standing on it." />
+
 ## Requirements
 
 - **Xcode** 26+ (Swift 6.2)
-- **Platforms** iPadOS 26+ · macOS 26+ · visionOS 26+ (the same three-pane app,
-  in a window on Vision Pro)
+- **Platforms** iPadOS 26+ · macOS 26+ · visionOS 26+ — the three-pane editor
+  on iPad and Mac, and on Vision Pro a viewer for what they made, with no
+  editing in it at all
 
 ## Getting Started
 
@@ -77,15 +85,18 @@ swift test
 
 ```
 TortoiseBlocks/
-├── TortoiseBlocksKit/    # UI-independent SwiftPM package (depends on TortoiseCore only)
-│   ├── Model/            #   Block tree, frozen JSON format, pure editing functions
-│   ├── Engine/           #   BlockExpander: block tree → command stream (+ blockID tags)
-│   └── CodeGen/          #   SwiftCodeGenerator: block tree → Swift source (+ tokenizer)
-├── App/                  # SwiftUI document app (palette | workspace | canvas)
-├── ThumbnailExtension/   # QuickLook thumbnails — reads one field, links nothing
-├── appstore/             # The store listing: text per locale, screenshots per platform
-├── fastlane/             # Pushes appstore/ to App Store Connect. The only Ruby here
-└── site/                 # The published website (GitHub Pages); docs/ is not published
+├── TortoiseBlocksKit/     # UI-independent SwiftPM package (depends on TortoiseCore only)
+│   ├── Model/             #   Block tree, frozen JSON format, pure editing functions
+│   ├── Engine/            #   BlockExpander: block tree → command stream (+ blockID tags)
+│   └── CodeGen/           #   SwiftCodeGenerator: block tree → Swift source (+ tokenizer)
+├── App/                   # SwiftUI document app (palette | workspace | canvas)
+│   └── Views/Viewer/      #   visionOS only: the drawing on the table, and its three windows
+├── ThumbnailExtension/    # QuickLook thumbnails — reads one field, links nothing
+├── TortoiseBlocksUITests/ # Not a test suite so much as a camera: it shoots the captures
+├── Tools/                 # The capture rigs, and the Blender script the 3D tortoise comes from
+├── appstore/              # The store listing: text per locale, screenshots per platform
+├── fastlane/              # Pushes appstore/ to App Store Connect
+└── site/                  # The published website (GitHub Pages); docs/ is not published
 ```
 
 The runtime pipeline is one straight line:
@@ -184,8 +195,21 @@ goes up on demand, by hand:
 ```bash
 bundle exec fastlane metadata_check     # the files alone, no network, no key
 bundle exec fastlane ios metadata_diff  # live listing against what is written
-bundle exec fastlane ios metadata_push  # upload (mac for the other listing)
+bundle exec fastlane ios metadata_push  # upload (mac, visionos for the others)
 ```
+
+There are three listings and two sets of text: iOS and macOS share
+`appstore/metadata`, while visionOS reads `appstore/metadata-visionos`, because
+the app there is a viewer and the description that sells the editor would be
+describing a product that does not exist. The app-level fields the App Store
+keeps once per app rather than per platform — name, subtitle, privacy URL —
+are checked byte-identical across both, since whichever lane runs last would
+otherwise quietly overwrite the others.
+
+The captures are made by the rigs in [Tools/](Tools/): one command each for
+iPad, Mac and Vision Pro, all ending in `Tools/screenshots.rb`, which flattens
+the alpha channel App Store Connect rejects, optimises every PNG, and
+regenerates the website's downscaled copies from the same pictures.
 
 ## License
 

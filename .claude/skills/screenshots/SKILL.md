@@ -21,7 +21,7 @@ only evidence that counts.
 ruby Tools/ipad-shots.rb                 # iPad: 4 shots × 2 languages, ~8 min
 ruby Tools/macos-shots.rb                # Mac: 4 shots × 2 languages
 ruby Tools/visionos-shots.rb             # Vision Pro: 3 shots × 2 languages
-ruby Tools/screenshots.rb                # always: strip alpha, optimise, rebuild site/shots
+ruby Tools/screenshots.rb                # always: strip alpha, optimise, rebuild site/shots and docs/
 ```
 
 All three take a name filter (`ruby Tools/ipad-shots.rb star`) and end by
@@ -53,7 +53,9 @@ composite. A capture with *real* transparency stops the run instead, because
 choosing a background would change the picture and that is a person's decision.
 
 It then runs `oxipng -o max --strip safe`, which is lossless and worth about a
-fifth of the bytes, and regenerates `site/shots/`.
+fifth of the bytes, and regenerates `site/shots/` — and the README's two
+pictures, `docs/Screenshot.png` (the Mac tree capture) and `docs/Viewer.png`
+(the Vision Pro one), which are derived on exactly the same terms.
 
 **That last part is the reason it is a script and not a paragraph.** The site
 images are downscaled copies of seven captures, so a reshoot that stops at
