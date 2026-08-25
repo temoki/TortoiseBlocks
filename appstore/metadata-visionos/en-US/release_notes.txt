@@ -1,1 +1,0 @@
-Tortoise Blocks comes to Apple Vision Pro, as a viewer for the drawings you make on iPad and Mac. Open one and it goes on the table in front of you, at whatever size you like, with the tortoise walking across the paper as the picture appears. The blocks it was made from and the Swift code behind it open in two more windows, both at once.
