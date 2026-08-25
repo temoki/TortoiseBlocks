@@ -39,6 +39,19 @@ module MetadataCheck
   # app's name depend on lane order, silently. They have to match.
   SHARED = ["name.txt", "subtitle.txt", "privacy_url.txt"].freeze
 
+  # Empty is a problem everywhere except here, and only because App Store
+  # Connect has no field to fill: "What's New" belongs to an *update*, and
+  # visionOS 1.1.0 is the app's first version on that platform. deliver says so
+  # and moves on — `Skipping 'release_notes'... this is the first version of
+  # the app` — so text written here cannot reach the store however many times
+  # it is pushed, and shows up in every `metadata_diff` instead. Two permanent
+  # phantom lines is how a diff people read becomes a diff people skip.
+  #
+  # **Delete this the moment visionOS takes a second version**, which is also
+  # when the notes have to be written: an update with no What's New is refused,
+  # and by then it is this exemption that would be hiding the empty file.
+  MAY_BE_EMPTY = { "metadata-visionos" => ["release_notes.txt"] }.freeze
+
   # Sizes Apple accepts for the display types this app ships. An unexpected
   # size is a mistake worth stopping on, not a shape to guess at. A platform
   # missing from this table is not checked at all, so a new screenshots
@@ -96,7 +109,9 @@ module MetadataCheck
       METADATA_DIRECTORIES.flat_map do |metadata|
         locale_directories(root / metadata).flat_map do |directory|
           locale = directory.basename.to_s
-          REQUIRED.flat_map { |name| field_problems(directory / name, "#{metadata}/#{locale}/#{name}") }
+          REQUIRED.flat_map do |name|
+            field_problems(directory / name, "#{metadata}/#{locale}/#{name}", metadata)
+          end
         end
       end
     end
@@ -125,12 +140,13 @@ module MetadataCheck
       end
     end
 
-    def field_problems(path, where)
+    def field_problems(path, where, metadata)
       return [[where, "missing"]] unless path.exist?
 
       text = path.read(encoding: "UTF-8").strip
       found = []
-      found << [where, "empty"] if text.empty?
+      may_be_empty = MAY_BE_EMPTY.fetch(metadata, []).include?(path.basename.to_s)
+      found << [where, "empty"] if text.empty? && !may_be_empty
       limit = LIMITS[path.basename.to_s]
       found << [where, "#{text.length} characters, limit is #{limit}"] if limit && text.length > limit
       if URLS.include?(path.basename.to_s) && !text.start_with?("http")

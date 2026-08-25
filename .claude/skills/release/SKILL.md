@@ -149,8 +149,17 @@ subdirectories, and it ends by reconciling the screenshots — wait for the
 checksums, delete duplicates, sort by filename, fail if live still differs from
 disk. Two more traps sit outside our code: **App Review Information must exist
 before deliver will run at all** (it reads it without a rescue and an app that
-has never had it gets `No data`), and **What's New shows as a difference until
-the second release**, because App Store Connect refuses it for a first version.
+has never had it gets `No data`), and **What's New does not exist until the
+second release on a platform**, because the field belongs to an update: deliver
+says so and moves on (`Skipping 'release_notes'... this is the first version of
+the app`), so text written there cannot reach the store however many times it
+is pushed, and `metadata_diff` reports it every run instead. Two permanent
+phantom lines is how a diff people read becomes a diff people skip, so
+`appstore/metadata-visionos/*/release_notes.txt` is deliberately **empty** and
+`MetadataCheck::MAY_BE_EMPTY` allows that one field in that one directory.
+**Write the notes and delete the exemption together**, when visionOS takes its
+second version — an update with no What's New is refused, and by then it is the
+exemption that would be hiding the empty file.
 One more vocabulary mismatch to remember: deliver says `osx`, the Connect API
 says `MAC_OS`, and passing the former to spaceship reports a missing version
 that plainly exists.
