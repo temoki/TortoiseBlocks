@@ -231,7 +231,14 @@ iOS to notice if you don't.
 What *is* unlinked is the tag and the version it ships: nothing makes
 `v0.2.0` and `MARKETING_VERSION` agree, and a mismatch uploads the old
 version silently. `release-tag.yml` compares them (and catches app/extension
-drift, since it requires one distinct value across all four configurations).
+drift, since it requires one distinct value across every configuration in the
+project). **That is every configuration, including targets that ship
+nothing**: adding the UI test target put a fifth and sixth `MARKETING_VERSION`
+in the file at Xcode's default `1.0`, and the next tag would have opened with
+`MARKETING_VERSION is not the same everywhere` — a red check on the release,
+for a test bundle nobody installs. It is carried at the app's version rather
+than exempted, because the alternative is teaching a `grep` which targets to
+believe.
 It cannot block the release — Xcode Cloud is already archiving — it only
 makes the mistake loud while there is still a build to cancel. A suffix after
 `-` is stripped before comparing: a marketing version is dotted numbers, a
