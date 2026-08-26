@@ -192,6 +192,21 @@ phantom lines is how a diff people read becomes a diff people skip, so
 **Write the notes and delete the exemption together**, when visionOS takes its
 second version — an update with no What's New is refused, and by then it is the
 exemption that would be hiding the empty file.
+**And a visionOS app cannot be submitted until App Motion is answered.** It is
+a required *app*-level property for every visionOS app — App Store Connect →
+App Information → App Motion, alongside the other fields the app keeps rather
+than the version — and it is nowhere in `appstore/`: deliver has no such
+metadata field, so `metadata_push` cannot set it and `metadata_check` cannot
+miss it. Nothing warns of it until the submission itself refuses, with a
+sentence about violent or frequent motion and no mention of where to go. The
+answer here is **"No, this app doesn't contain high motion"**, and it follows
+from Apple's own rule rather than from modesty: the test is whether *the
+virtual camera* moves without the user moving their head or body, and this app
+never moves it. The drawing is placed once and stays where it was put; the
+tortoise walking the paper is an object a twelfth of the sheet's width, and
+changing the placement moves the sheet, not the viewer. Once answered it stays
+answered — this is a first-visionOS-submission cost, like the version record
+and What's New.
 One more vocabulary mismatch to remember: deliver says `osx`, the Connect API
 says `MAC_OS`, and passing the former to spaceship reports a missing version
 that plainly exists.
