@@ -51,7 +51,9 @@ something nobody can buy.
 
 **What ends the hold is 1.1.0 actually being on the store** — not approved, not
 submitted, live. Then `gh workflow run pages.yml --ref main`, and delete the
-branch and its policy; the policy's id is in the environment listing, and
+branch, its policy **and these three paragraphs** — a note saying the site is
+held, left standing after it is not, sends the next reader looking for a branch
+that no longer exists. The policy's id is in the environment listing, and
 removing it is what stops a future deploy from having a second ref to choose
 from. Two traps sit around this. Deploying from the `v1.0.0`
 tag is *not* the same as deploying 1.0.0's site — the tag was cut before the
