@@ -32,6 +32,38 @@ are deployed by hand (Actions tab, or `gh workflow run pages.yml`) once the
 release is out. Do not add a `push:` trigger back for convenience: that is the
 timing this replaced. And `cancel-in-progress: false`, because a deploy
 interrupted midway can leave the live site as a half-written artifact.
+
+**Right now the live site is deployed from `site/1.0.0`, not from main**
+(2026-08-26). The trigger above was added *after* a push-triggered deploy on
+2026-08-11 had already put 1.1.0's page live — 🌳 blocks you make yourself,
+Apple Vision Pro, privacy §6 — while 1.1.0 was unreleased and iOS 1.0.0 was
+still in review. That branch is main with `site/` rolled back, and it is
+disposable.
+
+**The policy page is the exception, and it is the shape to reuse.** §6 is what
+tells App Review why the app asks to sense the room, so it had to be live
+before the visionOS build was submitted — and deploying main to get it would
+have taken the landing page along, selling a version still in review. So
+`privacy.html` alone was carried across from main onto the branch and deployed
+from there. A policy describing a version that has not shipped is a policy
+written ahead of time; a landing page selling one is an advertisement for
+something nobody can buy.
+
+**What ends the hold is 1.1.0 actually being on the store** — not approved, not
+submitted, live. Then `gh workflow run pages.yml --ref main`, and delete the
+branch, its policy **and these three paragraphs** — a note saying the site is
+held, left standing after it is not, sends the next reader looking for a branch
+that no longer exists. The policy's id is in the environment listing, and
+removing it is what stops a future deploy from having a second ref to choose
+from. Two traps sit around this. Deploying from the `v1.0.0`
+tag is *not* the same as deploying 1.0.0's site — the tag was cut before the
+app was on the store, so its page says "Coming soon" and points the badge at
+GitHub; the branch re-applies the badge and the OG card on top of the tag's
+`site/`. And a ref outside the `github-pages` environment's list fails in two
+seconds with `not allowed to deploy to github-pages due to environment
+protection rules`, which names the ref and nothing else: the list holds
+`main`, `gh-pages` and `site/1.0.0`, tags are not in it, and it is edited
+through `repos/{owner}/{repo}/environments/github-pages/deployment-branch-policies`.
 The policy page states what was *measured* — no accounts, no analytics, no
 advertising or third-party SDK, no tracking, and no networking code anywhere
 in the app or in TortoiseGraphics2 — which is also why no
