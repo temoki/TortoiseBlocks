@@ -87,6 +87,43 @@ quantization is what keeps that a non-issue. Only CSS `background-image` would a
 not worth trading `<img alt>` on the page's content images to save one
 language's worth of cached bytes.
 
+**The site is registered with Google Search Console, and the SEO is three
+files' worth of plumbing rather than copywriting.** The landing page went a
+month without appearing in a search, and the first suspicion — that something
+was blocking crawlers — was wrong: there is no `robots.txt` anywhere, no
+`noindex`, no `X-Robots-Tag`, and the repository is public. It had simply never
+been registered, and one thing about it was genuinely broken. **A crawler
+renders the page, so it negotiates like a browser** — Googlebot's
+`navigator.languages` is `en-US` — and the Japanese `<section>` therefore goes
+`display:none` on the one URL anyone links to. The Japanese page was not
+ranking badly; it did not exist. The fix keeps every decision above intact:
+hreflang alternates naming `?lang=en`, `?lang=ja` and the bare URL as
+`x-default`, real `<a href="?lang=…">` links in both footers because a
+`<select>` is not something a crawler can follow, and a `data-description` on
+each section beside the `data-title` that was already there — so adding a
+language is still a code, an `<option>` and a translated `<section>`.
+**There is deliberately no `rel=canonical`.** It would have to differ per URL,
+and one file cannot say three things: a static one pointing anywhere folds the
+other two into it and un-indexes the Japanese page, while a script-written one
+is the case Google says not to rely on. hreflang carries the relationship, and
+that is what it is for. The `?lang=` spelling is not free to change either —
+it is what `appstore/metadata*/*/marketing_url.txt` and `privacy_url.txt`
+already point at, so a move to `/ja/` paths would mean re-pushing both
+listings.
+`site/sitemap.xml` lists six URLs rather than two, because an hreflang set has
+to name every variant from every variant. It carries no `lastmod`: the site is
+deployed by hand at release time, so the date would go stale the first time
+someone forgot it, and Google ignores a lastmod it cannot trust. **It is
+submitted in Search Console, not announced from a `robots.txt`** — a
+`robots.txt` is only read at the *host* root, `temoki.github.io/robots.txt`,
+which belongs to no repository here; one placed in `site/` would be served,
+ignored, and mistaken for working. A sitemap has no such rule and may sit at
+any level at or above the URLs it lists.
+The JSON-LD `SoftwareApplication` block is the weakest of these and is kept
+honest on purpose: every value in it is checkable against the App Store
+listing, `LICENSE`, or the specs table on the page itself, and there is no
+`aggregateRating` — nor may one ever be added that nobody left.
+
 **The landing page is written for parents and teachers**, not for the kid and
 not for a developer — the technical account lives in the README. Three things
 about it are decisions rather than taste. The App Store badge is Apple's own

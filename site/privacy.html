@@ -7,8 +7,22 @@
 <meta name="description" content="Tortoise Blocks collects no data and makes no network connections. Tortoise Blocks は利用者の情報を一切収集せず、ネットワーク通信も行いません。">
 <link rel="icon" href="icon-176.png">
 
-<!-- The same card as the landing page, and English for the same reason: both
-     languages of this page live at one URL, so a preview can only be one. -->
+<!-- Each language is a URL, so each language is a page a search engine can
+     index on its own. The set is identical on every variant, self-reference
+     included, which is exactly what lets it be static in one file that serves
+     all three; `x-default` is the bare URL because that is the one that
+     negotiates. There is deliberately no `rel=canonical`: it would have to
+     differ per URL, and one file cannot say three things — a static one
+     pointing anywhere folds the other two into it and un-indexes the Japanese
+     page, while a script-written one is the case Google says not to rely on.
+     hreflang carries the relationship instead, which is what it is for. -->
+<link rel="alternate" hreflang="en" href="https://temoki.github.io/TortoiseBlocks/privacy.html?lang=en">
+<link rel="alternate" hreflang="ja" href="https://temoki.github.io/TortoiseBlocks/privacy.html?lang=ja">
+<link rel="alternate" hreflang="x-default" href="https://temoki.github.io/TortoiseBlocks/privacy.html">
+
+<!-- The same card as the landing page, and English for the same reason: a
+     social scraper does not run the script that picks a language, so the
+     per-language URLs declared above buy a preview nothing. -->
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Tortoise Blocks">
 <meta property="og:title" content="Privacy Policy — Tortoise Blocks">
@@ -150,7 +164,8 @@
   </div>
 </header>
 
-<section lang="en">
+<section lang="en"
+         data-description="Tortoise Blocks collects no information about the people who use it: no accounts, no analytics, no advertising, and no network connections at all.">
 
   <h2 style="border-top:0;padding-top:0;margin-top:2.5rem">Privacy Policy</h2>
 
@@ -248,7 +263,8 @@
 
 </section>
 
-<section lang="ja">
+<section lang="ja"
+         data-description="Tortoise Blocks は利用者の情報を一切収集しません。アカウントも、解析も、広告も、ネットワーク通信もありません。">
 
   <h2 style="border-top:0;padding-top:0;margin-top:2.5rem">プライバシーポリシー</h2>
 
@@ -327,7 +343,9 @@
 
 <footer>
   <a href="./">Tortoise Blocks</a> ·
-  <a href="https://github.com/temoki/TortoiseBlocks">GitHub</a>
+  <a href="https://github.com/temoki/TortoiseBlocks">GitHub</a> ·
+  <a href="?lang=en" hreflang="en" lang="en">English</a> ·
+  <a href="?lang=ja" hreflang="ja" lang="ja">日本語</a>
 </footer>
 
 </main>
@@ -343,8 +361,15 @@
       select.value = lang;
       // Taken from the page rather than a parallel list of titles, so a new
       // language needs no edit here.
-      var heading = document.querySelector('section[lang="' + lang + '"] h2');
+      var section = document.querySelector('section[lang="' + lang + '"]');
+      var heading = section && section.querySelector("h2");
       if (heading) document.title = heading.textContent.trim() + " — Tortoise Blocks";
+      // The static description names both languages, because that is what the
+      // bare URL and a script-less reader get.
+      var desc = document.querySelector('meta[name="description"]');
+      if (desc && section && section.dataset.description) {
+        desc.setAttribute("content", section.dataset.description);
+      }
       if (remember) {
         // The choice rides in the URL, not in storage: a page promising no
         // data collection has no business writing localStorage, and this
