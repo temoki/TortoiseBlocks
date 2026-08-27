@@ -7,7 +7,23 @@
 <meta name="description" content="Tortoise Blocks is a visual programming app for kids on iPad, Mac and Apple Vision Pro: snap blocks together, press play, and watch the tortoise draw. Tortoise Blocks は、ブロックをならべてカメに絵をかいてもらう、iPad と Mac と Apple Vision Pro のための子ども向けプログラミングアプリです。">
 <link rel="icon" href="icon-176.png">
 
-<!-- One card serves both languages, because both are served from one URL. -->
+<!-- Each language is a URL, so each language is a page a search engine can
+     index on its own. The set is identical on every variant, self-reference
+     included, which is exactly what lets it be static in one file that serves
+     all three; `x-default` is the bare URL because that is the one that
+     negotiates. There is deliberately no `rel=canonical`: it would have to
+     differ per URL, and one file cannot say three things — a static one
+     pointing anywhere folds the other two into it and un-indexes the Japanese
+     page, while a script-written one is the case Google says not to rely on.
+     hreflang carries the relationship instead, which is what it is for. -->
+<link rel="alternate" hreflang="en" href="https://temoki.github.io/TortoiseBlocks/?lang=en">
+<link rel="alternate" hreflang="ja" href="https://temoki.github.io/TortoiseBlocks/?lang=ja">
+<link rel="alternate" hreflang="x-default" href="https://temoki.github.io/TortoiseBlocks/">
+
+<!-- One card for both languages, and English by default. The alternates
+     above give each language a URL, but a social scraper is not a browser: it
+     does not run the script that picks a language, so a per-language card
+     would have to be written by JavaScript nothing would execute. -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Tortoise Blocks">
 <meta property="og:title" content="Tortoise Blocks">
@@ -239,7 +255,9 @@
 <main>
 
 <!-- ============================ English ============================= -->
-<section lang="en" data-title="Tortoise Blocks — Snap blocks together, watch the tortoise draw">
+<section lang="en"
+         data-title="Tortoise Blocks — Snap blocks together, watch the tortoise draw"
+         data-description="A visual programming app for kids on iPad, Mac and Apple Vision Pro. Snap blocks into a program, press play, and watch a tortoise draw your picture.">
 
   <div class="hero">
     <img class="icon" src="icon-256.png" alt="" width="112" height="112">
@@ -451,7 +469,9 @@
 </section>
 
 <!-- ============================ 日本語 ============================== -->
-<section lang="ja" data-title="Tortoise Blocks — ブロックをならべて、カメに絵をかいてもらおう">
+<section lang="ja"
+         data-title="Tortoise Blocks — ブロックをならべて、カメに絵をかいてもらおう"
+         data-description="iPad と Mac と Apple Vision Pro のための子ども向けビジュアルプログラミングアプリ。ブロックをならべて再生ボタンを押すと、カメが1本ずつ線をかいていきます。">
 
   <div class="hero">
     <img class="icon" src="icon-256.png" alt="" width="112" height="112">
@@ -608,6 +628,11 @@
   <a href="https://github.com/temoki/TortoiseBlocks">GitHub</a>
   <a href="privacy.html">Privacy / プライバシー</a>
   <a href="https://github.com/temoki/TortoiseBlocks/issues">Issues</a>
+  <!-- Real links, and not a second picker: a <select> is not something a
+       crawler can follow, so without these the Japanese URL is declared in the
+       head and reachable from nowhere. -->
+  <a href="?lang=en" hreflang="en" lang="en">English</a>
+  <a href="?lang=ja" hreflang="ja" lang="ja">日本語</a>
   <span>© hiraku.space</span>
 </footer>
 
@@ -624,6 +649,13 @@
       // so a new language needs no edit here.
       var section = document.querySelector('section[lang="' + lang + '"]');
       if (section && section.dataset.title) document.title = section.dataset.title;
+      // The static description names both languages, because that is what the
+      // bare URL and a script-less reader get. Once a language is resolved the
+      // page is only in that one, and the description should say so.
+      var desc = document.querySelector('meta[name="description"]');
+      if (desc && section && section.dataset.description) {
+        desc.setAttribute("content", section.dataset.description);
+      }
       if (remember) {
         // The choice rides in the URL, not in storage: this site promises the
         // app stores nothing, and the page has no business doing otherwise —
