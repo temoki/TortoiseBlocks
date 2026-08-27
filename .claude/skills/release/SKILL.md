@@ -43,6 +43,17 @@ protection rules`, naming the ref and nothing else. Tags are never in that list
 by default — and a tag's `site/` is the site as of the tag, not as of the
 release, which for `v1.0.0` meant a "Coming soon" page whose badge pointed at
 GitHub.
+**One file in `site/` is not part of the site.**
+`googlec3508f6a7924162b.html` is Google Search Console's proof of ownership for
+the URL-prefix property `https://temoki.github.io/TortoiseBlocks/`, and its
+entire content is the one line Google generated. Do not tidy it, rename it, or
+wrap it in HTML: the check reads the file's contents and the name has to match
+what is inside. It is a file rather than the `<meta name="google-site-verification">`
+alternative for one reason — the landing page's `<head>` is rewritten every
+release, and a tag living there is exactly what a rewrite drops silently, taking
+the verification with it; Search Console re-checks periodically and un-verifies
+when the proof stops answering. Nothing links to it, and nothing should.
+
 The policy page states what was *measured* — no accounts, no analytics, no
 advertising or third-party SDK, no tracking, and no networking code anywhere
 in the app or in TortoiseGraphics2 — which is also why no
