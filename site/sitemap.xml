@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Six URLs, not two: an hreflang set has to name every variant from every
+  Nine URLs, not three: an hreflang set has to name every variant from every
   variant, so each of the three addresses each page answers to gets its own
   entry carrying the whole set. They are the same alternates the pages
   declare in their heads — a sitemap is where a crawler finds the Japanese
@@ -54,5 +54,23 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://temoki.github.io/TortoiseBlocks/privacy.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="ja" href="https://temoki.github.io/TortoiseBlocks/privacy.html?lang=ja"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://temoki.github.io/TortoiseBlocks/privacy.html"/>
+  </url>
+  <url>
+    <loc>https://temoki.github.io/TortoiseBlocks/why.html?lang=en</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://temoki.github.io/TortoiseBlocks/why.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://temoki.github.io/TortoiseBlocks/why.html?lang=ja"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://temoki.github.io/TortoiseBlocks/why.html"/>
+  </url>
+  <url>
+    <loc>https://temoki.github.io/TortoiseBlocks/why.html?lang=ja</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://temoki.github.io/TortoiseBlocks/why.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://temoki.github.io/TortoiseBlocks/why.html?lang=ja"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://temoki.github.io/TortoiseBlocks/why.html"/>
+  </url>
+  <url>
+    <loc>https://temoki.github.io/TortoiseBlocks/why.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://temoki.github.io/TortoiseBlocks/why.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://temoki.github.io/TortoiseBlocks/why.html?lang=ja"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://temoki.github.io/TortoiseBlocks/why.html"/>
   </url>
 </urlset>

@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why this app exists — Tortoise Blocks</title>
+<meta name="description" content="Tortoise Blocks goes back to Logo, to Seymour Papert, and to a classroom in 1994. Tortoise Blocks の前史には、Logo と、シーモア・パパートと、1994年の教室があります。">
+<link rel="icon" href="favicon.ico">
+
+<!-- Each language is a URL, so each language is a page a search engine can
+     index on its own. The set is identical on every variant, self-reference
+     included, which is exactly what lets it be static in one file that serves
+     all three; `x-default` is the bare URL because that is the one that
+     negotiates. There is deliberately no `rel=canonical`: it would have to
+     differ per URL, and one file cannot say three things — a static one
+     pointing anywhere folds the other two into it and un-indexes the Japanese
+     page, while a script-written one is the case Google says not to rely on.
+     hreflang carries the relationship instead, which is what it is for. -->
+<link rel="alternate" hreflang="en" href="https://temoki.github.io/TortoiseBlocks/why.html?lang=en">
+<link rel="alternate" hreflang="ja" href="https://temoki.github.io/TortoiseBlocks/why.html?lang=ja">
+<link rel="alternate" hreflang="x-default" href="https://temoki.github.io/TortoiseBlocks/why.html">
+
+<!-- The same card as the other two pages, and English for the same reason: a
+     social scraper does not run the script that picks a language, so the
+     per-language URLs declared above buy a preview nothing. -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Tortoise Blocks">
+<meta property="og:title" content="Why this app exists — Tortoise Blocks">
+<meta property="og:description" content="A language called Logo, a researcher who died in 2016, and a classroom in Japan in 1994. Where Tortoise Blocks comes from, and what it is aiming at.">
+<meta property="og:url" content="https://temoki.github.io/TortoiseBlocks/why.html">
+<meta property="og:image" content="https://temoki.github.io/TortoiseBlocks/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Tortoise Blocks tortoise, in a purple beret with a paintbrush for a tail.">
+<meta name="twitter:card" content="summary_large_image">
+
+<style>
+  /* Kept in step with index.html and privacy.html: the accent is the mascot's
+     purple, the same literal both appearances use in the app. */
+  :root {
+    --bg: #ffffff;
+    --fg: #1c1c1e;
+    --muted: #5b5b60;
+    --rule: #e3e3e8;
+    --accent: #b64ae5;
+    --card: #f7f5fa;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 12px 32px rgba(0,0,0,.10);
+    --btn-bg: #8b1bbb;
+    --btn-fg: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #131316;
+      --fg: #ececf0;
+      --muted: #a0a0a8;
+      --rule: #2c2c31;
+      --accent: #cf7bf0;
+      --card: #1c1c21;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.45);
+      --btn-bg: #cf7bf0;
+      --btn-fg: #131316;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2.5rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.75 -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  main { max-width: 44rem; margin: 0 auto; }
+  header { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  header img { width: 72px; height: 72px; border-radius: 16px; flex: none; }
+  h1 { font-size: 1.5rem; line-height: 1.3; margin: 0; }
+  h2 {
+    font-size: 1.15rem; margin: 2.75rem 0 .75rem;
+    padding-top: 1.5rem; border-top: 1px solid var(--rule);
+  }
+  p, ul { margin: .75rem 0; }
+  ul { padding-left: 1.35rem; }
+  li { margin: .3rem 0; }
+  a { color: var(--accent); }
+  img { max-width: 100%; height: auto; }
+  .lede {
+    margin: 1.75rem 0 0;
+    padding: 1.1rem 1.25rem;
+    background: var(--card);
+    border-radius: 12px;
+    font-size: 1.05rem;
+  }
+  .lede strong { color: var(--fg); }
+
+  /* The two turtle-graphics programs, side by side. Not a screenshot: the
+     point of the section is that one of them is short, and a reader who
+     cannot see the picture still gets that from the text. */
+  .two {
+    display: grid; gap: 1rem; margin: 1.5rem 0;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  }
+  .two div { background: var(--card); border-radius: 12px; padding: 1.1rem 1.25rem; }
+  .two h3 { margin: 0 0 .5rem; font-size: .95rem; }
+  .two pre {
+    margin: 0; font-size: .9rem; line-height: 1.6;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    white-space: pre-wrap;
+  }
+  .two p { margin: .75rem 0 0; color: var(--muted); font-size: .875rem; }
+
+  /* The two viewpoints, drawn. It is the same triangle at the same size in
+     both panels — only the annotation changes, which is the section's whole
+     point. Every colour is a token, so the figures follow the theme. */
+  .two .fig { display: block; width: 100%; height: auto; margin: .35rem 0 1.1rem; }
+  .two .fig text { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+  .two .fig .pt { fill: var(--fg); font-weight: 600; }
+  .two .fig .hot { fill: var(--accent); font-weight: 700; }
+
+  figure { margin: 2rem 0 0; }
+  figure img, figure video { border-radius: 14px; box-shadow: var(--shadow); }
+  /* Self-hosted rather than embedded from GitHub: a site that promises no
+     third-party requests may not make one for a video either. It carries
+     `controls` and does not autoplay — a 10-second loop the reader cannot
+     stop is exactly what WCAG 2.2.2 is about — and `preload="none"` means
+     the file is only fetched if someone presses play. */
+  figure video { display: block; width: 100%; height: auto; background: var(--card); }
+  figcaption { margin-top: .85rem; color: var(--muted); font-size: .9rem; }
+  /* Provenance for material that is not ours: the course handouts came
+     from the school. */
+  .pair { display: grid; gap: .75rem; }
+  .pair img { border-radius: 10px; }
+  /* The page's only route back to the app: an essay that has just spent two
+     thousand words on why the app exists should not end without one, and the
+     footer wordmark is not it. The fill is a darker shade of the same purple
+     rather than --accent itself — white on --accent is 4.1:1, under AA. In
+     dark the accent is light enough to carry dark text, so the pair inverts
+     and the hue never changes. Measured: 7.07:1 light, 6.84:1 dark. */
+  .cta { margin: 3rem 0 0; text-align: center; }
+  .cta a {
+    display: inline-block; padding: .85rem 2rem;
+    border-radius: 999px;
+    background: var(--btn-bg); color: var(--btn-fg);
+    text-decoration: none; font-weight: 600;
+  }
+  .cta a:hover { opacity: .9; }
+  .cta a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  .credit { display: block; margin-top: .35rem; font-size: .8rem; opacity: .8; }
+
+  footer {
+    margin-top: 3.5rem; padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+    color: var(--muted); font-size: .875rem;
+  }
+  :lang(ja) {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans",
+                 "Helvetica Neue", Arial, sans-serif;
+    /* Keeps a line from starting on a small kana or a 長音符. Japanese
+       paragraphs are also written as one source line each: a newline between
+       two CJK characters is not reliably collapsed away, and shows up as a
+       gap mid-sentence. */
+    line-break: strict;
+    word-break: auto-phrase;
+  }
+
+  /* Language picker. A select rather than a row of buttons, so a third and
+     fourth language cost one <option> and no layout thinking. */
+  .langpick { margin-left: auto; }
+  .langpick select {
+    font: inherit; font-size: .9rem;
+    padding: .45rem 2rem .45rem .75rem;
+    border: 1px solid var(--rule); border-radius: 8px;
+    background: var(--bg); color: var(--fg);
+    cursor: pointer; appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+                      linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: right 1rem center, right .7rem center;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+  }
+  .langpick select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* The hiding rule keys on an attribute only the script sets, so with
+     JavaScript off every language renders in full and only the picker —
+     useless without it — goes away. */
+  html[data-lang] section[lang] { display: none; }
+  html[data-lang="en"] section[lang="en"],
+  html[data-lang="ja"] section[lang="ja"] { display: block; }
+  html:not([data-lang]) .langpick { display: none; }
+</style>
+<script>
+  /* Adding a language takes three edits: a code here, an <option> below, and
+     a <section lang="…"> of translated text. Everything else follows. The
+     first entry is the fallback when nothing else matches. */
+  var LANGS = ["en", "ja"];
+
+  // Runs before the body renders, so the right language is the first thing
+  // painted rather than a flash of another one.
+  (function () {
+    var q = new URLSearchParams(location.search).get("lang");
+    var lang = LANGS.indexOf(q) >= 0 ? q : negotiate();
+    document.documentElement.dataset.lang = lang;
+    document.documentElement.lang = lang;
+
+    // navigator.languages is in the reader's own order of preference, so the
+    // first tag that matches something we have wins — "ja-JP" matches "ja",
+    // "java" matches nothing.
+    function negotiate() {
+      var tags = navigator.languages || [navigator.language || ""];
+      for (var i = 0; i < tags.length; i++) {
+        var tag = String(tags[i]).toLowerCase();
+        for (var j = 0; j < LANGS.length; j++) {
+          if (tag === LANGS[j] || tag.indexOf(LANGS[j] + "-") === 0) return LANGS[j];
+        }
+      }
+      return LANGS[0];
+    }
+  })();
+</script>
+</head>
+<body>
+<main>
+
+<header>
+  <img src="icon-176.png" alt="">
+  <h1>Tortoise&nbsp;Blocks</h1>
+  <div class="langpick">
+    <select id="lang" aria-label="Language / 言語">
+      <option value="en" lang="en">English</option>
+      <option value="ja" lang="ja">日本語</option>
+    </select>
+  </div>
+</header>
+
+<!-- ============================ English ============================= -->
+<section lang="en"
+         data-description="Tortoise Blocks goes back to a language called Logo, to a researcher who died in 2016, and to a classroom in Japan in 1994. Where the app comes from, and what it is aiming at.">
+
+  <h2 style="border-top:0;padding-top:0;margin-top:2.5rem">Why this app exists</h2>
+
+  <p class="lede">
+    <strong>Not one of the ideas in Tortoise Blocks was invented here. They were
+    inherited</strong> — from a language called Logo, from a researcher who died
+    in 2016, and from a classroom in Japan in 1994.
+  </p>
+
+  <h2>A tortoise you give directions to</h2>
+
+  <p>
+    Almost all computer drawing is done from a bird's-eye view. You look down at
+    the page, name a coordinate, and draw a line to it.
+  </p>
+
+  <p>
+    Turtle graphics works the other way round. There is a tortoise standing on
+    the page, and it leaves a line behind it wherever it walks. All you ever do
+    is give it directions — turn right twenty degrees, walk forward five steps —
+    and the drawing is whatever trail it leaves. Same picture in the end;
+    opposite place to stand while making it.
+  </p>
+
+  <p>
+    That sounds like a small difference until you try to draw something. From
+    above, an equilateral triangle needs trigonometry to find where its third
+    corner lands. From the tortoise's back it needs no mathematics at all — it
+    is three walks and three turns, and a child can see why.
+  </p>
+
+  <div class="two">
+    <div>
+      <h3>From above</h3>
+      <svg class="fig" viewBox="0 0 248 200" role="img" aria-labelledby="bird-en">
+        <title id="bird-en">An equilateral triangle on a coordinate grid. Two corners sit at (0,0) and (10,0); the third is at x=5, and the height up to it is dashed and marked with a question mark.</title>
+        <defs>
+          <pattern id="grid-en" width="16" height="16" patternUnits="userSpaceOnUse" x="40" y="170">
+            <path d="M16 0V16M0 16H16" fill="none" stroke="var(--fg)" stroke-opacity=".16"/>
+          </pattern>
+        </defs>
+        <rect x="40" y="26" width="192" height="144" fill="url(#grid-en)"/>
+        <path d="M40 178V20M32 170H234" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+        <path d="M40 14l-4.5 9h9z" fill="var(--muted)"/>
+        <path d="M240 170l-9-4.5v9z" fill="var(--muted)"/>
+        <path d="M120 170V33" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <path d="M40 170H200L120 31.4Z" fill="none" stroke="var(--fg)" stroke-width="2" stroke-linejoin="round"/>
+        <circle cx="40" cy="170" r="3.5" fill="var(--fg)"/>
+        <circle cx="200" cy="170" r="3.5" fill="var(--fg)"/>
+        <circle cx="120" cy="31.4" r="3.5" fill="var(--fg)"/>
+        <text class="pt" x="34" y="186" text-anchor="end">(0,0)</text>
+        <text class="pt" x="200" y="188" text-anchor="middle">(10,0)</text>
+        <text class="pt" x="120" y="22" text-anchor="middle">(5,&#8202;<tspan class="hot">?</tspan>)</text>
+      </svg>
+      <pre>addLine(to: (10, 0))
+addLine(to: (5, ?))
+addLine(to: (0, 0))</pre>
+      <p>The question mark is where the trigonometry goes.</p>
+    </div>
+    <div>
+      <h3>From the tortoise</h3>
+      <svg class="fig" viewBox="0 0 248 200" role="img" aria-labelledby="turtle-en">
+        <title id="turtle-en">The same triangle, walked rather than plotted: three sides of ten steps, with a 120-degree left turn at each corner, and a turtle at the start facing along the first side.</title>
+        <path d="M206 170H234" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <path d="M113.5 20.1L104 3.7" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <path d="M226 170A26 26 0 0 0 187 147.5" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+        <path d="M107 8.9A26 26 0 0 0 107 53.9" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+        <path d="M40 170H200L120 31.4Z" fill="none" stroke="var(--fg)" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M21 161.5L40 170l-19 8.5z" fill="var(--accent)"/>
+        <text x="120" y="188" text-anchor="middle">10</text>
+        <text x="184" y="104" text-anchor="middle">10</text>
+        <text x="56" y="104" text-anchor="middle">10</text>
+        <text class="hot" x="219" y="140" text-anchor="middle">120°</text>
+        <text class="hot" x="74" y="35" text-anchor="middle">120°</text>
+      </svg>
+      <pre>forward(10)
+left(120)
+forward(10)
+left(120)
+forward(10)</pre>
+      <p>No question marks. Just a repeated pattern.</p>
+    </div>
+  </div>
+
+  <p>
+    And when the turn is wrong, the drawing says so at once. Put 100 where 120
+    belongs and the triangle does not close; put 140 and it overshoots. So a
+    child changes the number and runs it again, and again, and somewhere in
+    there stops guessing and starts knowing. Try, look, change, try again —
+    that loop is not a side effect of turtle graphics. It is the whole method.
+  </p>
+
+  <p>
+    Tortoise Blocks is an app for exactly that. The blocks in its palette —
+    Forward, Turn Left — are the forward and left in the figure above, and when
+    a child snaps them together and presses play, the tortoise on screen sets
+    off and leaves its line behind it. The triangle above is a program you can
+    build in it: Forward 10 and Turn Left 120, wrapped in Repeat 3 times.
+  </p>
+
+  <h2>A classroom in 1994</h2>
+
+  <p>
+    The app's author met turtle graphics in 1994, in his second year of junior
+    high school, in a computer class. The machine was a Fujitsu FM&nbsp;R-50
+    running MS-DOS, the software was called LogoWriter 2, and the subject was
+    programming itself.
+  </p>
+
+  <p>
+    He got carried away, and what he made drew a reaction from his classmates.
+    That was his first time succeeding at programming, and it is the reason he
+    writes software for a living now — which is to say that this app is not a
+    project about childhood learning so much as one paying a debt to it.
+  </p>
+
+  <h2>Seymour Papert</h2>
+
+  <p>
+    Turtle graphics was never a drawing toy. It was an argument, and the person
+    making it was Seymour Papert, who had spent five years in Geneva working
+    with the psychologist Jean Piaget on how children's thinking develops. In
+    1967, with Wally Feurzeig and Cynthia Solomon, he designed Logo — around
+    what he would later call constructionism: that children learn best while
+    building something real, something that works, that they can show to
+    somebody, and that fails in ways they can see and fix.
+  </p>
+
+  <p>
+    Which is why the tortoise takes its directions the way it does. You cannot
+    tell a tortoise to go to coordinate (5, 8.66); you tell it to turn and walk,
+    the way you would tell yourself.
+  </p>
+
+  <p>
+    Papert worked with LEGO from 1985, and the company's Mindstorms robotics kit
+    took its name from his 1980 book. A great deal of the very idea that
+    children learn with computers at all starts with him.
+  </p>
+
+  <h2>Building Tortoise Graphics, 2016</h2>
+
+  <p>
+    Two things happened close together in 2016. In June, Apple announced
+    <a href="https://www.apple.com/swift/playgrounds/">Swift Playgrounds</a>:
+    Swift on an iPad, for people learning to code. On 31 July, Seymour Papert
+    died.
+  </p>
+
+  <p>
+    That news is what moved the app's author to start building. If turtle
+    graphics could be made to run inside Swift Playgrounds, then children could
+    have on an iPad what he had had in 1994. A week later, there was something
+    that ran.
+  </p>
+
+  <p>
+    That was
+    <a href="https://github.com/temoki/TortoiseGraphics2">Tortoise Graphics</a>,
+    a turtle graphics engine written in Swift, distributed as a Swift
+    Playgrounds Book that a child could easily try on an iPad. The name is
+    "tortoise" rather than "turtle" for no better reason than that its author
+    prefers the land-dwelling kind — which is also how this app got its name,
+    and why the mascot has feet.
+  </p>
+
+  <figure>
+    <video src="tortoise-graphics.mp4" poster="tortoise-graphics.png"
+           width="640" height="450" controls loop muted playsinline preload="none"
+           aria-label="Screen recording: Tortoise Graphics running in Swift Playgrounds on an iPad, drawing a star of overlapping red lines as the code beside it runs."></video>
+    <figcaption>
+      Tortoise Graphics in Swift Playgrounds, on an iPad. The loop is the two
+      commands from the figure near the top of this page — forward and left —
+      thirty-six times over instead of three.</figcaption>
+  </figure>
+
+  <h2>A school in Ontario</h2>
+
+  <p>
+    Two schools wrote to say they wanted to teach with it. One was Lakefield
+    College School in Ontario, Canada — then a boarding school of about 360
+    students — which used it in its introduction to computer science. The course
+    ran in a particular order: start with block-based programming like Scratch,
+    move to text-based programming with Tortoise Graphics, and finish with each
+    student drawing a shape of their own in code and plotting it on a pen
+    plotter.
+  </p>
+
+  <figure>
+    <div class="pair">
+      <img src="lesson-blocks.png" loading="lazy" width="1400" height="814"
+           alt="A course handout headed How it worked in GP Blocks, showing a block program — repeat 4, move 50, turn by 90 — with the teacher&rsquo;s handwritten notes labelling the repeat block, the class and the object.">
+      <img src="lesson-swift.png" loading="lazy" width="1400" height="1025"
+           alt="The next handout, showing the same square written in Swift with Tortoise Graphics — a for loop around forward 50 and left 90 — annotated by hand in the same vocabulary.">
+    </div>
+    <figcaption>
+      Two pages of the teacher&rsquo;s own handouts. The same square twice:
+      once in blocks — repeat 4, move 50, turn by 90 — and once in Swift,
+      forward 50 and left 90. Blocks first, then text, in the same handwriting.
+      <span class="credit">Course materials: Lakefield College School</span></figcaption>
+  </figure>
+
+  <h2>Which is why this app is blocks</h2>
+
+  <p>
+    That course order is the design of Tortoise Blocks, more or less directly.
+    A child starts where Lakefield's students start — blocks that snap together,
+    nothing to spell correctly, nothing to get wrong before anything can run at
+    all. But the code pane is right there beside it, showing the very same
+    program as real Swift, syntax-colored, ready to copy out.
+  </p>
+
+  <p>
+    Blocks and Swift are not two different things here — they are one program,
+    shown two ways. One day the blocks will not be enough, and that is the day
+    this app is built for: the day a child outgrows it.
+  </p>
+
+  <figure>
+    <img src="shots/ipad-en-3.png" loading="lazy" width="1600" height="1200"
+         alt="Tortoise Blocks on iPad with the code pane open: the blocks of the spiral program in the middle, and the same program as syntax-colored Swift on the right.">
+    <figcaption>
+      The blocks in the middle, and the same program as Swift on the right. One
+      program in both notations at once — which is the whole of the claim above.</figcaption>
+  </figure>
+
+
+  <p class="cta"><a href="./?lang=en">See the app</a></p>
+
+</section>
+
+<!-- ============================ 日本語 ============================== -->
+<section lang="ja"
+         data-description="Tortoise Blocks の前史には、Logo というプログラミング言語と、2016年に亡くなった一人の研究者と、1994年の教室があります。このアプリがどこから来て、どこを目指しているのか。">
+
+  <h2 style="border-top:0;padding-top:0;margin-top:2.5rem">なぜ、このアプリを作っているのか</h2>
+
+  <p class="lede">
+    <strong>Tortoise Blocks の中にある考えは、どれもここで生まれたものではありません。受け継いだものです。</strong>もとをたどると、Logo というプログラミング言語と、2016年に亡くなった一人の研究者と、1994年の日本のある教室に行き着きます。
+  </p>
+
+  <h2>カメに道順を教えて、絵をかく</h2>
+
+  <p>コンピュータで絵をかくとき、ふつうは鳥の視点に立ちます。紙を上から見下ろして、座標を指定して、そこまで線を引く。</p>
+
+  <p>タートル・グラフィックスは、その反対です。紙の上にカメが1匹立っていて、歩いたあとに線が残ります。人がやることは、そのカメに道順を教えることだけ。右に20度まわって、前に5歩あるく。カメが通ったあとが、そのまま絵になります。できあがる絵は同じでも、それを描いているあいだに立っている場所が正反対です。</p>
+
+  <p>この違いは、実際に何かをかこうとしたとたんに効いてきます。上から見た正三角形は、3つめの頂点がどこに来るのかを三角関数で求めなければなりません。カメの背中からなら、数学はまったく要りません。3回あるいて3回まわるだけで、しかも「なぜそうなるのか」が子どもにも見えています。</p>
+
+  <div class="two">
+    <div>
+      <h3>上から見ると</h3>
+      <svg class="fig" viewBox="0 0 248 200" role="img" aria-labelledby="bird-ja">
+        <title id="bird-ja">座標グリッド上の正三角形。2つの頂点は (0,0) と (10,0)、3つめは x=5 の位置にあり、そこまでの高さが破線と疑問符で示されている。</title>
+        <defs>
+          <pattern id="grid-ja" width="16" height="16" patternUnits="userSpaceOnUse" x="40" y="170">
+            <path d="M16 0V16M0 16H16" fill="none" stroke="var(--fg)" stroke-opacity=".16"/>
+          </pattern>
+        </defs>
+        <rect x="40" y="26" width="192" height="144" fill="url(#grid-ja)"/>
+        <path d="M40 178V20M32 170H234" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+        <path d="M40 14l-4.5 9h9z" fill="var(--muted)"/>
+        <path d="M240 170l-9-4.5v9z" fill="var(--muted)"/>
+        <path d="M120 170V33" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <path d="M40 170H200L120 31.4Z" fill="none" stroke="var(--fg)" stroke-width="2" stroke-linejoin="round"/>
+        <circle cx="40" cy="170" r="3.5" fill="var(--fg)"/>
+        <circle cx="200" cy="170" r="3.5" fill="var(--fg)"/>
+        <circle cx="120" cy="31.4" r="3.5" fill="var(--fg)"/>
+        <text class="pt" x="34" y="186" text-anchor="end">(0,0)</text>
+        <text class="pt" x="200" y="188" text-anchor="middle">(10,0)</text>
+        <text class="pt" x="120" y="22" text-anchor="middle">(5,&#8202;<tspan class="hot">?</tspan>)</text>
+      </svg>
+      <pre>addLine(to: (10, 0))
+addLine(to: (5, ?))
+addLine(to: (0, 0))</pre>
+      <p>この「?」のところに三角関数が入ります。</p>
+    </div>
+    <div>
+      <h3>カメから見ると</h3>
+      <svg class="fig" viewBox="0 0 248 200" role="img" aria-labelledby="turtle-ja">
+        <title id="turtle-ja">同じ三角形を、座標ではなく歩いて描いたもの。10歩の辺が3つ、角ごとに左へ120度の回転、そして出発点には最初の辺の方向を向いたカメ。</title>
+        <path d="M206 170H234" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <path d="M113.5 20.1L104 3.7" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <path d="M226 170A26 26 0 0 0 187 147.5" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+        <path d="M107 8.9A26 26 0 0 0 107 53.9" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+        <path d="M40 170H200L120 31.4Z" fill="none" stroke="var(--fg)" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M21 161.5L40 170l-19 8.5z" fill="var(--accent)"/>
+        <text x="120" y="188" text-anchor="middle">10</text>
+        <text x="184" y="104" text-anchor="middle">10</text>
+        <text x="56" y="104" text-anchor="middle">10</text>
+        <text class="hot" x="219" y="140" text-anchor="middle">120°</text>
+        <text class="hot" x="74" y="35" text-anchor="middle">120°</text>
+      </svg>
+      <pre>forward(10)
+left(120)
+forward(10)
+left(120)
+forward(10)</pre>
+      <p>「?」はありません。同じ形の繰り返しだけです。</p>
+    </div>
+  </div>
+
+  <p>そして、まわる角度をまちがえれば、絵がすぐにそう言ってくれます。120のところに100と書けば三角形は閉じないし、140と書けば行きすぎる。だから子どもは数字を変えて、また動かして、また変えて、そのうちのどこかで、あてずっぽうをやめて分かるようになります。やってみて、見て、直して、またやってみる。この繰り返しはタートル・グラフィックスの副産物ではなく、それ自体が学び方そのものです。</p>
+
+  <p>Tortoise Blocks は、そのタートル・グラフィックスのアプリです。パレットに並んでいる「まえへ」「ひだりへまわる」は、上の図の forward と left そのものです。子どもがそれをブロックとしてつなぎ、再生ボタンを押すと、画面のカメが歩きだして、あとに線を残していきます。上の三角形も、「まえへ 10」と「ひだりへまわる 120」を「くりかえす 3かい」で包めば、それで描けます。</p>
+
+  <h2>1994年の教室</h2>
+
+  <p>このアプリの作者がタートル・グラフィックスに出会ったのは、1994年、中学2年のコンピュータの授業でした。使ったのは富士通の FM R-50 という MS-DOS のパソコン、ソフトは「ロゴライター2」。プログラミングそのものを教わる授業でした。</p>
+
+  <p>そこで夢中になって作ったものが、クラスメイトのあいだで反響を呼びました。プログラミングでの、はじめての成功体験です。いま作者がソフトウェアを仕事にしているのは、そのときの体験があるからで、つまりこのアプリは子どもの学びについてのプロジェクトというより、自分が受け取ったものを返そうとしているだけのものです。</p>
+
+  <h2>シーモア・パパート</h2>
+
+  <p>タートル・グラフィックスは、お絵かきの道具として作られたのではありませんでした。それは一つの主張であり、主張していたのはシーモア・パパートという人でした。ジュネーヴで5年間、心理学者のジャン・ピアジェのもとで、子どもの知能がどう育つのかを研究していた人です。1967年、パパートはウォーリー・フォイヤーツァイク、シンシア・ソロモンとともに Logo を設計します。のちに彼が「構築主義」と呼ぶ考えを軸にした言語でした。子どもがいちばんよく学ぶのは、実際に動くもの、誰かに見せられるもの、そして失敗したときに自分の目で原因が分かるものを作っているときだ、という考えです。</p>
+
+  <p>カメへの命令のしかたがあのようになっているのは、そのためです。カメに「座標 (5, 8.66) へ行け」とは言えません。自分自身に言うのと同じように、まわれ、あるけ、と言うのです。</p>
+
+  <p>パパートは1985年からレゴと協業しており、レゴのロボット教材「マインドストーム」は、彼が1980年に書いた本の名前をそのまま受け継いだものです。子どもがコンピュータで学ぶという発想そのものの多くが、この人から始まっています。</p>
+
+  <h2>2016年、Tortoise Graphics を開発</h2>
+
+  <p>2016年、2つのできごとが近い時期に重なりました。6月、Apple が <a href="https://www.apple.com/jp/swift/playgrounds/">Swift Playgrounds</a> を発表します。iPad で Swift を書ける、プログラミングを学ぶための環境です。そして7月31日、シーモア・パパートがこの世を去ります。</p>
+
+  <p>作者を動かしたのは、その報せでした。あのタートル・グラフィックスを Swift Playgrounds で動かせるようにすれば、子どもたちに、iPad の上で1994年の自分と同じ体験をしてもらえるかもしれない。その一週間後には、もう動くものができていました。</p>
+
+  <p>それが <a href="https://github.com/temoki/TortoiseGraphics2">Tortoise Graphics</a>、Swift 製のタートル・グラフィックス・エンジンです。Swift Playgrounds の Book 形式で配布し、子どもはそれを iPad で簡単に試すことができました。名前が turtle ではなく tortoise なのは、作者が個人的にリクガメのほうが好みだから、というだけの理由です。このアプリの名前も、マスコットにちゃんと足があるのも、そこから来ています。</p>
+
+  <figure>
+    <video src="tortoise-graphics.mp4" poster="tortoise-graphics.png"
+           width="640" height="450" controls loop muted playsinline preload="none"
+           aria-label="画面収録：iPad の Swift Playgrounds で Tortoise Graphics が動き、横のコードに従って赤い線が重なった星を描いていく。"></video>
+    <figcaption>iPad の Swift Playgrounds で動く Tortoise Graphics。繰り返しているのは、このページの上のほうの図と同じ2つの命令です。forward と left を、3回ではなく36回。</figcaption>
+  </figure>
+
+  <h2>オンタリオの学校で</h2>
+
+  <p>「授業で使いたい」という連絡が、2つの学校から届きました。ひとつはカナダ・オンタリオ州の Lakefield College School。当時、約360人が在籍する全寮制の学校で、コンピュータ・サイエンス入門の授業に使われていました。その授業には順番がありました。まず Scratch のようなブロック・ベースのプログラミングから始め、次に Tortoise Graphics でテキスト・ベースに移り、最終課題では生徒が自分の考えた図形をコードで描いて、ペン・プロッターで出力する。</p>
+
+  <figure>
+    <div class="pair">
+      <img src="lesson-blocks.png" loading="lazy" width="1400" height="814"
+           alt="「How it worked in GP Blocks」と題された授業プリント。repeat 4／move 50／turn by 90 というブロックのプログラムに、先生の手書きで repeat ブロック・クラス・オブジェクトの説明が書き込まれている。">
+      <img src="lesson-swift.png" loading="lazy" width="1400" height="1025"
+           alt="次のプリント。同じ正方形を Tortoise Graphics の Swift で書いたもので、forward 50 と left 90 を囲む for ループに、同じ用語で手書きの注釈が入っている。">
+    </div>
+    <figcaption>先生が授業で配ったプリント、2ページ分。同じ正方形を2度書いています。1度めはブロックで repeat 4／move 50／turn by 90、2度めは Swift で forward 50 と left 90。ブロックが先、テキストが後。同じ手書きの字で。<span class="credit">授業資料: Lakefield College School</span></figcaption>
+  </figure>
+
+  <h2>だから、このアプリはブロックから始まる</h2>
+
+  <p>その授業の順番が、ほとんどそのまま Tortoise Blocks の設計になっています。子どもは Lakefield の生徒と同じところから始めます。つないでいくだけのブロック。つづりを正しく書く必要はなく、動かす前にまちがえようがありません。けれどそのすぐ横にコードのペインがあって、いま作ったのとまったく同じプログラムが、色のついた本物の Swift として見えていて、そのままコピーして持ち出せます。</p>
+
+  <p>ブロックと Swift は、別のものではありません。同じプログラムを、2つの書き方で見せているだけです。そして子どもはいつか、ブロックでは足りなくなります。このアプリは、その日のために作られています。子どもがこれを卒業する日のために。</p>
+
+  <figure>
+    <img src="shots/ipad-ja-3.png" loading="lazy" width="1600" height="1200"
+         alt="コード表示にした iPad の Tortoise Blocks。中央にうずまきのプログラムのブロック、右に同じプログラムが色のついた Swift として並んでいる。">
+    <figcaption>中央でつないだブロックが、右にそのまま Swift として出ています。1つのプログラムが、2つの書き方で同時に見えている。上に書いたことは、それだけのことです。</figcaption>
+  </figure>
+
+
+  <p class="cta"><a href="./?lang=ja">アプリを見る</a></p>
+
+</section>
+
+<footer>
+  <a href="./">Tortoise Blocks</a> ·
+  <a href="privacy.html">Privacy / プライバシー</a> ·
+  <a href="https://github.com/temoki/TortoiseBlocks">GitHub</a> ·
+  <!-- Real links, and not a second picker: a <select> is not something a
+       crawler can follow, so without these the Japanese URL is declared in the
+       head and reachable from nowhere. -->
+  <a href="?lang=en" hreflang="en" lang="en">English</a> ·
+  <a href="?lang=ja" hreflang="ja" lang="ja">日本語</a>
+</footer>
+
+</main>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var select = document.getElementById("lang");
+
+    function apply(lang, remember) {
+      root.dataset.lang = lang;
+      root.lang = lang;
+      select.value = lang;
+      // Taken from the page rather than a parallel list of titles, so a new
+      // language needs no edit here.
+      var section = document.querySelector('section[lang="' + lang + '"]');
+      var heading = section && section.querySelector("h2");
+      if (heading) document.title = heading.textContent.trim() + " — Tortoise Blocks";
+      // The static description names both languages, because that is what the
+      // bare URL and a script-less reader get.
+      var desc = document.querySelector('meta[name="description"]');
+      if (desc && section && section.dataset.description) {
+        desc.setAttribute("content", section.dataset.description);
+      }
+      if (remember) {
+        // The choice rides in the URL, not in storage: this site promises the
+        // app stores nothing, and the page has no business doing otherwise.
+        var url = new URL(location.href);
+        url.searchParams.set("lang", lang);
+        history.replaceState(null, "", url);
+      }
+    }
+
+    select.addEventListener("change", function () { apply(select.value, true); });
+    apply(root.dataset.lang, false);
+  })();
+</script>
+</body>
+</html>

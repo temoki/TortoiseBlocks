@@ -220,6 +220,14 @@
   .showcase figure { margin: 0; }
   .showcase p { margin: 0; color: var(--muted); }
 
+  /* ---- Where this comes from --------------------------------------- */
+  /* A short pointer to why.html, in the body rather than only in the footer:
+     each language's own URL has to be reachable by something a crawler can
+     follow, and the footer carries one link for both. */
+  .origin { text-align: center; }
+  .origin p { margin: 0 auto; max-width: 34em; color: var(--muted); }
+  .origin .go { margin-top: 1.5rem; }
+
   /* ---- Parents / privacy ------------------------------------------- */
   .quiet {
     margin-top: 4.5rem; background: var(--wash);
@@ -471,6 +479,16 @@
     </figure>
   </div>
 
+  <div class="band origin">
+    <h2>Where this comes from</h2>
+    <p>
+      A language called Logo, a researcher who died in 2016, and a classroom in
+      Japan in 1994. The tortoise, the blocks and the code pane beside them all
+      come from there.
+    </p>
+    <p class="go"><a href="why.html?lang=en">Why this app exists →</a></p>
+  </div>
+
   <div class="quiet">
     <h2>Quiet about the child using it</h2>
     <p>
@@ -632,6 +650,12 @@
     </figure>
   </div>
 
+  <div class="band origin">
+    <h2>このアプリがどこから来たのか</h2>
+    <p>Logo というプログラミング言語と、2016年に亡くなった一人の研究者と、1994年の教室。カメも、ブロックも、その横のコードのペインも、もとをたどればぜんぶ同じひとつの考えから来ています。</p>
+    <p class="go"><a href="why.html?lang=ja">なぜ、このアプリを作っているのか →</a></p>
+  </div>
+
   <div class="quiet">
     <h2>使う子どものことを、何も集めません</h2>
     <p>このアプリは子どものために作られていて、子どもに何も求めません。ログインも、名前の入力欄も、広告も、利用状況の計測もありません。そもそもアプリの中に、通信を行うコードが1行もありません。</p>
@@ -669,6 +693,7 @@
 
 <footer>
   <a href="https://github.com/temoki/TortoiseBlocks">GitHub</a>
+  <a href="why.html">Why this app / このアプリのわけ</a>
   <a href="privacy.html">Privacy / プライバシー</a>
   <a href="https://github.com/temoki/TortoiseBlocks/issues">Issues</a>
   <!-- Real links, and not a second picker: a <select> is not something a
