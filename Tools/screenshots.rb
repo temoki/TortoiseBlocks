@@ -50,14 +50,21 @@ DERIVED = {
     prefix: "ipad",
     size: "1600x1200",
     locales: { "en-US" => "en", "ja" => "ja" },
-    shots: { "1_star_canvas" => "1", "2_spiral_canvas" => "2", "4_tree_canvas" => "4" }
+    # 3_spiral_code joined the set for site/why.html, which argues that the
+    # blocks and the Swift are one program: it pairs the code pane with
+    # 2_spiral_canvas, the same document drawn, and the pair only reads as one
+    # program if both are the same device.
+    shots: { "1_star_canvas" => "1", "2_spiral_canvas" => "2", "3_spiral_code" => "3",
+             "4_tree_canvas" => "4" }
   },
   "macos" => {
     prefix: "mac",
     size: "1400x875",
     locales: { "en-US" => "en", "ja" => "ja" },
     # The star went to the Vision Pro row when the platform section got a
-    # picture of its own; the code pane is the Mac's remaining job on the page.
+    # picture of its own; the code pane is the Mac's remaining job on the
+    # landing page. why.html uses the iPad's copy of the same shot instead —
+    # see the ios row.
     shots: { "3_spiral_code" => "3" }
   },
   # One is enough: the drawing on the table is the whole of what this platform
