@@ -54,7 +54,14 @@ DERIVED = {
     # blocks and the Swift are one program: it pairs the code pane with
     # 2_spiral_canvas, the same document drawn, and the pair only reads as one
     # program if both are the same device.
-    shots: { "1_star_canvas" => "1", "2_spiral_canvas" => "2", "3_spiral_code" => "3",
+    #
+    # 1_star_canvas left it when the landing page's hero took a video. The
+    # still had been the hero's picture, and the recording is the same three
+    # panes on the same device with the tortoise actually walking — so the two
+    # stacked up as one picture shown twice. Nothing else on the site used it,
+    # and a shot the site does not display is ~240KB in both languages that
+    # every visitor was never going to see.
+    shots: { "2_spiral_canvas" => "2", "3_spiral_code" => "3",
              "4_tree_canvas" => "4" }
   },
   "macos" => {
