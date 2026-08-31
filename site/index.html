@@ -182,6 +182,44 @@
   figure img { border-radius: 14px; box-shadow: var(--shadow); }
   figcaption { margin-top: .85rem; color: var(--muted); font-size: .9rem; }
 
+  /* ---- Video ------------------------------------------------------- */
+  /* The one third-party request the site makes, and the only place the
+     no-outside-requests rule that keeps the App Store badge local is spent.
+     `youtube-nocookie` rather than `youtube.com`: the same player, with no
+     cookie set until someone actually presses play.
+
+     It is spent twice, though. Both languages are always in the document and
+     the hidden one's iframe loads anyway — measured in Chrome's net log, two
+     URL_REQUESTs for the embed on one page view, and `loading="lazy"` did
+     not stop it when it was there: Chrome deliberately does not defer a
+     hidden iframe, the same way the hidden language's screenshots are
+     fetched. Only a script could stop the second one, and the language
+     machinery here never hides behind a script.
+
+     The tag is YouTube's own embed code, pasted as it hands it over —
+     `frameborder`, the `si` parameter, the generic title and all. Only the
+     styling below is ours.
+
+     A player that says "error 153" is being read over `file://`, and the
+     markup is not the reason. The iframe's origin is `null` there, YouTube
+     cannot check who is embedding it, and it refuses to serve the player;
+     measured both ways on this very file, error under `file://` and the
+     same bytes playing over http. So preview `site/` from a server —
+     `python3 -m http.server` inside it — rather than by opening the file.
+
+     The box is 16:9 and reserved by aspect-ratio, so nothing reflows when the
+     player arrives; the recording is an iPad's, so YouTube pillarboxes it
+     inside that and the black is the player's own. `height: auto` is what
+     makes that work and is not decoration: the tag's `width`/`height` land
+     as presentational hints, `width: 100%` outranks one of them but nothing
+     here was overriding the other, and `aspect-ratio` is ignored while both
+     dimensions are definite — so the player rendered 992×315, a letterbox
+     slot with a squashed video in it. */
+  .video iframe {
+    display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; border: 0;
+    border-radius: 14px; box-shadow: var(--shadow); background: #000;
+  }
+
   /* ---- Features ---------------------------------------------------- */
   h2 {
     font-size: clamp(1.35rem, 3vw, 1.7rem); line-height: 1.35;
@@ -326,6 +364,16 @@
       </a>
       <p>iPadOS&nbsp;26 or later · macOS&nbsp;26 or later · visionOS&nbsp;26 or later</p>
     </div>
+
+    <figure class="video">
+      <iframe width="560" height="315"
+              src="https://www.youtube-nocookie.com/embed/E1dVrK2yPb4?si=IM3FBvmeBB0HZL9C"
+              title="YouTube video player" frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media;
+                     gyroscope; picture-in-picture; web-share"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen></iframe>
+    </figure>
 
     <figure>
       <img src="shots/ipad-en-1.png" loading="lazy"
@@ -546,6 +594,16 @@
       </a>
       <p>iPadOS&nbsp;26 以降 · macOS&nbsp;26 以降 · visionOS&nbsp;26 以降</p>
     </div>
+
+    <figure class="video">
+      <iframe width="560" height="315"
+              src="https://www.youtube-nocookie.com/embed/E1dVrK2yPb4?si=IM3FBvmeBB0HZL9C"
+              title="YouTube video player" frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media;
+                     gyroscope; picture-in-picture; web-share"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen></iframe>
+    </figure>
 
     <figure>
       <img src="shots/ipad-ja-1.png" loading="lazy"
