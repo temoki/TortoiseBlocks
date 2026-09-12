@@ -214,6 +214,18 @@ struct PaletteSectionView: View {
     }
 }
 
+/// The measurements a palette entry's block look is made of, named because
+/// two things wear it: the button style below, and the drag preview (#75),
+/// which has to be the same block or picking one up changes what you were
+/// looking at. They differ in exactly one way — an entry fills the column, a
+/// preview is the size of the block — and that difference is a frame, which
+/// is why this is a handful of constants rather than one modifier.
+private enum PaletteBlock {
+    static let verticalPadding: CGFloat = 9
+    static let horizontalPadding: CGFloat = 11
+    static let shape = RoundedRectangle(cornerRadius: 8)
+}
+
 /// A palette entry's block look: the category fill, the shared ink, and a
 /// press state of its own since the plain style has none.
 private struct PaletteBlockButtonStyle: ButtonStyle {
@@ -222,10 +234,10 @@ private struct PaletteBlockButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .foregroundStyle(BlockCategory.ink)
-            .padding(.vertical, 9)
-            .padding(.horizontal, 11)
+            .padding(.vertical, PaletteBlock.verticalPadding)
+            .padding(.horizontal, PaletteBlock.horizontalPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(color, in: RoundedRectangle(cornerRadius: 8))
+            .background(color, in: PaletteBlock.shape)
             .opacity(configuration.isPressed ? 0.7 : 1)
             // Here rather than on the `Button`, because the button is a drag
             // source and the pair crashes visionOS — see `pointerHover`. It
@@ -239,6 +251,11 @@ struct PaletteEntryButton: View {
     let entry: PaletteEntry
     let category: BlockCategory
     let workspace: WorkspaceEditor
+
+    /// The entry's width, so the drag preview is the block you pressed rather
+    /// than the words on it (#75). It follows the palette column, which grows
+    /// with Dynamic Type, so it is measured rather than written down.
+    @State private var entryWidth: CGFloat = 0
 
     var body: some View {
         Button {
@@ -261,7 +278,35 @@ struct PaletteEntryButton: View {
         // and `draggable` on the same view segfault — see `pointerHover`.
         //
         // Evaluated per drag, so every drag stamps a fresh Block (new ID).
-        .draggable(Block(kind: entry.kind))
+        //
+        // With a preview of its own (#75). The default is a snapshot of the
+        // view, which squares off the corners the block was drawn with and
+        // lifts a picture of a control rather than a block. This one is the
+        // same label in the same fill, at the size of the block instead of the
+        // width of the column — what you are carrying, not where it came from.
+        //
+        // Deliberately built from plain views rather than by reusing
+        // `PaletteBlockButtonStyle`: that style carries `pointerHover()`, and
+        // a hover effect anywhere under a `draggable` is the pairing that
+        // segfaults visionOS.
+        .draggable(Block(kind: entry.kind)) {
+            Label {
+                Text(entry.title)
+            } icon: {
+                Image(systemName: entry.systemImage)
+            }
+            .labelStyle(BlockLabelStyle())
+            .foregroundStyle(BlockCategory.ink)
+            .padding(.vertical, PaletteBlock.verticalPadding)
+            .padding(.horizontal, PaletteBlock.horizontalPadding)
+            .frame(maxWidth: entryWidth > 0 ? entryWidth : nil, alignment: .leading)
+            .background(category.color, in: PaletteBlock.shape)
+        }
+        .onGeometryChange(for: CGFloat.self) {
+            $0.size.width
+        } action: {
+            entryWidth = $0
+        }
         .accessibilityHint("Tap to add to the end of the program. Drag to place anywhere.")
     }
 }
