@@ -19,6 +19,24 @@ final class WorkspaceUIState {
     /// exactly one dialog: a second presentation modifier of the same kind
     /// silently swallows the first.
     var confirmsDeleteAll = false
+
+    /// How many times the block tree has been edited — undo and redo
+    /// included, since both are edits (#70).
+    ///
+    /// The workspace animates on this rather than on the tree itself. The
+    /// block list re-renders on every committed command during playback, so
+    /// `.animation(_:value:)` keyed on `[Block]` would compare two whole trees
+    /// ten times a second to answer a question — "did an edit happen?" — that
+    /// a counter answers in one comparison. It is bumped in the same write as
+    /// the tree, so SwiftUI sees both in one update and the changes animate
+    /// together.
+    private(set) var editGeneration = 0
+
+    /// Called from `WorkspaceEditor.apply`, which is the only place the tree
+    /// is written.
+    func recordEdit() {
+        editGeneration += 1
+    }
 }
 
 /// Value-type editing facade over the document.
@@ -39,6 +57,9 @@ struct WorkspaceEditor {
         get { uiState.insertionTarget }
         nonmutating set { uiState.insertionTarget = newValue }
     }
+
+    /// What the workspace animates on (#70) — see `WorkspaceUIState`.
+    var editGeneration: Int { uiState.editGeneration }
 
     // Reading these in body stays fresh without observation: every edit,
     // undo, and redo mutates the document, which re-renders the view tree.
@@ -166,21 +187,29 @@ struct WorkspaceEditor {
     @discardableResult
     private func setBlocks(_ new: [Block]) -> Bool {
         guard new != blocks else { return false }
-        Self.apply(new, to: document, undoManager: undoManager)
+        Self.apply(new, to: document, undoManager: undoManager, uiState: uiState)
         return true
     }
 
     /// Writes the tree through the binding and registers the inverse;
     /// undoing re-enters here, which registers the redo automatically.
+    ///
+    /// Every edit in the app comes through this one function, which is what
+    /// makes the workspace's animation (#70) a single change rather than one
+    /// per call site — and why undo and redo animate for free: they re-enter
+    /// here, so a block that slid in when it was added slides back in when it
+    /// is brought back.
     private static func apply(
-        _ value: [Block], to document: Binding<BlocksDocument>, undoManager: UndoManager?
+        _ value: [Block], to document: Binding<BlocksDocument>, undoManager: UndoManager?,
+        uiState: WorkspaceUIState
     ) {
         let old = document.wrappedValue.project.blocks
         document.wrappedValue.project.blocks = value
+        uiState.recordEdit()
         guard let undoManager else { return }
         undoManager.registerUndo(withTarget: undoManager) { manager in
             MainActor.assumeIsolated {
-                apply(old, to: document, undoManager: manager)
+                apply(old, to: document, undoManager: manager, uiState: uiState)
             }
         }
     }

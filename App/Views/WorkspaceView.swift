@@ -70,6 +70,14 @@ struct WorkspaceView: View {
                             usedVariableNames: BlockTree.usedVariableNames(in: workspace.blocks),
                             usedFunctionNames: BlockTree.usedFunctionNames(in: workspace.blocks)
                         )
+                        // Every tree edit — add, delete, reorder, drop, undo,
+                        // redo — moves the rows instead of replacing them
+                        // (#70). Innermost, so it scopes to the block list:
+                        // the same edit also changes the toolbar's undo/redo
+                        // enablement and the transport's staleness, and
+                        // neither of those should animate because a block
+                        // moved.
+                        .blockEditAnimation(workspace.editGeneration)
                         // Ambient default for every value slot in the tree
                         // (NumberValueButton, ComparisonButton, etc.): the
                         // white "chip" look that reads on a solid,
@@ -1079,6 +1087,36 @@ private struct RowHeightFloor: View {
             .hidden()
             // An invisible control has no business in the accessibility tree.
             .accessibilityHidden(true)
+    }
+}
+
+/// The motion every tree edit gets (#70).
+///
+/// A modifier rather than a bare `.animation(_:value:)` at the call site so
+/// the Reduce Motion check has somewhere to live that isn't the view body —
+/// the same reason `pointerHover()` exists for `#if os(...)`. Motion here is
+/// decoration over an edit that has already happened, so switching it off is
+/// simply passing no animation; nothing downstream has to know.
+private struct BlockEditAnimation: ViewModifier {
+    let generation: Int
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// Quick, with a little bounce — these are blocks being stacked, and the
+    /// audience is children. 0.3s rather than `.snappy`'s own 0.5 because an
+    /// edit is a direct manipulation: the row should be where you put it by
+    /// the time you look at it. Judge a change to this in the running app on a
+    /// *nested* program, where a single edit moves rows at three depths.
+    private static let spring = Animation.snappy(duration: 0.3)
+
+    func body(content: Content) -> some View {
+        content.animation(reduceMotion ? nil : Self.spring, value: generation)
+    }
+}
+
+extension View {
+    fileprivate func blockEditAnimation(_ generation: Int) -> some View {
+        modifier(BlockEditAnimation(generation: generation))
     }
 }
 
