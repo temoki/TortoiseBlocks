@@ -22,7 +22,16 @@ struct WorkspaceView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        Group {
+        // A `ZStack` rather than a `Group`, and that is the whole reason the
+        // cross-fade below works (#72). `Group` hands its modifiers to each
+        // *child*, so an `.animation(_:value:)` on one lands on whichever
+        // branch is showing — and when the branch flips, the new child gets a
+        // fresh modifier with no previous value to compare against, so the one
+        // change you wanted animated is the one that cannot be. The can went
+        // with it, its `safeAreaInset` being distributed the same way. A real
+        // container is a stable ancestor, and it also puts the two states in
+        // the same space, which is what a cross-fade is.
+        ZStack {
             if workspace.blocks.isEmpty {
                 ContentUnavailableView {
                     Label("Build with Blocks", systemImage: "square.stack.3d.up")
@@ -65,6 +74,10 @@ struct WorkspaceView: View {
                     guard let block = items.first else { return false }
                     return workspace.handleDrop(block, at: 0, inBodyAt: .topLevel)
                 }
+                // The default for an inserted or removed view, said out loud:
+                // this pane is the one place a transition is the point rather
+                // than a side effect, and it should not change silently.
+                .transition(.opacity)
             }
             else {
                 ScrollViewReader { proxy in
@@ -84,7 +97,7 @@ struct WorkspaceView: View {
                         // enablement and the transport's staleness, and
                         // neither of those should animate because a block
                         // moved.
-                        .blockEditAnimation(workspace.editGeneration)
+                        .motion(Motion.blockEdit, value: workspace.editGeneration)
                         // Ambient default for every value slot in the tree
                         // (NumberValueButton, ComparisonButton, etc.): the
                         // white "chip" look that reads on a solid,
@@ -120,6 +133,7 @@ struct WorkspaceView: View {
                         scroll(proxy, to: id)
                     }
                 }
+                .transition(.opacity)
             }
         }
         // `safeAreaInset` rather than an overlay: it also insets the scroll
@@ -156,6 +170,11 @@ struct WorkspaceView: View {
         } message: {
             Text("You can undo this.")
         }
+        // The empty pane and the program are the same surface showing two
+        // things, so they cross-fade rather than cut (#72). Applied *outside*
+        // the inset above so the can fades in with the first block instead of
+        // popping in beside a pane that faded — the two are one change.
+        .motion(Motion.paneSwap, value: workspace.blocks.isEmpty)
         // Puts the inset on the window's bottom edge. Without it SwiftUI keeps
         // the home indicator's 20pt *inside* the inset, which reads as 36pt
         // under the can against 12pt above it. Note it has to be applied here
@@ -183,7 +202,7 @@ struct WorkspaceView: View {
     private func scroll(_ proxy: ScrollViewProxy, to id: UUID) {
         lastScrolledBlockID = id
         lastScrollTime = Date()
-        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
+        withAnimation(reduceMotion ? nil : Motion.scrollFollow) {
             proxy.scrollTo(id, anchor: .center)
         }
     }
@@ -1116,36 +1135,6 @@ private struct RowHeightFloor: View {
             .hidden()
             // An invisible control has no business in the accessibility tree.
             .accessibilityHidden(true)
-    }
-}
-
-/// The motion every tree edit gets (#70).
-///
-/// A modifier rather than a bare `.animation(_:value:)` at the call site so
-/// the Reduce Motion check has somewhere to live that isn't the view body —
-/// the same reason `pointerHover()` exists for `#if os(...)`. Motion here is
-/// decoration over an edit that has already happened, so switching it off is
-/// simply passing no animation; nothing downstream has to know.
-private struct BlockEditAnimation: ViewModifier {
-    let generation: Int
-
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    /// Quick, with a little bounce — these are blocks being stacked, and the
-    /// audience is children. 0.3s rather than `.snappy`'s own 0.5 because an
-    /// edit is a direct manipulation: the row should be where you put it by
-    /// the time you look at it. Judge a change to this in the running app on a
-    /// *nested* program, where a single edit moves rows at three depths.
-    private static let spring = Animation.snappy(duration: 0.3)
-
-    func body(content: Content) -> some View {
-        content.animation(reduceMotion ? nil : Self.spring, value: generation)
-    }
-}
-
-extension View {
-    fileprivate func blockEditAnimation(_ generation: Int) -> some View {
-        modifier(BlockEditAnimation(generation: generation))
     }
 }
 

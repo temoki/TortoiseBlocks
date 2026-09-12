@@ -365,3 +365,16 @@ environment value in a body. Note that reduced motion still **moves**: a scroll
 that brings a new block into view has to arrive either way, it just arrives
 without the travel. There is no third shape, and forgetting both fails
 silently — motion nobody switched off simply plays.
+
+**And a `Group` cannot carry that animation** (#72). `Group` hands its
+modifiers to each *child*, so `.animation(_:value:)` on
+`Group { if A { X } else { Y } }` lands on whichever branch is showing; when
+the branch flips, the new child gets a fresh modifier with no previous value to
+compare against, and the one change you wanted animated is the one that cannot
+be. `safeAreaInset` is distributed the same way, which is why the trash can cut
+along with the pane. The workspace's two states therefore sit in a `ZStack`:
+a real container is a stable ancestor, and it holds both states in the same
+space, which is what a cross-fade is. `CanvasPane`'s canvas/code swap was
+already a `ZStack` and already worked — same modifier, same kind of value,
+different container — which is how the two were told apart. Nothing warns you:
+the modifier is written, the build is clean, and the pane simply cuts.
