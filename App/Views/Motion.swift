@@ -26,6 +26,13 @@ enum Motion {
     /// swap should read as the *same pane* showing something else.
     static let paneSwap = Animation.easeInOut(duration: 0.25)
 
+    /// A control changing what it means: the transport's centre button
+    /// swapping ▶︎ for ⏸ and its fill between the accent and grey (#73).
+    ///
+    /// No bounce, and short. A spring would overshoot a colour interpolation,
+    /// and the button has to be pressable again immediately.
+    static let controlState = Animation.easeInOut(duration: 0.2)
+
     /// Bringing a row into view — the playback follow, and the block the
     /// palette just made (#71). Applied imperatively around `scrollTo`, so
     /// this is the one constant `motion(_:value:)` doesn't carry.
