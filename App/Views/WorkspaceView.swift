@@ -253,6 +253,11 @@ struct WorkspaceTrashZone: View {
     let workspace: WorkspaceEditor
 
     @State private var isTargeted = false
+    /// Counts drops the can has accepted, so it can answer one (#76). A
+    /// counter rather than a flag: two blocks thrown away in a row are two
+    /// bounces, and a flag would have to be put back before it could fire
+    /// again.
+    @State private var acceptedDrops = 0
 
     @ScaledMetric private var diameter: CGFloat = 56
 
@@ -272,6 +277,14 @@ struct WorkspaceTrashZone: View {
                 .font(.title2)
                 .foregroundStyle(isTargeted ? Color.red : Color.secondary)
                 .frame(width: diameter, height: diameter)
+                // Without this the can only answers on what it actually
+                // *draws* — the glyph and the ring — and the transparent gap
+                // between them, most of the target, is not there at all. The
+                // symptom is the ⋯ menu's again (`touchTarget`): a control
+                // that looks right and misses taps aimed at the middle of it.
+                // A rect rather than a circle, so the corners of the 56pt
+                // frame stay usable and the drop target does not shrink.
+                .contentShape(.rect)
                 .background {
                     Circle()
                         .fill(isTargeted ? Color.red.opacity(0.15) : Color.clear)
@@ -280,6 +293,12 @@ struct WorkspaceTrashZone: View {
                             lineWidth: 2)
                 }
                 .scaleEffect(isTargeted ? 1.1 : 1)
+                // The can reacts while a block is over it — red, filled,
+                // larger — and used to fall silent at the moment that matters.
+                // You let go, the block was gone, and the can was already back
+                // to its resting grey as though nothing had been thrown into
+                // it (#76).
+                .symbolMotion(.bounce, trigger: acceptedDrops)
         }
         .buttonStyle(.plain)
         .pointerHover()
@@ -291,6 +310,11 @@ struct WorkspaceTrashZone: View {
             // outcome: throwing away a block you were carrying but never
             // placed just means not placing it.
             workspace.delete(dropped.id)
+            // Bounces either way, including for that palette-origin block.
+            // The tree may not have changed, but the child's answer to "what
+            // happened to the thing I was holding?" is the same one, and the
+            // can is what they were looking at when they let go.
+            acceptedDrops += 1
             return true
         } isTargeted: {
             isTargeted = $0

@@ -165,6 +165,15 @@ the glyph: enlarging the ⋯ was tried alongside it and taken back out once the
 words beside them, and a control that is merely easy to hit does not need to be
 the loudest thing on the row.
 
+The other half of the same lesson is that a control answers on what it
+*draws*. The trash can is a `title2` glyph inside a 56pt frame with a stroked
+circle behind it, and it was hit-testing the glyph and the ring only — the
+transparent gap between them, most of the target, was not there. `contentShape`
+is what puts it back, as a rect rather than a circle so the frame's corners
+stay usable and the drop target doesn't shrink with the tap target. Same
+symptom as the `Menu` above, different cause, and just as invisible: the
+control looks right and misses the taps aimed at the middle of it.
+
 **A row compresses in a fixed order: the spacer, then the label, never a chip.**
 Getting there took two modifiers, and neither is the one the symptom suggests.
 An if header nested one level deep broke its label onto two lines — 「も」/「し」 —

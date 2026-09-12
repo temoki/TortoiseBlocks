@@ -39,6 +39,31 @@ enum Motion {
     static let scrollFollow = Animation.easeInOut(duration: 0.2)
 }
 
+/// A one-shot SF Symbol effect that Reduce Motion switches off (#76).
+///
+/// The trigger is an `Int` — a counter of the thing that happened — because
+/// suppressing the effect means holding that number still, and only a type we
+/// know can be pinned to a constant. Declarative motion, so the check lives in
+/// a modifier like the one below rather than in a view body.
+private struct ReducibleSymbolMotion<Effect: DiscreteSymbolEffect & SymbolEffect>: ViewModifier {
+    let effect: Effect
+    let trigger: Int
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content.symbolEffect(effect, value: reduceMotion ? 0 : trigger)
+    }
+}
+
+extension View {
+    func symbolMotion<Effect: DiscreteSymbolEffect & SymbolEffect>(
+        _ effect: Effect, trigger: Int
+    ) -> some View {
+        modifier(ReducibleSymbolMotion(effect: effect, trigger: trigger))
+    }
+}
+
 /// `.animation(_:value:)` that Reduce Motion switches off.
 ///
 /// A modifier so the check has somewhere to live that isn't the view body —
