@@ -11,7 +11,7 @@
 | Pricing | `Free` |
 | Funding | `Bootstrapped` のみ |
 | Launch tags | `Kids` · `Education` · `Open Source` |
-| Product categories | `Apps for kids` · `Online learning` |
+| Product category | `Engineering & Development` > `Code editors`（1つだけ） |
 | Website | `https://temoki.github.io/TortoiseBlocks/?lang=en` |
 | App Store | `https://apps.apple.com/app/id6798677334` |
 | GitHub（アプリ） | `https://github.com/temoki/TortoiseBlocks` |
@@ -22,8 +22,10 @@ Website の `?lang=en` は必須。付けないと閲覧者の環境次第で日
 `Kids` の breadcrumb は `Kids & Parenting > Kids`。同名の親グループと
 `Parenting` が補完に混ざる。
 
-Launch tags はローンチに、Product categories はプロダクトページに付く別の分類。
-`Apps for kids` は後者にしかない（`Product categories > Family > Apps for kids`）。
+Launch tags はローンチに、Product category はプロダクトページに付く別の分類。
+後者の選択肢は技術寄りの18項目しかなく、公開サイトの browse 分類にある
+`Family` や `Education & Learning` は選べない。Launch tags 側で誰のためかは
+伝わるので、こちらは「何であるか」を担当させる。枠は3つあるが埋めない。
 
 ### Tagline（60字以内 / 46字）
 
