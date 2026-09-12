@@ -1172,6 +1172,12 @@ private struct BlockChrome: ViewModifier {
             .foregroundStyle(BlockCategory.ink)
             .rowShape()
             .background(color, in: shape)
+            // What the drag preview is allowed to be (#90). iPadOS composites
+            // a preview onto an opaque backing and fills whatever the snapshot
+            // leaves transparent, so a block came up with white in its rounded
+            // corners. Naming the shape is what tells it where the block ends.
+            // macOS never showed this, which is why it took a device to find.
+            .contentShape(.dragPreview, shape)
             .overlay {
                 shape.stroke(ring, lineWidth: isHighlighted ? 3 : (isDropTargeted ? 2 : 0))
             }

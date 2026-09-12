@@ -296,6 +296,9 @@ struct PaletteEntryButton: View {
             .padding(.horizontal, PaletteBlock.horizontalPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(category.color, in: PaletteBlock.shape)
+            // The corners are the block's, not a hole to fill in — see
+            // `BlockChrome` (#90).
+            .contentShape(.dragPreview, PaletteBlock.shape)
         }
         .accessibilityHint("Tap to add to the end of the program. Drag to place anywhere.")
     }
