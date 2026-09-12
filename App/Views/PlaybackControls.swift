@@ -144,6 +144,11 @@ private struct TransportCenterButton: View {
             // finished button would only pad around a style-sized background.
             Label(action.title, systemImage: action.systemImage)
                 .font(.system(size: glyph))
+                // ▶︎ and ⏸ morph into one another rather than being swapped
+                // out (#73). This is the most-pressed control in the app and
+                // it carries four meanings, so the press should be visibly
+                // answered by the glyph it leaves behind.
+                .contentTransition(.symbolEffect(.replace))
                 .frame(width: diameter, height: diameter)
         }
         .buttonStyle(.borderedProminent)
@@ -155,6 +160,11 @@ private struct TransportCenterButton: View {
         // moment a run finished. An explicit system grey reads the same on
         // both.
         .tint(action.runsProgram ? .accentColor : .gray)
+        // Drives both the glyph above and the fill: the action is what
+        // changed, so it is what the animation is keyed on. It moves at human
+        // speed — a run starting, a pause, a finish, an edit going stale —
+        // never with the playhead, so nothing here is paid per command.
+        .motion(Motion.controlState, value: action)
         // The label changes with the action, so VoiceOver announces what
         // the press will do — which is also why this is a Button and not
         // a Toggle bound to `isPaused`.
@@ -200,6 +210,17 @@ struct PlaybackScrubber: View {
         }
         .font(.caption.monospacedDigit())
         .foregroundStyle(.secondary)
+        // The counter does not roll. `.contentTransition(.numericText())` was
+        // tried here and taken back out (#73): a digit that tumbles is a thing
+        // to watch, and this one is a readout beside the control you are
+        // actually using — it drew the eye away from the step button under
+        // your finger. The transport is a video player's, and a video player's
+        // elapsed time does not roll either.
+        //
+        // Worth knowing if it is ever reconsidered: a `contentTransition` does
+        // nothing at all without an animated transaction, so it is inert
+        // during playback and costs a full animation ten times a second the
+        // moment one is supplied. There is no setting between those two.
     }
 
     private var position: Binding<Double> {
