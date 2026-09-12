@@ -252,11 +252,6 @@ struct PaletteEntryButton: View {
     let category: BlockCategory
     let workspace: WorkspaceEditor
 
-    /// The entry's width, so the drag preview is the block you pressed rather
-    /// than the words on it (#75). It follows the palette column, which grows
-    /// with Dynamic Type, so it is measured rather than written down.
-    @State private var entryWidth: CGFloat = 0
-
     var body: some View {
         Button {
             workspace.add(entry.kind)
@@ -299,13 +294,7 @@ struct PaletteEntryButton: View {
             .foregroundStyle(BlockCategory.ink)
             .padding(.vertical, PaletteBlock.verticalPadding)
             .padding(.horizontal, PaletteBlock.horizontalPadding)
-            .frame(maxWidth: entryWidth > 0 ? entryWidth : nil, alignment: .leading)
             .background(category.color, in: PaletteBlock.shape)
-        }
-        .onGeometryChange(for: CGFloat.self) {
-            $0.size.width
-        } action: {
-            entryWidth = $0
         }
         .accessibilityHint("Tap to add to the end of the program. Drag to place anywhere.")
     }

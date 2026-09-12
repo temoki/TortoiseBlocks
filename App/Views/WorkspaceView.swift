@@ -453,13 +453,6 @@ struct BlockRowView: View {
 
     @ScaledMetric private var rowSpacing: CGFloat = 8
 
-    /// The width of the row's content, so the drag preview can be the width of
-    /// the row rather than of the words on it (#75). Measured rather than
-    /// guessed: it follows the column, Dynamic Type and the block's own kind.
-    /// Note it constrains a *different* view than the one it measures — a
-    /// measurement fed back into its own size is the infinite layout loop.
-    @State private var contentWidth: CGFloat = 0
-
     var body: some View {
         switch block.kind {
         case .repeatBlock(let count, let body):
@@ -541,11 +534,6 @@ struct BlockRowView: View {
                     // would be read as part of the block's own sentence.
                     .accessibilityHidden(true)
             }
-            .onGeometryChange(for: CGFloat.self) {
-                $0.size.width
-            } action: {
-                contentWidth = $0
-            }
             .blockChrome(block.kind.category.color, isHighlighted: isHighlighted)
             // The block without the furniture (#75). The default preview is a
             // snapshot of the row, which carries the ⋯ and the empty space the
@@ -563,7 +551,6 @@ struct BlockRowView: View {
                     usedFunctionNames: usedFunctionNames
                 ) { _ in }
                 .buttonStyle(WorkspaceChipButtonStyle())
-                .frame(maxWidth: contentWidth > 0 ? contentWidth : nil, alignment: .leading)
                 .blockChrome(block.kind.category.color)
             }
             // One stop per block instead of three: the kind, its value
@@ -635,88 +622,131 @@ struct ContainerBlockRow<Header: View>: View {
     @ScaledMetric private var foot: CGFloat = 11
     /// Gap between the header's own cells.
     @ScaledMetric private var headerSpacing: CGFloat = 8
-    /// The header's content width, for the drag preview — see `BlockRowView`.
-    @State private var headerWidth: CGFloat = 0
+    /// How tall a dragged container is allowed to be (#87). A deep one is
+    /// taller than the screen, and a picture that long hanging off one finger
+    /// covers the very program you are trying to aim at. Past this the shape
+    /// is cut off and faded out, which reads as "and more below" rather than
+    /// as a block that ends there.
+    @ScaledMetric private var previewHeightLimit: CGFloat = 220
 
     var body: some View {
         // Spacing 0: the arms have to meet. What separates the header from the
         // first child is the mouth's own leading `DropGap`, which is also what
         // separates any two sibling rows.
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: headerSpacing) {
-                header
-                InsertionTargetButton(
-                    address: BodyAddress(containerID: block.id), workspace: workspace)
-                Spacer(minLength: 0)
-                RowControls(
-                    blockID: block.id, workspace: workspace, addElseAction: addElseAction)
-            }
-            .onGeometryChange(for: CGFloat.self) {
-                $0.size.width
-            } action: {
-                headerWidth = $0
-            }
-            .blockChrome(
-                block.kind.category.color, corners: headerCorners,
-                isDropTargeted: isDropTargeted
-            )
-            // The header alone, and only the header (#75). Dropping it moves
-            // the whole container — mouths, children and all — but a preview
-            // of the entire subtree would be a picture the size of the program
-            // hanging off one finger, and the C's arms have nothing to close
-            // around while they are in the air. The hat you grabbed is what
-            // you are shown carrying.
-            .draggable(block) {
-                HStack(spacing: headerSpacing) { header }
-                    .buttonStyle(WorkspaceChipButtonStyle())
-                    .frame(maxWidth: headerWidth > 0 ? headerWidth : nil, alignment: .leading)
-                    .blockChrome(block.kind.category.color, corners: headerCorners)
-            }
-            .rowContextMenu(blockID: block.id, workspace: workspace)
-            // The menu holds it, and a menu is reachable — but an action says
-            // it out loud, the way Move Up / Move Down do.
-            .accessibilityActions {
-                if let addElseAction {
-                    Button("Add Otherwise", action: addElseAction)
+            headerArm
+                .blockChrome(
+                    block.kind.category.color, corners: headerCorners,
+                    isDropTargeted: isDropTargeted
+                )
+                // The whole block, children and all (#87). Dropping it moves the
+                // whole container — mouths, children and foot — so that is what it
+                // should look like in the air. It was the header alone in #75, on
+                // the argument that a subtree is a lot to hang off one finger;
+                // judged in the running app, a hat that leaves its body behind
+                // reads as though the body is staying put.
+                //
+                // Read-only, through the flag the visionOS viewer already needed
+                // (#53): the ⋯ and the mouths' "add here" toggles take themselves
+                // off, so nothing that cannot be pressed is drawn.
+                .draggable(block) {
+                    containerShape
+                        .buttonStyle(WorkspaceChipButtonStyle())
+                        .environment(\.showsBlockEditing, false)
+                        .frame(maxHeight: previewHeightLimit, alignment: .top)
+                        .clipped()
+                        .mask(alignment: .top) { previewFade }
                 }
-            }
-            // Dropping onto the header appends into this container's body.
-            .dropDestination(for: Block.self) { items, _ in
-                guard let dropped = items.first else { return false }
-                return workspace.handleDrop(
-                    dropped, at: childBlocks.count,
-                    inBodyAt: BodyAddress(containerID: block.id))
-            } isTargeted: {
-                isDropTargeted = $0
-            }
+                .rowContextMenu(blockID: block.id, workspace: workspace)
+                // The menu holds it, and a menu is reachable — but an action says
+                // it out loud, the way Move Up / Move Down do.
+                .accessibilityActions {
+                    if let addElseAction {
+                        Button("Add Otherwise", action: addElseAction)
+                    }
+                }
+                // Dropping onto the header appends into this container's body.
+                .dropDestination(for: Block.self) { items, _ in
+                    guard let dropped = items.first else { return false }
+                    return workspace.handleDrop(
+                        dropped, at: childBlocks.count,
+                        inBodyAt: BodyAddress(containerID: block.id))
+                } isTargeted: {
+                    isDropTargeted = $0
+                }
 
+            bodyArms
+        }
+    }
+
+    /// The C with nothing attached: the same pieces the body assembles, in the
+    /// same order, for the drag preview to render. The header wears its chrome
+    /// here because the body wears a *stateful* version of it — the
+    /// drop-target ring — which a preview has no business showing.
+    private var containerShape: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            headerArm
+                .blockChrome(block.kind.category.color, corners: headerCorners)
+            bodyArms
+        }
+    }
+
+    /// Opaque until near the bottom, then out. Only the last stretch of a
+    /// clipped preview fades, so a container short enough to fit is untouched
+    /// — the fade has to mean "there is more", not "this block is faint".
+    private var previewFade: some View {
+        LinearGradient(
+            stops: [
+                .init(color: .black, location: 0),
+                .init(color: .black, location: 0.82),
+                .init(color: .clear, location: 1),
+            ],
+            startPoint: .top, endPoint: .bottom)
+    }
+
+    /// The top arm's contents. `InsertionTargetButton` and `RowControls` take
+    /// themselves off when `showsBlockEditing` is false, which is what lets
+    /// the preview reuse this instead of keeping a stripped copy in step.
+    private var headerArm: some View {
+        HStack(spacing: headerSpacing) {
+            header
+            InsertionTargetButton(
+                address: BodyAddress(containerID: block.id), workspace: workspace)
+            Spacer(minLength: 0)
+            RowControls(
+                blockID: block.id, workspace: workspace, addElseAction: addElseAction)
+        }
+    }
+
+    /// Everything below the header: the mouth, the else mouth if there is one,
+    /// and the foot that closes the shape.
+    @ViewBuilder private var bodyArms: some View {
+        mouth(
+            BlockListView(
+                blocks: childBlocks,
+                address: BodyAddress(containerID: block.id),
+                workspace: workspace,
+                highlightedID: highlightedID,
+                usedVariableNames: usedVariableNames,
+                usedFunctionNames: usedFunctionNames
+            ))
+
+        if let elseBlocks {
+            ElseDividerRow(blockID: block.id, elseCount: elseBlocks.count, workspace: workspace)
             mouth(
                 BlockListView(
-                    blocks: childBlocks,
-                    address: BodyAddress(containerID: block.id),
+                    blocks: elseBlocks,
+                    address: BodyAddress(containerID: block.id, slot: .elseBody),
                     workspace: workspace,
                     highlightedID: highlightedID,
                     usedVariableNames: usedVariableNames,
                     usedFunctionNames: usedFunctionNames
                 ))
-
-            if let elseBlocks {
-                ElseDividerRow(blockID: block.id, elseCount: elseBlocks.count, workspace: workspace)
-                mouth(
-                    BlockListView(
-                        blocks: elseBlocks,
-                        address: BodyAddress(containerID: block.id, slot: .elseBody),
-                        workspace: workspace,
-                        highlightedID: highlightedID,
-                        usedVariableNames: usedVariableNames,
-                        usedFunctionNames: usedFunctionNames
-                    ))
-            }
-
-            UnevenRoundedRectangle(cornerRadii: RowCorners.containerFoot.radii)
-                .fill(block.kind.category.color)
-                .frame(height: foot)
         }
+
+        UnevenRoundedRectangle(cornerRadii: RowCorners.containerFoot.radii)
+            .fill(block.kind.category.color)
+            .frame(height: foot)
     }
 
     /// One mouth: the children, held off the left edge far enough to clear the
