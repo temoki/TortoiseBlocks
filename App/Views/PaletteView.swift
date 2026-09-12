@@ -294,6 +294,7 @@ struct PaletteEntryButton: View {
             .foregroundStyle(BlockCategory.ink)
             .padding(.vertical, PaletteBlock.verticalPadding)
             .padding(.horizontal, PaletteBlock.horizontalPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(category.color, in: PaletteBlock.shape)
         }
         .accessibilityHint("Tap to add to the end of the program. Drag to place anywhere.")

@@ -551,6 +551,7 @@ struct BlockRowView: View {
                     usedFunctionNames: usedFunctionNames
                 ) { _ in }
                 .buttonStyle(WorkspaceChipButtonStyle())
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .blockChrome(block.kind.category.color)
             }
             // One stop per block instead of three: the kind, its value

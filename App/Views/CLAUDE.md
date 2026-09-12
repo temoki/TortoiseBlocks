@@ -387,3 +387,35 @@ space, which is what a cross-fade is. `CanvasPane`'s canvas/code swap was
 already a `ZStack` and already worked — same modifier, same kind of value,
 different container — which is how the two were told apart. Nothing warns you:
 the modifier is written, the build is clean, and the pane simply cuts.
+
+**A drag preview is proposed the source view's size, so it fills rather than
+measures** (#87, #91). `draggable(_:preview:)` hands the preview the size of
+the view it was attached to, which means `.frame(maxWidth: .infinity)` gives a
+preview exactly the width of the row or palette entry it came from — no
+measurement, no plumbing. Without it a preview shrinks to its own content,
+which reads as a smaller block than the one that was under the finger.
+
+This was found the hard way and the wrong way round. The first attempt measured
+each source with `onGeometryChange` and handed the number to `.frame(maxWidth:)`
+— which is a *ceiling*, not a width, so a value wider than the content
+collapsed straight back to the content and the whole mechanism looked like it
+worked while doing nothing. Using the same number as a fixed `.frame(width:)`
+on the container exposed the second half: **`onGeometryChange` does not report
+the rendered width here.** Measured against a 100pt rectangle drawn on screen,
+a row draws 408pt — the column's 440 less the list's 32 — while the modifier
+reports 359, and the `ScrollView` above it reports 391 for a 440pt column. The
+error starts at the top and every level inherits it intact (359 = 391 − 32).
+Why is unknown; what matters is that geometry read inside this column is not
+the geometry on screen, so do not build on it. The container preview is what
+gave the answer away: it filled correctly all along, because `DropGap` carries
+a `maxWidth: .infinity` and was quietly doing what every preview should.
+
+**And an iPad has no Taptic Engine** (#74). `UIImpactFeedbackGenerator` — what
+`.sensoryFeedback`'s `.impact`, `.success` and `.error` are built on — is
+iPhone-only; the iPad's only haptics come from an Apple Pencil Pro or an M4
+Magic Keyboard trackpad, through a different generator, and never from a
+finger. This app ships to iPad, Mac and Vision Pro and no iPhone
+(`TARGETED_DEVICE_FAMILY` is "2,7"), so `.sensoryFeedback` is inert on every
+device it runs on. It fails silently — no error, no warning, nothing happens —
+which is exactly how a full implementation of it got written and then thrown
+away. Sound (#80) is the only channel left for answering a touch.
