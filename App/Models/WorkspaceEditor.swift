@@ -37,6 +37,18 @@ final class WorkspaceUIState {
     func recordEdit() {
         editGeneration += 1
     }
+
+    /// The block the palette just stamped out, so the workspace can bring it
+    /// into view (#71).
+    ///
+    /// Only the *tap* path sets this. A block that was dragged into place was
+    /// put where the child was already looking, and scrolling after a drop
+    /// would move the program out from under them.
+    private(set) var lastAddedBlockID: UUID?
+
+    func recordAdd(_ id: UUID) {
+        lastAddedBlockID = id
+    }
 }
 
 /// Value-type editing facade over the document.
@@ -61,6 +73,9 @@ struct WorkspaceEditor {
     /// What the workspace animates on (#70) — see `WorkspaceUIState`.
     var editGeneration: Int { uiState.editGeneration }
 
+    /// What the workspace scrolls to (#71) — likewise.
+    var lastAddedBlockID: UUID? { uiState.lastAddedBlockID }
+
     // Reading these in body stays fresh without observation: every edit,
     // undo, and redo mutates the document, which re-renders the view tree.
     var canUndo: Bool { undoManager?.canUndo ?? false }
@@ -74,6 +89,10 @@ struct WorkspaceEditor {
         let target = validatedInsertionTarget() ?? .topLevel
         guard let new = BlockTree.appending(block, toBodyAt: target, in: blocks) else { return }
         setBlocks(new)
+        // Where it went, so the workspace can show it (#71). After the write,
+        // and only when the write happened: pointing at a block that was never
+        // added would scroll to nothing.
+        uiState.recordAdd(block.id)
         // Adding a container makes it the natural next target.
         if kind.containerBody != nil {
             insertionTarget = BodyAddress(containerID: block.id)
