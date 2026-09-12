@@ -94,6 +94,11 @@ First comment の "a turtle graphics engine in Swift" と "that engine"
 
 `Free`
 
+### Funding information
+
+`Bootstrapped` のみチェック。設問の定義が "Have not raised VC funding" なので
+無料アプリでも該当する。Y Combinator / Venture backed は事実として該当しない。
+
 ---
 
 ## Shoutouts（Built with）
