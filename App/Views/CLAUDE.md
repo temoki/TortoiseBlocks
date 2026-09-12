@@ -343,3 +343,25 @@ the else divider) stays square, and that squareness is what makes the
 pieces read as one block. Verify it that way too — a vertical scan down
 the spine of a rendered container must be one unbroken run of the
 category color, through the else divider and into the foot.
+
+**Motion is added at the edit, and switched off in one of two places** (#70,
+#71). Every tree edit — add, delete, reorder, drop, undo, redo — comes through
+`WorkspaceEditor.apply`, so that one function bumps
+`WorkspaceUIState.editGeneration` and the block list animates on the counter.
+Not on `[Block]`: this view re-renders on every committed command during
+playback, and comparing two whole trees ten times a second is the wrong price
+for "did an edit happen?" — the same reason the staleness hash sits in
+`CanvasPane`. Keep the `.animation(_:value:)` innermost, too. The same edit
+also changes the toolbar's undo/redo enablement and the transport's staleness,
+and neither should move because a block did.
+
+Reduce Motion then takes one of two shapes, and which one is decided by
+whether the motion is declarative. Declarative motion hides the check in a
+modifier, the way `pointerHover()` hides `#if os(...)`: `blockEditAnimation`
+passes `nil` instead of a spring. An imperative `withAnimation` has no modifier
+to hide inside, so `WorkspaceView` reads `accessibilityReduceMotion` itself and
+hands `withAnimation` the same `nil` — that is the *only* reason to read the
+environment value in a body. Note that reduced motion still **moves**: a scroll
+that brings a new block into view has to arrive either way, it just arrives
+without the travel. There is no third shape, and forgetting both fails
+silently — motion nobody switched off simply plays.

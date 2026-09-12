@@ -14,6 +14,13 @@ struct WorkspaceView: View {
     @State private var lastScrollTime: Date?
     private let minScrollInterval: TimeInterval = 0.25
 
+    /// Read here rather than hidden in a modifier the way `blockEditAnimation`
+    /// hides it (#70): scrolling is an imperative `withAnimation`, so there is
+    /// no modifier for the check to live inside. Reduced motion still moves
+    /// the list — the block has to be on screen either way — it just arrives
+    /// without the travel.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         Group {
             if workspace.blocks.isEmpty {
@@ -91,17 +98,26 @@ struct WorkspaceView: View {
                     }
                     .onChange(of: runner.currentBlockID) { _, id in
                         guard let id, id != lastScrolledBlockID else { return }
-                        let now = Date()
                         if let lastScrollTime,
-                            now.timeIntervalSince(lastScrollTime) < minScrollInterval
+                            Date().timeIntervalSince(lastScrollTime) < minScrollInterval
                         {
                             return
                         }
-                        lastScrolledBlockID = id
-                        lastScrollTime = now
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            proxy.scrollTo(id, anchor: .center)
-                        }
+                        scroll(proxy, to: id)
+                    }
+                    // A block added from the palette lands at the end of the
+                    // program, or in whichever mouth is the insertion target —
+                    // either of which can be off screen once a program has
+                    // grown, and then pressing a palette block looks like it
+                    // did nothing (#71).
+                    //
+                    // Unthrottled, unlike the playback follow above: this is
+                    // one press, not ten a second. It still records the time,
+                    // so a run in progress waits its `minScrollInterval` before
+                    // pulling the list back to the executing block.
+                    .onChange(of: workspace.lastAddedBlockID) { _, id in
+                        guard let id else { return }
+                        scroll(proxy, to: id)
                     }
                 }
             }
@@ -156,6 +172,19 @@ struct WorkspaceView: View {
                 }
                 .disabled(!workspace.canRedo)
             }
+        }
+    }
+
+    /// Brings a row into view, and records that it did. Both callers write the
+    /// same two pieces of state, so they share one place to write them: the
+    /// throttle above reads `lastScrollTime` whoever set it, which is what
+    /// keeps a palette press and a running program from fighting over the
+    /// scroll position.
+    private func scroll(_ proxy: ScrollViewProxy, to id: UUID) {
+        lastScrolledBlockID = id
+        lastScrollTime = Date()
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
+            proxy.scrollTo(id, anchor: .center)
         }
     }
 }
