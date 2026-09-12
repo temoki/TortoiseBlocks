@@ -122,13 +122,19 @@ First comment の "a turtle graphics engine in Swift" と "that engine"
 | **Blender** | ⭕️（任意）マスコットをバイナリでなくスクリプトにした判断がある |
 | Swift Playgrounds | ❌ **これで作っていない。** 2016年の前身エンジンの*配布形式*であって、このアプリのビルドには関係ない |
 | SwiftUI Apps | ❌ フレームワーク本体ではなく「SwiftUI 製アプリの一覧」。レビュー対象が違う |
-| Claude Code | ❌ 使ってはいるが、子ども向けアプリの売りと相性を見て入れない |
+| **Claude Code** | ⭕️ 一人でこの規模を出荷する手段として最も効いた |
 
 Swift は候補から選択できない。SF Symbols と Xcode Cloud は Product Hunt に
 ページがない（404）。
 
 2本でも構わない。**featured になりやすいという特典は、読み返して顔をしかめる
 レビューと引き換えにする価値はない。**
+
+Claude Code は「AI で作った子ども向けアプリ」と読まれる余地があるので一度は
+見送ったが、入れる。**書き方で対処する。**設計の判断は issue で先に決着させて
+いて自分のものだ、という事実をレビュー文の中に置き、道具が効いたのは「一人で
+この規模を出荷できたこと」だと書く。曖昧に濁すより、順序をはっきりさせたほうが
+強い。
 
 ### レビュー文
 
@@ -157,6 +163,26 @@ a teacher can actually go and look. The rest is the ordinary reason: Actions
 checks every pull request on three platforms, Releases carry the builds, the
 website itself is Pages, and the issues are where a feature gets argued out
 before it is written. One place, and free for a public repository.
+```
+
+**What made you choose Claude Code over the alternatives?**
+
+```
+Because the hard part of this project was never typing the code. Tortoise
+Blocks is one person's app on three Apple platforms, with a document format
+that is frozen — a file saved by the first release still has to open — and most
+of its real work is decisions whose reasons are invisible in the code they
+produce. Why the recursion limit is 30 rather than 100, for one: it was
+measured, not chosen. Expansion overflows a 512KB stack between 55 and 60
+levels deep in a debug build, and that is a crash, not an error you can catch.
+
+What made me stay with Claude Code is that it works from the whole repository
+and from a written record of those reasons — a CLAUDE.md that says why things
+are the way they are — rather than from whichever file happens to be open. The
+design is argued out in the issues before anything is built, and it stays mine.
+What I get back is scope: an app this size, on three platforms, with the store
+listing, the website and the capture rigs around it, is more than one person's
+evenings otherwise.
 ```
 
 **What made you choose Figma over the alternatives?**（任意）
