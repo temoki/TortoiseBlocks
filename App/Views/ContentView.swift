@@ -147,6 +147,17 @@ struct CanvasPane: View {
                         .padding()
                 }
             }
+            // Pressing the toggle should change the content and nothing else,
+            // which is an argument for a cross-fade as much as for the two
+            // panes matching (#11) — a cut makes the pane look like it was
+            // replaced rather than turned over (#72).
+            //
+            // The code pane stays inside an `if` rather than joining the
+            // canvas on `opacity`: keeping it alive would re-run
+            // `SwiftCodeGenerator` on every edit, for a pane nobody is
+            // looking at. The canvas is the one that can't be rebuilt —
+            // destroying `TortoiseCanvas` resets playback identity.
+            .motion(Motion.paneSwap, value: showsCode)
             Divider()
             PlaybackControls(
                 blocks: workspace.blocks, runner: runner,
