@@ -1,0 +1,170 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Tortoise Blocks — Product Hunt gallery</title>
+<!--
+  Product Hunt のギャラリー画像5枚のソース。1枚 = 1 <section>。
+  ./build.sh が #s1 … #s5 をそれぞれ headless Chrome で撮り、
+  1270x760 に落として oxipng にかける。文言を直すならここ。
+
+  :target で1枚だけ表示しているので、ブラウザで直接開くときも
+  gallery.html#s1 のようにフラグメントを付ける。
+-->
+<style>
+  :root {
+    /* site/index.html と同じパレット。アクセントは薄い地の上で
+       コントラストを稼ぐため、サイトの #b64ae5 より一段濃い。 */
+    --fg: #1c1c1e;
+    --muted: #56565c;
+    --accent: #8b2fc9;
+  }
+
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 1270px; height: 760px; overflow: hidden;
+    background: #fff;
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  section { display: none; box-sizing: border-box; width: 1270px; height: 760px; }
+  section:target { display: flex; }
+
+  /* ---- 1〜4枚目: 左に文言、右にスクリーンショット ------------------ */
+  .split {
+    align-items: center; gap: 44px; padding: 56px 60px;
+    background: linear-gradient(155deg, #faf7ff 0%, #eee5fb 100%);
+  }
+  .copy { width: 352px; flex: none; }
+  .eyebrow {
+    margin: 0 0 14px; font-size: 13px; font-weight: 700;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--accent);
+  }
+  h1 {
+    margin: 0 0 18px; font-size: 42px; line-height: 1.12;
+    letter-spacing: -.022em; font-weight: 700; color: var(--fg);
+  }
+  .sub { margin: 0; font-size: 17.5px; line-height: 1.62; color: var(--muted); }
+
+  .shot { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; }
+  .shot img {
+    display: block; max-width: 100%; max-height: 648px; border-radius: 16px;
+    box-shadow: 0 2px 6px rgba(40, 10, 60, .10), 0 26px 60px rgba(40, 10, 60, .20);
+  }
+
+  /* ---- 1枚目だけ: 文言を上に、切り抜いた画面を大きく --------------- */
+  .wide {
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 26px; padding: 36px 60px; text-align: center;
+    background: linear-gradient(155deg, #faf7ff 0%, #eee5fb 100%);
+  }
+  .wide .copy { width: auto; max-width: 1000px; }
+  .wide h1 { font-size: 40px; margin-bottom: 12px; }
+  .wide .eyebrow { margin-bottom: 12px; }
+
+  /* macOS のキャプチャ(2880x1800)から、ブロックの列とコードの列だけを
+     切り出す。切り抜き枠は原寸で x=620 y=152 w=2078 h=950。倍率は
+     1150/2078 = 0.5534 なので、画像は 2880*0.5534 = 1594px 幅で置き、
+     左に 620*0.5534 = 343px、上に 152*0.5534 = 84px ずらす。
+     パレット列とウインドウ枠を落とす代わりに、コードが読める大きさになる。
+     右上を数px内側に寄せてあるのは、ウインドウの角丸の外の紫の地が
+     三日月形に写り込むため。枠を動かすときはそこを見ること。 */
+  .crop {
+    width: 1150px; height: 526px; overflow: hidden; border-radius: 14px;
+    box-shadow: 0 2px 6px rgba(40, 10, 60, .10), 0 26px 60px rgba(40, 10, 60, .20);
+  }
+  .crop img {
+    display: block; position: relative; max-width: none;
+    width: 1594px; left: -343px; top: -84px;
+  }
+
+  /* ---- 5枚目: 文字だけのカード ------------------------------------ */
+  .card {
+    align-items: center; justify-content: center; padding: 56px;
+    background: linear-gradient(150deg, #6d1f95 0%, #b64ae5 100%);
+    color: #fff; text-align: center;
+  }
+  .card .eyebrow { color: rgba(255, 255, 255, .72); }
+  .card h1 { color: #fff; font-size: 54px; margin-bottom: 34px; }
+  .card ul { margin: 0 0 32px; padding: 0; list-style: none; display: inline-block; text-align: left; }
+  .card li {
+    font-size: 20px; line-height: 1.5; margin: 0 0 14px;
+    padding-left: 38px; position: relative; color: rgba(255, 255, 255, .94);
+  }
+  .card li::before {
+    content: "✓"; position: absolute; left: 0; top: -1px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: rgba(255, 255, 255, .18); color: #fff;
+    font-size: 14px; line-height: 26px; text-align: center;
+  }
+  .card .foot { margin: 0; font-size: 17px; color: rgba(255, 255, 255, .78); }
+  .card .mark {
+    display: block; width: 88px; height: 88px; margin: 0 auto 26px;
+    border-radius: 22%; box-shadow: 0 10px 30px rgba(30, 0, 45, .28);
+  }
+</style>
+
+<section id="s1" class="wide">
+  <div class="copy">
+    <p class="eyebrow">Blocks become Swift</p>
+    <h1>One program, in two notations</h1>
+    <p class="sub">Snap blocks together, and the pane beside them shows the same
+      program as real, syntax-colored Swift.</p>
+  </div>
+  <div class="crop">
+    <img src="../../appstore/screenshots/macos/en-US/3_spiral_code.png" alt="">
+  </div>
+</section>
+
+<section id="s2" class="split">
+  <div class="copy">
+    <p class="eyebrow">Blocks you make yourself</p>
+    <h1>A block that<br>calls itself</h1>
+    <p class="sub">Name a block 🌳, let it draw a branch, and let it call itself
+      twice — a little shorter each time. Nine blocks on one screen, and
+      thirty-one branches later there is a tree.</p>
+  </div>
+  <div class="shot">
+    <img src="../../appstore/screenshots/ios/en-US/4_tree_canvas.png" alt="">
+  </div>
+</section>
+
+<section id="s3" class="split">
+  <div class="copy">
+    <p class="eyebrow">Watch it draw</p>
+    <h1>Which block<br>drew which line</h1>
+    <p class="sub">Play, pause, step forward one command at a time, scrub back
+      and forth, change the speed mid-run. The block being drawn stays lit, so
+      it is never a mystery.</p>
+  </div>
+  <div class="shot">
+    <img src="../../appstore/screenshots/ios/en-US/2_spiral_canvas.png" alt="">
+  </div>
+</section>
+
+<section id="s4" class="split">
+  <div class="copy">
+    <p class="eyebrow">Apple Vision Pro</p>
+    <h1>Off the screen,<br>onto the table</h1>
+    <p class="sub">Built on iPad and Mac. Open one on Vision Pro and it lies on
+      the table in front of you, at whatever size you like, with the tortoise
+      walking the line as it appears.</p>
+  </div>
+  <div class="shot">
+    <img src="../../appstore/screenshots/visionos/en-US/1_star_table.png" alt="">
+  </div>
+</section>
+
+<section id="s5" class="card">
+  <div>
+    <img class="mark" src="../../site/icon-256.png" alt="">
+    <p class="eyebrow">For parents and teachers</p>
+    <h1>It asks the child for nothing</h1>
+    <ul>
+      <li>No accounts, no sign-in, nothing to type but numbers</li>
+      <li>No advertising, no analytics, no third-party SDKs</li>
+      <li>No network connections — no networking code in the app at all</li>
+      <li>Drawings stay on the device, and wherever you save them</li>
+    </ul>
+    <p class="foot">Free, and open source under the MIT license</p>
+  </div>
+</section>
