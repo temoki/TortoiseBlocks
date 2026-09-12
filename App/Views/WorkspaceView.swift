@@ -429,6 +429,13 @@ struct BlockRowView: View {
 
     @ScaledMetric private var rowSpacing: CGFloat = 8
 
+    /// The width of the row's content, so the drag preview can be the width of
+    /// the row rather than of the words on it (#75). Measured rather than
+    /// guessed: it follows the column, Dynamic Type and the block's own kind.
+    /// Note it constrains a *different* view than the one it measures — a
+    /// measurement fed back into its own size is the infinite layout loop.
+    @State private var contentWidth: CGFloat = 0
+
     var body: some View {
         switch block.kind {
         case .repeatBlock(let count, let body):
@@ -510,8 +517,31 @@ struct BlockRowView: View {
                     // would be read as part of the block's own sentence.
                     .accessibilityHidden(true)
             }
+            .onGeometryChange(for: CGFloat.self) {
+                $0.size.width
+            } action: {
+                contentWidth = $0
+            }
             .blockChrome(block.kind.category.color, isHighlighted: isHighlighted)
-            .draggable(block)
+            // The block without the furniture (#75). The default preview is a
+            // snapshot of the row, which carries the ⋯ and the empty space the
+            // spacer was holding for it — a picture of a row rather than the
+            // block inside it. This is the same label in the same chrome, at
+            // the size of its own content.
+            //
+            // The chip style has to be named here: it is applied ambiently to
+            // the block list, and a drag preview is rendered outside that
+            // hierarchy, where the chips would fall back to `.bordered` and
+            // stop looking like the ones you were just looking at.
+            .draggable(block) {
+                SimpleBlockLabel(
+                    kind: block.kind, usedVariableNames: usedVariableNames,
+                    usedFunctionNames: usedFunctionNames
+                ) { _ in }
+                .buttonStyle(WorkspaceChipButtonStyle())
+                .frame(maxWidth: contentWidth > 0 ? contentWidth : nil, alignment: .leading)
+                .blockChrome(block.kind.category.color)
+            }
             // One stop per block instead of three: the kind, its value
             // chips, and the running state read as a single sentence —
             // "Forward, Number 100, Running" — rather than as separate
@@ -581,6 +611,8 @@ struct ContainerBlockRow<Header: View>: View {
     @ScaledMetric private var foot: CGFloat = 11
     /// Gap between the header's own cells.
     @ScaledMetric private var headerSpacing: CGFloat = 8
+    /// The header's content width, for the drag preview — see `BlockRowView`.
+    @State private var headerWidth: CGFloat = 0
 
     var body: some View {
         // Spacing 0: the arms have to meet. What separates the header from the
@@ -595,11 +627,27 @@ struct ContainerBlockRow<Header: View>: View {
                 RowControls(
                     blockID: block.id, workspace: workspace, addElseAction: addElseAction)
             }
+            .onGeometryChange(for: CGFloat.self) {
+                $0.size.width
+            } action: {
+                headerWidth = $0
+            }
             .blockChrome(
                 block.kind.category.color, corners: headerCorners,
                 isDropTargeted: isDropTargeted
             )
-            .draggable(block)
+            // The header alone, and only the header (#75). Dropping it moves
+            // the whole container — mouths, children and all — but a preview
+            // of the entire subtree would be a picture the size of the program
+            // hanging off one finger, and the C's arms have nothing to close
+            // around while they are in the air. The hat you grabbed is what
+            // you are shown carrying.
+            .draggable(block) {
+                HStack(spacing: headerSpacing) { header }
+                    .buttonStyle(WorkspaceChipButtonStyle())
+                    .frame(maxWidth: headerWidth > 0 ? headerWidth : nil, alignment: .leading)
+                    .blockChrome(block.kind.category.color, corners: headerCorners)
+            }
             .rowContextMenu(blockID: block.id, workspace: workspace)
             // The menu holds it, and a menu is reachable — but an action says
             // it out loud, the way Move Up / Move Down do.
