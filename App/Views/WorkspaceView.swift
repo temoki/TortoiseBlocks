@@ -386,7 +386,12 @@ struct DropGap: View {
     /// the tiling would bring back the pulsing #77 fixed — the drop is simply
     /// refused, as it always was.
     private var isOpen: Bool {
-        isTargeted && workspace.dropChangesTree(at: index, inBodyAt: address)
+        isTargeted && acceptsDrop
+    }
+
+    /// Whether this gap can do anything at all with what is being carried.
+    private var acceptsDrop: Bool {
+        workspace.dropChangesTree(at: index, inBodyAt: address)
     }
 
     /// How far the rows part to show where the block will land (#77). Near a
@@ -458,6 +463,25 @@ struct DropGap: View {
             }
         }
         .contentShape(.rect)
+        // Out of the way entirely when it can do nothing (#101). The system
+        // puts a green ⊕ on the preview over any drop destination and never
+        // asks whether the drop would achieve anything, so a gap that refuses
+        // the block was still promising to take it — the badge said yes while
+        // the space stayed shut.
+        //
+        // This is the hole in the tiling that #77 warns about, and it is
+        // harmless in exactly these places: nothing is meant to open there, so
+        // nothing being targeted there changes nothing. Move out of the band
+        // and the next gap opens as usual.
+        // iPadOS only, and not for want of trying: macOS routes drop targeting
+        // somewhere hit testing does not reach, and `.disabled(_:)` does not
+        // reach it either — both were built and watched on a Mac, and the
+        // badge stayed. The lever Apple means for this is `isEnabled` on the
+        // `dropDestination` that replaces ours (#99), which has no `isTargeted`
+        // and so cannot be adopted without answering what drives the parting.
+        // Until then the Mac shows a ⊕ over a gap that will refuse the block —
+        // cosmetic, and the refusal itself has always been correct.
+        .allowsHitTesting(acceptsDrop)
         .dropDestination(for: Block.self) { items, _ in
             guard let block = items.first else { return false }
             return workspace.handleDrop(block, at: index, inBodyAt: address)
