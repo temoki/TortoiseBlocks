@@ -229,6 +229,27 @@ because the gap that opens is the one being pointed at and it grows around that
 point. All of this was judged on an iPad, which is the only place it can be:
 the question is what happens under a finger.
 
+**The Mac badges those gaps anyway, and cannot be talked out of it** (#101).
+The system puts a ⊕ on the preview over any drop destination without asking
+whether the drop would achieve anything. On iPadOS, taking the gap out of hit
+testing takes the badge with it. On macOS nothing does: `allowsHitTesting`,
+`.disabled(_:)`, and `dropConfiguration` returning
+`DropConfiguration(operation: .forbidden)` were each built and watched, and the
+badge stayed through all three. Do not try them again in that order. The Mac
+shows a ⊕ over a gap that will refuse the block; the refusal has always been
+correct, and the space still stays shut, so what is left is one wrong glyph.
+
+**And the replacement drop API cannot be adopted yet** (#99). Ours —
+`dropDestination(for:action:isTargeted:)` — is soft-deprecated in favour of
+`dropDestination(for:isEnabled:action:)`, whose `isEnabled` is exactly the
+lever the badge wants. It has no `isTargeted`, and the session observers that
+would replace it (`onDropSessionUpdated`, `dropConfiguration`) are
+`@available(iOS, unavailable)`. Migrating would trade a cosmetic Mac defect for
+a broken parting on the platform this app is for. The deprecation is silent —
+`deprecated: 100000.0`, so no build warning — which is why it went unnoticed
+for so long; it is not urgent, and it is not actionable until a targeting
+signal exists on iOS.
+
 **A gap that cannot take the block stays shut** (#98). Opened space is a
 promise that something will land there, and two gaps make it falsely: the ones
 either side of the block being dragged, where a drop puts it back where it was,
