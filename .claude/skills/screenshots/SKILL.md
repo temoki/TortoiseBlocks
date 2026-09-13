@@ -169,14 +169,23 @@ is centred under the menu bar and fully in frame.
 **macOS UI testing needs Xcode to hold the Accessibility permission** (System
 Settings ▸ Privacy & Security ▸ Accessibility). Without it every run fails
 with "Timed out while enabling automation mode", which mentions neither Xcode
-nor permissions.
+nor permissions. **The screen has to be unlocked and the display awake**, too:
+a locked Mac fails to activate the app ("Running Background") and hands back
+captures that are nothing like the window.
 
 Four ways the Mac differs from the iPad, all handled but all worth knowing:
 
-- **The window screenshot is fully opaque, with the rounded corners filled
-  near-black.** Composite it as-is and the window wears four black wedges. The
-  corners are flood-filled to transparent rather than masked with a drawn
-  radius — the shape is macOS's own continuous curve, not a circle.
+- **The window screenshot is fully opaque, and outside its rounded corners is
+  whatever was on screen behind the window** — near-black on a dark desktop,
+  and composited as-is the window wears four wedges of it. The corners are
+  flood-filled to transparent rather than masked with a drawn radius — the
+  shape is macOS's own continuous curve, not a circle. That only works where
+  the wedge differs from the window: with a light window behind a corner the
+  fill runs into the white canvas and erases every white pixel, the plate
+  shows through the whole window, and `metadata_check` still passes. So each
+  corner is filled inside a small box, and one whose fill spreads through the
+  box borrows its neighbour on the same edge, mirrored (left and right match;
+  top and bottom do not). Light behind both corners of an edge stops the run.
 - **macOS reopens the windows it had when it quit**, so the second shot's
   launch restores the first shot's drawing and opens its own beside it. Two
   windows means two transports, and `play.fill` stops being a single element:
