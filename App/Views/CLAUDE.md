@@ -103,6 +103,30 @@ appears). The palette entry is a drag source, so its hover lives inside
 the body, not the modifier, which is why this first read as "`hoverEffect`
 crashes on visionOS": it does not, the pairing does.
 
+**26's glass is not used on any surface of ours, and that was tested rather
+than assumed** (#79). All three candidates were built and looked at, and all
+three came back out.
+
+*The transport floating on glass over the canvas.* It covers the bottom of the
+drawing — and worse than that, the picture then reads as sitting low in its
+pane, because the part that is hidden is the part that would have balanced it.
+The panel's shadow also clips against its own bounds, which no amount of
+padding fixes. The pane is a working view of a drawing; a panel over it is a
+panel in the way.
+
+*`scrollEdgeEffectStyle(.soft)` on the palette and the workspace.* No visible
+difference at all. Both columns keep space between their content and the bar
+above, so there is barely a moment where content is under it to soften.
+
+*The run button on `.glassProminent`.* A slight difference, not worth the
+change: the button's job is to say run-or-not through the accent, and glass
+takes its colour from whatever is behind it.
+
+The toolbars get the system's glass for free and that is where it belongs. If
+this comes up again, the question to ask first is whether any of our own
+surfaces has something *behind* it worth showing through — the canvas is a
+drawing, the workspace is a list, and neither does.
+
 **The code pane is paper, not a semantic surface** (#11). It sat on
 `.background.secondary`, which resolves to near-white or near-black on iPad and
 Mac but to light translucent glass on visionOS — and the syntax colors had
