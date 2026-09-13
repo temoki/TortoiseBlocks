@@ -715,12 +715,29 @@ struct ContainerBlockRow<Header: View>: View {
     @ScaledMetric private var foot: CGFloat = 11
     /// Gap between the header's own cells.
     @ScaledMetric private var headerSpacing: CGFloat = 8
-    /// How tall a dragged container is allowed to be (#87). A deep one is
-    /// taller than the screen, and a picture that long hanging off one finger
-    /// covers the very program you are trying to aim at. Past this the shape
-    /// is cut off and faded out, which reads as "and more below" rather than
-    /// as a block that ends there.
-    @ScaledMetric private var previewHeightLimit: CGFloat = 220
+    /// How far past the header a dragged container is allowed to show (#102):
+    /// the mouth's leading gap, and then half of the first child.
+    ///
+    /// The cap was 220 at first — a guard against a deep container being
+    /// taller than the screen — and that was the wrong quantity to pick. What
+    /// matters is not how much fits but where the *header* ends up, because
+    /// the header is what was grabbed: macOS holds a preview by its centre, so
+    /// at 220 the block hung more than a hundred points from the pointer
+    /// carrying it. iPadOS anchors nearer the top and hid that entirely.
+    ///
+    /// A multiple of the header was the next wrong answer. Header heights
+    /// differ by platform — the macOS body size is 13pt against iOS's 17 — so
+    /// the same multiple leaves a different amount showing, and what shows
+    /// first is not a block at all but the mouth's own `DropGap`. Measuring
+    /// the header and adding a fixed glimpse is the quantity that means
+    /// something: enough to see a child hanging there, on both.
+    @ScaledMetric private var previewGlimpse: CGFloat = 32
+    /// Until the header has been measured. Near a macOS header plus the
+    /// glimpse; only ever used for the frame or two before the real number
+    /// arrives.
+    @ScaledMetric private var previewHeightFallback: CGFloat = 76
+    /// The rendered height of this container's header, measured (#102).
+    @State private var headerHeight: CGFloat = 0
 
     var body: some View {
         // Spacing 0: the arms have to meet. What separates the header from the
@@ -732,6 +749,7 @@ struct ContainerBlockRow<Header: View>: View {
                     block.kind.category.color, corners: headerCorners,
                     isDropTargeted: isDropTargeted
                 )
+                .measuringHeight(into: $headerHeight)
                 // The whole block, children and all (#87). Dropping it moves the
                 // whole container — mouths, children and foot — so that is what it
                 // should look like in the air. It was the header alone in #75, on
@@ -816,14 +834,22 @@ struct ContainerBlockRow<Header: View>: View {
     /// cannot hold one.
     private var previewCard: RoundedRectangle { .rect(cornerRadius: 10) }
 
-    /// Opaque until near the bottom, then out. Only the last stretch of a
-    /// clipped preview fades, so a container short enough to fit is untouched
-    /// — the fade has to mean "there is more", not "this block is faint".
+    /// How tall the preview is allowed to be: the header as measured, plus the
+    /// glimpse below it.
+    private var previewHeightLimit: CGFloat {
+        headerHeight > 0 ? headerHeight + previewGlimpse : previewHeightFallback
+    }
+
+    /// Opaque through the header and most of the glimpse, then out. The fade
+    /// has to mean "there is more", so it may not reach the header — a faded
+    /// header would read as the block itself being faint — and it may not take
+    /// the whole glimpse either, or there is nothing left to glimpse.
     private var previewFade: some View {
-        LinearGradient(
+        let opaque = (headerHeight + previewGlimpse * 0.55) / previewHeightLimit
+        return LinearGradient(
             stops: [
                 .init(color: .black, location: 0),
-                .init(color: .black, location: 0.82),
+                .init(color: .black, location: min(max(opaque, 0), 1)),
                 .init(color: .clear, location: 1),
             ],
             startPoint: .top, endPoint: .bottom)
@@ -1366,6 +1392,29 @@ private struct RowHeightFloor: View {
             .hidden()
             // An invisible control has no business in the accessibility tree.
             .accessibilityHidden(true)
+    }
+}
+
+extension View {
+    /// Reports this view's rendered height into `height`.
+    ///
+    /// A `GeometryReader` in the background, rather than
+    /// `onGeometryChange(for:of:action:)` — which is the modifier for this and
+    /// **does not report the rendered geometry inside the workspace column**.
+    /// Measured against each other on the same view, on macOS, the modifier
+    /// said 159 for a header the reader put at 44 and a ruler confirmed at ~45
+    /// (#102); the same modifier under-reports *width* there too (#95, 359
+    /// against a row drawing 408). Why is unknown. The reader is right on both
+    /// platforms, and that is what this uses.
+    fileprivate func measuringHeight(into height: Binding<CGFloat>) -> some View {
+        background {
+            GeometryReader { proxy in
+                Color.clear
+                    .onChange(of: proxy.size.height, initial: true) { _, new in
+                        height.wrappedValue = new
+                    }
+            }
+        }
     }
 }
 
