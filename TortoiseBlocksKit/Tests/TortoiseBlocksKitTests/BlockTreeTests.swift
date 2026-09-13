@@ -393,4 +393,62 @@ struct BlockTreeTests {
         #expect(outerBody[0].kind == .turnLeft(.literal(45)))
         #expect(BlockTree.updatingKind(of: UUID(), to: .home, in: tree) == nil)
     }
+
+    // Fixture: [forward, outerRepeat { turn, innerRepeat { home } }]
+
+    @Test("a drop either side of the dragged block changes nothing")
+    func dropBesideItself() {
+        // `forward` is at index 0 of the top level, so 0 and 1 put it back.
+        #expect(
+            !BlockTree.dropChangesTree(
+                blockWithID: forward.id, toIndex: 0, inBodyAt: .topLevel, in: tree))
+        #expect(
+            !BlockTree.dropChangesTree(
+                blockWithID: forward.id, toIndex: 1, inBodyAt: .topLevel, in: tree))
+        // Past the repeat is a real move.
+        #expect(
+            BlockTree.dropChangesTree(
+                blockWithID: forward.id, toIndex: 2, inBodyAt: .topLevel, in: tree))
+    }
+
+    @Test("a drop inside the dragged block's own subtree changes nothing")
+    func dropInsideItself() {
+        let ownMouth = BodyAddress(containerID: outerRepeat.id)
+        let grandchildMouth = BodyAddress(containerID: innerRepeat.id)
+        for index in 0...2 {
+            #expect(
+                !BlockTree.dropChangesTree(
+                    blockWithID: outerRepeat.id, toIndex: index, inBodyAt: ownMouth, in: tree))
+        }
+        // A mouth deeper inside the same subtree is just as impossible.
+        #expect(
+            !BlockTree.dropChangesTree(
+                blockWithID: outerRepeat.id, toIndex: 0, inBodyAt: grandchildMouth, in: tree))
+        // A sibling moving into that same mouth is fine.
+        #expect(
+            BlockTree.dropChangesTree(
+                blockWithID: forward.id, toIndex: 0, inBodyAt: grandchildMouth, in: tree))
+    }
+
+    @Test("a block the tree has never seen always inserts")
+    func dropFromPalette() {
+        #expect(
+            BlockTree.dropChangesTree(
+                blockWithID: UUID(), toIndex: 0, inBodyAt: .topLevel, in: tree))
+    }
+
+    @Test("moving a nested block out to the top level changes the tree")
+    func dropOutOfAMouth() {
+        #expect(
+            BlockTree.dropChangesTree(
+                blockWithID: home.id, toIndex: 0, inBodyAt: .topLevel, in: tree))
+        // But not either side of itself in the mouth it is already in.
+        let itsMouth = BodyAddress(containerID: innerRepeat.id)
+        #expect(
+            !BlockTree.dropChangesTree(
+                blockWithID: home.id, toIndex: 0, inBodyAt: itsMouth, in: tree))
+        #expect(
+            !BlockTree.dropChangesTree(
+                blockWithID: home.id, toIndex: 1, inBodyAt: itsMouth, in: tree))
+    }
 }

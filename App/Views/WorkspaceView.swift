@@ -379,6 +379,16 @@ struct DropGap: View {
 
     @State private var isTargeted = false
 
+    /// Targeted *and* able to do something (#98). A gap either side of the
+    /// block being dragged, or one inside its own subtree, stays shut: the
+    /// space a gap opens is a promise that a block will land there, and those
+    /// drops land nothing. It is still a drop destination — leaving a hole in
+    /// the tiling would bring back the pulsing #77 fixed — the drop is simply
+    /// refused, as it always was.
+    private var isOpen: Bool {
+        isTargeted && workspace.dropChangesTree(at: index, inBodyAt: address)
+    }
+
     /// How far the rows part to show where the block will land (#77). Near a
     /// simple row's height, so the space that opens is the size of the thing
     /// that is about to fill it — the gap is the promise, not a hint.
@@ -410,7 +420,7 @@ struct DropGap: View {
                     .background {
                         RoundedRectangle(cornerRadius: 8)
                             .strokeBorder(
-                                isTargeted ? Color.accentColor : Color.secondary.opacity(0.4),
+                                isOpen ? Color.accentColor : Color.secondary.opacity(0.4),
                                 style: StrokeStyle(lineWidth: 2, dash: [5])
                             )
                     }
@@ -441,10 +451,10 @@ struct DropGap: View {
                     // down and the space is the size of a block. Reported
                     // height and hit area are the same number then, so the
                     // negative padding goes with them.
-                    .frame(height: isTargeted ? openHeight : closedHitHeight)
+                    .frame(height: isOpen ? openHeight : closedHitHeight)
                     .padding(
                         .vertical,
-                        isTargeted ? 0 : -(closedHitHeight - closedFootprint) / 2)
+                        isOpen ? 0 : -(closedHitHeight - closedFootprint) / 2)
             }
         }
         .contentShape(.rect)
@@ -456,7 +466,7 @@ struct DropGap: View {
         }
         // Reduce Motion switches the travel off, not the gap: where the block
         // is going has to be visible either way.
-        .motion(Motion.dropGap, value: isTargeted)
+        .motion(Motion.dropGap, value: isOpen)
         // Drop-only, so VoiceOver can't operate it: the invisible variant would
         // be an empty stop between every pair of rows, and the "Drop Here" of
         // an empty mouth would be read as if it were something to do. The
@@ -586,7 +596,7 @@ struct BlockRowView: View {
             // the block list, and a drag preview is rendered outside that
             // hierarchy, where the chips would fall back to `.bordered` and
             // stop looking like the ones you were just looking at.
-            .draggable(block) {
+            .draggable(workspace.dragging(block)) {
                 SimpleBlockLabel(
                     kind: block.kind, usedVariableNames: usedVariableNames,
                     usedFunctionNames: usedFunctionNames
@@ -708,7 +718,7 @@ struct ContainerBlockRow<Header: View>: View {
                 // Read-only, through the flag the visionOS viewer already needed
                 // (#53): the ⋯ and the mouths' "add here" toggles take themselves
                 // off, so nothing that cannot be pressed is drawn.
-                .draggable(block) {
+                .draggable(workspace.dragging(block)) {
                     containerShape
                         .buttonStyle(WorkspaceChipButtonStyle())
                         .environment(\.showsBlockEditing, false)
