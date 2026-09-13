@@ -453,6 +453,13 @@ struct BlockRowView: View {
 
     @ScaledMetric private var rowSpacing: CGFloat = 8
 
+    /// The row's content width, for the drag preview on iPadOS (#95). macOS
+    /// hands a preview the source view's size and `maxWidth` alone is enough;
+    /// iPadOS proposes nothing, so a floor has to come from somewhere. It
+    /// constrains a *different* view than the one it measures — a measurement
+    /// fed back into its own size is the infinite layout loop.
+    @State private var contentWidth: CGFloat = 0
+
     var body: some View {
         switch block.kind {
         case .repeatBlock(let count, let body):
@@ -534,6 +541,11 @@ struct BlockRowView: View {
                     // would be read as part of the block's own sentence.
                     .accessibilityHidden(true)
             }
+            .onGeometryChange(for: CGFloat.self) {
+                $0.size.width
+            } action: {
+                contentWidth = $0
+            }
             .blockChrome(block.kind.category.color, isHighlighted: isHighlighted)
             // The block without the furniture (#75). The default preview is a
             // snapshot of the row, which carries the ⋯ and the empty space the
@@ -551,7 +563,14 @@ struct BlockRowView: View {
                     usedFunctionNames: usedFunctionNames
                 ) { _ in }
                 .buttonStyle(WorkspaceChipButtonStyle())
-                .frame(maxWidth: .infinity, alignment: .leading)
+                // `maxWidth` is what matches the row on macOS, where a preview
+                // is proposed the source's size; `minWidth` is what matches it
+                // on iPadOS, where nothing is proposed and the greedy frame
+                // falls back to the content (#95). Neither alone covers both.
+                .frame(
+                    minWidth: contentWidth > 0 ? contentWidth : nil,
+                    maxWidth: .infinity, alignment: .leading
+                )
                 .blockChrome(block.kind.category.color)
                 // Where the block ends (#93). iPadOS composites a preview onto
                 // an opaque backing and fills whatever the snapshot leaves
@@ -620,6 +639,8 @@ struct ContainerBlockRow<Header: View>: View {
     @ViewBuilder let header: Header
 
     @State private var isDropTargeted = false
+    /// The whole C's width, for the drag preview — see `BlockRowView` (#95).
+    @State private var containerWidth: CGFloat = 0
     /// The left arm: wide enough to read as a limb of the block rather than
     /// as a rule beside it (the guide bar it replaces was 3pt).
     @ScaledMetric private var spine: CGFloat = 12
@@ -662,6 +683,10 @@ struct ContainerBlockRow<Header: View>: View {
                     containerShape
                         .buttonStyle(WorkspaceChipButtonStyle())
                         .environment(\.showsBlockEditing, false)
+                        .frame(
+                            minWidth: containerWidth > 0 ? containerWidth : nil,
+                            maxWidth: .infinity, alignment: .leading
+                        )
                         // A card, because a C cannot be described as one shape
                         // (#93). iPadOS fills whatever a preview leaves
                         // transparent, and for a container that is the header's
@@ -702,6 +727,11 @@ struct ContainerBlockRow<Header: View>: View {
                 }
 
             bodyArms
+        }
+        .onGeometryChange(for: CGFloat.self) {
+            $0.size.width
+        } action: {
+            containerWidth = $0
         }
     }
 

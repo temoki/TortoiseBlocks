@@ -445,3 +445,22 @@ workspace. And the height cap's fade now dissolves into the card rather than
 into nothing, because the system paints the named shape opaque: "more below"
 still reads, it just reads on a card. The alternative — leaving the four outer
 corners white — was built, looked at, and judged worse.
+
+**A drag preview's width takes two modifiers, one per platform** (#91, #95).
+macOS proposes the source view's size to the preview, so `maxWidth: .infinity`
+is enough there. iPadOS proposes nothing, and a greedy frame with no proposal
+falls back to the content — which is how every preview came out narrower than
+the block it was lifted from. The floor has to be measured and handed over, so
+each source reports its width through `onGeometryChange` and its preview wears
+`.frame(minWidth: measured, maxWidth: .infinity)`. Neither half covers both
+platforms, and on macOS the measured value is ignored, which is just as well:
+**`onGeometryChange` under-reports inside this column on macOS** — 359 against
+a row that draws 408, and 391 for a 440pt `ScrollView` — while on iPad it is
+right. That asymmetry is measured, not assumed (a 100pt rectangle drawn on
+screen settles the scale; `open -a TortoiseBlocks <file>.tortoise` gets a
+document on screen to measure).
+
+What the lift gets right, the drag then changes: **iPadOS scales the preview
+down once it is moving.** Nothing in `draggable` influences that, and UIKit's
+own preview API governs shape and background rather than size in flight. The
+size we control is the one at the moment of the lift, and it matches.
