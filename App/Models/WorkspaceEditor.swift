@@ -49,6 +49,25 @@ final class WorkspaceUIState {
     func recordAdd(_ id: UUID) {
         lastAddedBlockID = id
     }
+
+    /// The block a drag is carrying right now (#98).
+    ///
+    /// There is no "a drag started" signal on iOS — `onDragSessionUpdated` is
+    /// macOS-only, the same hole that made the trash can permanent (#30) — so
+    /// this is written from `draggable`'s payload, which is an `@autoclosure`
+    /// evaluated once per drag. The palette already leans on that: it is what
+    /// stamps a fresh `Block` for every drag.
+    ///
+    /// There is no "a drag ended" signal either, and here that costs nothing.
+    /// The value means something only while a drag is in flight, and a gap
+    /// only asks about it when something is hovering over it. A cancelled drag
+    /// leaves the last id behind, and the next drag overwrites it before any
+    /// gap can read it.
+    private(set) var draggedBlockID: UUID?
+
+    func beginDrag(_ id: UUID) {
+        draggedBlockID = id
+    }
 }
 
 /// Value-type editing facade over the document.
@@ -75,6 +94,23 @@ struct WorkspaceEditor {
 
     /// What the workspace scrolls to (#71) — likewise.
     var lastAddedBlockID: UUID? { uiState.lastAddedBlockID }
+
+    /// Records what a drag is carrying and hands the payload straight back, so
+    /// a call site reads `draggable(workspace.dragging(block))` and the
+    /// recording happens exactly when the drag does (#98).
+    func dragging(_ block: Block) -> Block {
+        uiState.beginDrag(block.id)
+        return block
+    }
+
+    /// Whether a drop there would change anything at all — false in the two
+    /// places a parted gap would be lying (#98): either side of the block
+    /// being dragged, and anywhere inside its own subtree.
+    func dropChangesTree(at index: Int, inBodyAt address: BodyAddress) -> Bool {
+        guard let dragged = uiState.draggedBlockID else { return true }
+        return BlockTree.dropChangesTree(
+            blockWithID: dragged, toIndex: index, inBodyAt: address, in: blocks)
+    }
 
     // Reading these in body stays fresh without observation: every edit,
     // undo, and redo mutates the document, which re-renders the view tree.

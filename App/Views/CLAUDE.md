@@ -229,6 +229,27 @@ because the gap that opens is the one being pointed at and it grows around that
 point. All of this was judged on an iPad, which is the only place it can be:
 the question is what happens under a finger.
 
+**A gap that cannot take the block stays shut** (#98). Opened space is a
+promise that something will land there, and two gaps make it falsely: the ones
+either side of the block being dragged, where a drop puts it back where it was,
+and any inside the dragged block's own subtree, which the tree refuses outright
+— the destination vanishes with the extraction. They stay drop destinations
+regardless, because taking them out of the tiling would bring the pulsing
+straight back; they simply do not open, and the drop is refused as it always
+was.
+
+Which gaps those are is answered by `BlockTree.dropChangesTree`, which
+**performs the move and compares** rather than restating as rules which drops
+are pointless — one set of rules cannot drift from another if there is only
+one. And what the drag is carrying comes from `draggable`'s payload, an
+`@autoclosure` evaluated once per drag, recorded into `WorkspaceUIState` on its
+way past. **There is no "a drag started" signal on iOS**, `onDragSessionUpdated`
+being macOS-only — the same hole that made the trash can permanent (#30), met a
+second time. There is no "a drag ended" either, and here that costs nothing:
+the value means something only while a drag is in flight, a gap only reads it
+while something hovers over it, and the next drag overwrites whatever a
+cancelled one left behind.
+
 **The can does two things, and the second one made it accessible** (#48). A drop
 throws away the block you are holding; a *tap* offers to throw away the program,
 which is what #44 took away when the row's ✕ became a menu — clearing a

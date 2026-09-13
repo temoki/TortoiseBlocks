@@ -190,6 +190,31 @@ public enum BlockTree {
         return nil
     }
 
+    /// Whether dropping `id` at `index` in the sibling list at `address`
+    /// would change the tree at all (#98).
+    ///
+    /// The workspace parts its rows to show where a dragged block will land,
+    /// and a gap that opens where nothing can happen is a promise the drop
+    /// does not keep. Two places make that promise: the gaps either side of
+    /// the block being dragged, where a drop puts it back exactly where it
+    /// was, and anywhere inside the dragged block's own subtree, which
+    /// ``moving(blockWithID:toIndex:inBodyAt:in:)`` refuses outright — the
+    /// destination vanishes with the extraction.
+    ///
+    /// Deliberately answered by *doing* the move and comparing, rather than by
+    /// a second set of rules about which drops are pointless. One set of rules
+    /// cannot drift from the other if there is only one. A block the tree has
+    /// never seen is a palette block, which always inserts.
+    public static func dropChangesTree(
+        blockWithID id: UUID, toIndex index: Int, inBodyAt address: BodyAddress,
+        in blocks: [Block]
+    ) -> Bool {
+        guard block(withID: id, in: blocks) != nil else { return true }
+        guard let moved = moving(blockWithID: id, toIndex: index, inBodyAt: address, in: blocks)
+        else { return false }
+        return moved != blocks
+    }
+
     /// True when any block in the tree (including nested bodies) satisfies
     /// `predicate`.
     public static func contains(

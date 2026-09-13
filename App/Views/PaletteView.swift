@@ -288,7 +288,7 @@ struct PaletteEntryButton: View {
         // `PaletteBlockButtonStyle`: that style carries `pointerHover()`, and
         // a hover effect anywhere under a `draggable` is the pairing that
         // segfaults visionOS.
-        .draggable(Block(kind: entry.kind)) {
+        .draggable(workspace.dragging(Block(kind: entry.kind))) {
             Label {
                 Text(entry.title)
             } icon: {
