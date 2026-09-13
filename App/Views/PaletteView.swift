@@ -163,6 +163,43 @@ extension BlockCategory {
         }
     }
 
+    /// What a container's arms turn while a drag is over its header (#78):
+    /// the same hue, turned up.
+    ///
+    /// The block answers with its own colour rather than wearing a ring. A
+    /// ring reads as something arriving from outside; the header, spine and
+    /// foot changing together reads as the container itself opening up, and it
+    /// keeps the C one unbroken run of colour the way the resting state is.
+    ///
+    /// **Saturation only — the brightness does not move.** Mixing a pastel
+    /// toward a dark saturated version of itself was tried first and came out
+    /// muddy, which is what interpolating between a light, washed colour and a
+    /// dark, vivid one always gives you: the middle is dull by construction.
+    /// Holding the brightness and pushing saturation to 2.4× keeps the colour
+    /// clean and makes it *more* itself rather than a step toward something
+    /// else.
+    ///
+    /// The ink still has to be readable, since the header carries it: measured
+    /// 6.06:1 sky, 5.41 wisteria, 10.56 mint, 7.44 apricot, 5.26 blush, 5.14
+    /// coral — all well over AA. Mint's luminance barely moves (1.13:1 against
+    /// its resting fill) because green carries most of the luminance in the
+    /// first place; the *hue* change is plain to see, and a contrast ratio is
+    /// the wrong instrument for that one.
+    ///
+    /// Not transparent, tempting as that was: the C is drawn additively so
+    /// nothing has to know the pane's background (#21), and letting the pane
+    /// through would hand that back.
+    var dropFill: Color {
+        switch self {
+        case .movement: Color(.sRGB, red: 0.000, green: 0.635, blue: 0.961)  // #00A2F5
+        case .pen: Color(.sRGB, red: 0.702, green: 0.457, blue: 0.937)  // #B375EF
+        case .fill: Color(.sRGB, red: 0.284, green: 0.906, blue: 0.510)  // #49E782
+        case .control: Color(.sRGB, red: 0.973, green: 0.577, blue: 0.039)  // #F8930A
+        case .variables: Color(.sRGB, red: 0.969, green: 0.319, blue: 0.535)  // #F75188
+        case .functions: Color(.sRGB, red: 0.973, green: 0.332, blue: 0.219)  // #F85538
+        }
+    }
+
     /// What is written on a block: a fixed near-black, on purpose.
     ///
     /// `Color.primary` would invert in dark mode and land white text back on a

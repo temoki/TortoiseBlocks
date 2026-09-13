@@ -609,7 +609,7 @@ struct BlockRowView: View {
             } action: {
                 contentWidth = $0
             }
-            .blockChrome(block.kind.category.color, isHighlighted: isHighlighted)
+            .blockChrome(block.kind.category, isHighlighted: isHighlighted)
             // The block without the furniture (#75). The default preview is a
             // snapshot of the row, which carries the ⋯ and the empty space the
             // spacer was holding for it — a picture of a row rather than the
@@ -634,7 +634,7 @@ struct BlockRowView: View {
                     minWidth: contentWidth > 0 ? contentWidth : nil,
                     maxWidth: .infinity, alignment: .leading
                 )
-                .blockChrome(block.kind.category.color)
+                .blockChrome(block.kind.category)
                 // Where the block ends (#93). iPadOS composites a preview onto
                 // an opaque backing and fills whatever the snapshot leaves
                 // transparent, so the rounded corners came up white. It is
@@ -746,8 +746,8 @@ struct ContainerBlockRow<Header: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             headerArm
                 .blockChrome(
-                    block.kind.category.color, corners: headerCorners,
-                    isDropTargeted: isDropTargeted
+                    block.kind.category, corners: headerCorners,
+                    isDropTargeted: isReceiving
                 )
                 .measuringHeight(into: $headerHeight)
                 // The whole block, children and all (#87). Dropping it moves the
@@ -798,6 +798,15 @@ struct ContainerBlockRow<Header: View>: View {
                     }
                 }
                 // Dropping onto the header appends into this container's body.
+                //
+                // No `allowsHitTesting(acceptsDrop)` here, the way `DropGap`
+                // has one (#101). This header is a drag *source* as well as a
+                // destination, and taking it out of hit testing takes the drag
+                // with it — and `draggedBlockID` outlives the drag that set it
+                // (#98), so one drag of a container left that container and
+                // every container inside it impossible to pick up again. The
+                // ⊕ over your own header is the price; the arms stay put, and
+                // the drop was always refused anyway.
                 .dropDestination(for: Block.self) { items, _ in
                     guard let dropped = items.first else { return false }
                     return workspace.handleDrop(
@@ -809,6 +818,7 @@ struct ContainerBlockRow<Header: View>: View {
 
             bodyArms
         }
+        .motion(Motion.dropGap, value: isReceiving)
         .onGeometryChange(for: CGFloat.self) {
             $0.size.width
         } action: {
@@ -816,14 +826,36 @@ struct ContainerBlockRow<Header: View>: View {
         }
     }
 
+    /// What the spine and the foot are painted with: the same answer the
+    /// header gives while a drag is over it (#78), so the C changes as one
+    /// shape rather than one arm at a time. A scan down the spine has to read
+    /// as an unbroken run of colour in either state.
+    private var armColor: Color {
+        isReceiving ? block.kind.category.dropFill : block.kind.category.color
+    }
+
+    /// Targeted *and* able to do anything about it (#78, extending #98). A
+    /// container dragged over its own header is being offered to itself, and
+    /// the tree refuses that — so the arms stay put rather than promising to
+    /// open. The gaps learned this first; the header is the other drop target
+    /// in a container and had been left out.
+    private var isReceiving: Bool { isDropTargeted && acceptsDrop }
+
+    /// Whether dropping what is being carried into this container's body would
+    /// change anything.
+    private var acceptsDrop: Bool {
+        workspace.dropChangesTree(
+            at: childBlocks.count, inBodyAt: BodyAddress(containerID: block.id))
+    }
+
     /// The C with nothing attached: the same pieces the body assembles, in the
     /// same order, for the drag preview to render. The header wears its chrome
     /// here because the body wears a *stateful* version of it — the
-    /// drop-target ring — which a preview has no business showing.
+    /// drop-target fill — which a preview has no business showing.
     private var containerShape: some View {
         VStack(alignment: .leading, spacing: 0) {
             headerArm
-                .blockChrome(block.kind.category.color, corners: headerCorners)
+                .blockChrome(block.kind.category, corners: headerCorners)
             bodyArms
         }
     }
@@ -910,7 +942,7 @@ struct ContainerBlockRow<Header: View>: View {
         }
 
         UnevenRoundedRectangle(cornerRadii: RowCorners.containerFoot.radii)
-            .fill(block.kind.category.color)
+            .fill(armColor)
             .frame(height: foot)
     }
 
@@ -923,7 +955,7 @@ struct ContainerBlockRow<Header: View>: View {
             .padding(.leading, spine + gutter)
             .background(alignment: .leading) {
                 Rectangle()
-                    .fill(block.kind.category.color)
+                    .fill(armColor)
                     .frame(width: spine)
             }
     }
@@ -971,7 +1003,7 @@ struct ElseDividerRow: View {
             .blockMenuInk()
         }
         .blockChrome(
-            BlockCategory.control.color, corners: .containerDivider,
+            BlockCategory.control, corners: .containerDivider,
             isDropTargeted: isDropTargeted
         )
         .contextMenu { removeButton }
@@ -1319,7 +1351,7 @@ enum RowCorners {
 /// and only a border, since anything that touches the fill takes the label's
 /// contrast with it.
 private struct BlockChrome: ViewModifier {
-    let color: Color
+    let category: BlockCategory
     var corners: RowCorners = .standalone
     var isHighlighted = false
     var isDropTargeted = false
@@ -1335,27 +1367,40 @@ private struct BlockChrome: ViewModifier {
     /// pastel in light mode; ink would read as a gap against a dark pane.
     private var ring: Color { scheme == .dark ? .white : BlockCategory.ink }
 
+    /// How far the running block lifts (#78). Small on purpose: a row is over
+    /// 400pt wide, so a percent of it is several points sideways — enough to
+    /// read as a lift, and past a few percent the row starts shouldering into
+    /// the column's edges.
+    private static let highlightScale: CGFloat = 1.03
+
     func body(content: Content) -> some View {
         content
             .foregroundStyle(BlockCategory.ink)
             .rowShape()
-            .background(color, in: shape)
-            .overlay {
-                shape.stroke(ring, lineWidth: isHighlighted ? 3 : (isDropTargeted ? 2 : 0))
-            }
-            // The ring is the whole of it, and the fill is left alone on
-            // purpose. State used to add `.brightness`, which is a filter over
-            // the composited row: it moves the card *and* its label the same
-            // way, and the label is already white, so only the card travelled
-            // — toward the text. Highlighting made a row harder to read the
-            // more it was highlighted. Measured white-on-card in dark mode,
-            // the fill green went 1.92:1 to 1.24:1 the moment it started
-            // running. So the two channels are now separate: the fill says
-            // which kind of block this is, the ring says what it is doing, and
-            // the ring can never eat the label's contrast.
+            .background(isDropTargeted ? category.dropFill : category.color, in: shape)
+            // No ring at all any more (#78). It marked the running block at
+            // 3pt — a hard dark outline snapping from row to row ten times a
+            // second, the loudest thing on a screen whose whole point is
+            // watching a drawing appear — and it marked a drop target at 2,
+            // where it read as something arriving from outside the block
+            // rather than as the block answering. Running is a lift below;
+            // being dropped into is the fill above.
+            // Running is a lift instead: a little larger, with the shadow it
+            // already had. `scaleEffect` is a transform, so the row grows
+            // without moving its neighbours or costing a layout pass — which
+            // matters at ten a second.
+            //
+            // The fill is still left alone, and that is the older rule (#41).
+            // State used to add `.brightness`, a filter over the composited
+            // row: it moved the card *and* its label the same way, and the
+            // label is already white, so only the card travelled — toward the
+            // text. Highlighting made a row harder to read the more it was
+            // highlighted; in dark mode the green went 1.92:1 to 1.24:1 the
+            // moment it started running. Scale cannot do that to a label.
+            .scaleEffect(isHighlighted ? Self.highlightScale : 1)
             .shadow(color: ring.opacity(isHighlighted ? 0.5 : 0), radius: 6)
-            .animation(.easeOut(duration: 0.15), value: isHighlighted)
-            .animation(.easeOut(duration: 0.12), value: isDropTargeted)
+            .motion(Motion.highlight, value: isHighlighted)
+            .motion(Motion.dropGap, value: isDropTargeted)
     }
 }
 
@@ -1434,12 +1479,12 @@ extension View {
 
 extension View {
     fileprivate func blockChrome(
-        _ color: Color, corners: RowCorners = .standalone, isHighlighted: Bool = false,
+        _ category: BlockCategory, corners: RowCorners = .standalone, isHighlighted: Bool = false,
         isDropTargeted: Bool = false
     ) -> some View {
         modifier(
             BlockChrome(
-                color: color, corners: corners, isHighlighted: isHighlighted,
+                category: category, corners: corners, isHighlighted: isHighlighted,
                 isDropTargeted: isDropTargeted))
     }
 }

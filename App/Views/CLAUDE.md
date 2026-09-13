@@ -369,9 +369,8 @@ from saturation.
 Three rules follow from the fills being light in *both* appearances. The label
 color must **not** follow the appearance — `Color.primary` would invert and put
 white back on a pastel, at 1.4:1 — so `BlockCategory.ink` is a fixed
-`#1C1C1E`. The highlight ring must, because its job is to stand out against
-both the pastel inside it and the pane outside, and which of black or white
-does that is exactly what the appearance decides. And the white value chip
+`#1C1C1E`. (The highlight ring that used to follow the appearance is gone —
+see below.) And the white value chip
 needs a drawn outline: at 1.5:1 against a pastel it no longer reads as a
 control on its own, so `WorkspaceChipButtonStyle` strokes it at ink 0.55 —
 measured, since 0.35 came out around 2:1 and 0.52 is where the worst fill
@@ -391,6 +390,41 @@ mascot silently stops matching the app (it already happened once: the first
 version of this accent came from the previous sprite's `#A659E6`). Stored as a literal
 rather than a system reference, so it is the same in both appearances — like
 the fills, it is the app's identity and not a response to its surroundings.
+
+**Neither state wears a ring any more** (#78). A 3pt outline marked the running
+block and a 2pt one marked a drop target, and both were wrong in the same way:
+a hard dark edge is the loudest thing on a screen whose whole point is watching
+a drawing appear, and it reads as something arriving from outside the block
+rather than as the block answering. The two states now say different kinds of
+thing.
+
+*Running lifts.* `scaleEffect` at 1.03, with the shadow the ring used to carry.
+A transform, so the row grows without moving its neighbours or costing a layout
+pass — which matters when the playhead moves ten times a second. Keep it small:
+a row is over 400pt wide, so a few percent is several points sideways and the
+row starts shouldering the column's edges. The fill is still untouched, which
+is the older rule (#41) and the reason this works — `.brightness` moved the
+card *and* its label together, so highlighting made a row harder to read the
+more it was highlighted; scale cannot do that to a label.
+
+*Being dropped into changes colour.* The header, spine and foot all take
+`BlockCategory.dropFill` together, so the C answers as one shape and a scan
+down the spine stays an unbroken run either way. **Saturation only — the
+brightness does not move.** Mixing the pastel toward a dark saturated version
+of itself was built first and came out muddy, which is what interpolating
+between a light washed colour and a dark vivid one always gives: the middle is
+dull by construction. Holding brightness and pushing saturation to 2.4× keeps
+it clean and makes the block *more itself* rather than a step toward something
+else. The header carries the ink, so that was measured too — 5.14:1 at worst.
+
+**And `allowsHitTesting` is only safe on a view that does one thing** (#78).
+A gap that cannot take the block drops out of hit testing so the system stops
+badging it (#101), and a container header cannot do the same: it is a drag
+*source* as well as a destination, and `draggedBlockID` outlives the drag that
+set it (#98). One drag of a container left that container — and every container
+inside it — impossible to pick up again, which showed up as "nested containers
+often won't drag". The ⊕ over your own header is what that costs, and it is the
+cheaper of the two.
 
 **A container is one C-shaped block, assembled from parts.** Indent plus a
 3pt guide bar left "what is inside this repeat, and where does it end?"
