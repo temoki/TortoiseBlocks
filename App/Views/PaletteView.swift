@@ -252,6 +252,10 @@ struct PaletteEntryButton: View {
     let category: BlockCategory
     let workspace: WorkspaceEditor
 
+    /// The entry's width, for the drag preview on iPadOS — see `BlockRowView`
+    /// (#95).
+    @State private var entryWidth: CGFloat = 0
+
     var body: some View {
         Button {
             workspace.add(entry.kind)
@@ -294,11 +298,19 @@ struct PaletteEntryButton: View {
             .foregroundStyle(BlockCategory.ink)
             .padding(.vertical, PaletteBlock.verticalPadding)
             .padding(.horizontal, PaletteBlock.horizontalPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(
+                minWidth: entryWidth > 0 ? entryWidth : nil,
+                maxWidth: .infinity, alignment: .leading
+            )
             .background(category.color, in: PaletteBlock.shape)
             // The corners are the block's, not a hole to fill in — see
             // `BlockChrome` (#90).
             .contentShape(.dragPreview, PaletteBlock.shape)
+        }
+        .onGeometryChange(for: CGFloat.self) {
+            $0.size.width
+        } action: {
+            entryWidth = $0
         }
         .accessibilityHint("Tap to add to the end of the program. Drag to place anywhere.")
     }
