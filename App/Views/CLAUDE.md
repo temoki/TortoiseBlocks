@@ -493,8 +493,12 @@ clips the spine and the foot clean off the C.
 three pieces, on purpose (nothing has to know the mouth's geometry), and that
 is exactly what leaves no single outline to declare: covering the arms while
 skipping the mouth needs the header's height, which no `Shape` can read. So a
-dragged container goes on a card instead — a rounded rectangle at the C's own
-outer radius of 10, in `.background`, so it holds up in both appearances.
+dragged container goes on a card instead, in `.background` so it holds up in
+both appearances — and with **the header's own corner radii rather than a
+number**. Written as a flat 10 it left a crescent of card showing around a
+definition's 20pt hat (#14): the same white corner the card was put there to
+remove, back on the one block with a different silhouette. `RowCorners` is the
+vocabulary; take the radii from it rather than writing one out.
 
 Two things follow, both judged on device and accepted. The card shows through
 the gap between the last child and the foot, where the pane would show in the

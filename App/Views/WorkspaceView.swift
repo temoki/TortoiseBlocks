@@ -828,11 +828,25 @@ struct ContainerBlockRow<Header: View>: View {
         }
     }
 
-    /// The surface a dragged container sits on — the C's own outer radius, so
-    /// the card is the silhouette the block already had rather than a new one.
+    /// The surface a dragged container sits on — the silhouette the block
+    /// already had, rather than a new one.
+    ///
+    /// Its top corners are the *header's*, which is the whole point: they were
+    /// a flat 10 at first, and a definition's hat is 20 (#14), so dragging one
+    /// showed a crescent of card between the block's curve and the card's — the
+    /// white corner #93 had just taken off every other block. The bottom is the
+    /// foot's, though the height cap usually cuts before it.
+    ///
     /// Not `static`: this type is generic over its header, and a generic type
-    /// cannot hold one.
-    private var previewCard: RoundedRectangle { .rect(cornerRadius: 10) }
+    /// cannot hold a stored one.
+    private var previewCard: UnevenRoundedRectangle {
+        .rect(
+            cornerRadii: RectangleCornerRadii(
+                topLeading: headerCorners.radii.topLeading,
+                bottomLeading: RowCorners.containerFoot.radii.bottomLeading,
+                bottomTrailing: RowCorners.containerFoot.radii.bottomTrailing,
+                topTrailing: headerCorners.radii.topTrailing))
+    }
 
     /// How tall the preview is allowed to be: the header as measured, plus the
     /// glimpse below it.
