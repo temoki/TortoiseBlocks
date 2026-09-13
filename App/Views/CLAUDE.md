@@ -511,11 +511,28 @@ the block it was lifted from. The floor has to be measured and handed over, so
 each source reports its width through `onGeometryChange` and its preview wears
 `.frame(minWidth: measured, maxWidth: .infinity)`. Neither half covers both
 platforms, and on macOS the measured value is ignored, which is just as well:
-**`onGeometryChange` under-reports inside this column on macOS** — 359 against
-a row that draws 408, and 391 for a 440pt `ScrollView` — while on iPad it is
-right. That asymmetry is measured, not assumed (a 100pt rectangle drawn on
-screen settles the scale; `open -a TortoiseBlocks <file>.tortoise` gets a
-document on screen to measure).
+**`onGeometryChange` does not report the rendered geometry inside this column**
+— see below — while on iPad it happens to be right.
+
+**Measure with a `GeometryReader`, not with `onGeometryChange`** (#102). The
+modifier is the one SwiftUI offers for this and the one the house rules prefer,
+and inside the workspace column it returns numbers that are not on screen. Both
+were put on the same view at once and read off a Mac: the modifier said a
+container header was **159pt** tall where the reader said **44** and a ruler
+drawn on screen confirmed ~45. It under-reports width in the same place (#95):
+**359** against a row that draws **408**, and **391** for a 440pt `ScrollView`.
+Why is unknown. The reader is right on both platforms; `measuringHeight(into:)`
+wraps the pattern.
+
+Two things were built on the wrong number before this was found, and both are
+worth knowing as symptoms. A container's drag preview was capped by "header
+plus a glimpse" and showed a whole extra block on macOS against a third of one
+on iPad — the same constant, a header measured 159 on one platform and ~52 on
+the other. And the width floor in #95 rests on a value macOS ignores, which is
+the only reason it works there. **When a measured layout number explains
+nothing, suspect the measurement before the layout** — and settle it with a
+rectangle of known size drawn on screen, which costs one build
+(`open -a TortoiseBlocks <file>.tortoise` puts a document up to measure).
 
 What the lift gets right, the drag then changes: **iPadOS scales the preview
 down once it is moving.** Nothing in `draggable` influences that, and UIKit's
