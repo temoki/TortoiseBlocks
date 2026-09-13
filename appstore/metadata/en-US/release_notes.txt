@@ -1,12 +1,10 @@
-BLOCKS YOU MAKE YOURSELF
+BLOCKS THAT MOVE LIKE BLOCKS
 
-Give a block a name, put whatever you like inside it, and call it from anywhere in your program. A block can call itself, too — which is all it takes to draw a tree.
+Building a program now feels more like handling real blocks.
 
-• A new sample draws a fractal tree, so you can see a block calling itself before you build one.
-• Every block now carries one ⋯ menu: delete it, move it up or down, or give an "if" its "otherwise".
-• Tap the trash can to clear the whole program at once. You can undo it.
-• Block labels stay on one line in narrower windows.
-
-ON APPLE VISION PRO
-
-Tortoise Blocks now runs on Apple Vision Pro, as a viewer for the drawings you make here. Open one and it goes on the table in front of you, at whatever size you like, with the tortoise walking across the paper as the picture appears. Your drawings are the same documents on every device.
+• Drag a block and it lifts off looking just like itself — and a block with others inside carries them along.
+• The rows part to show exactly where your block will land, and a block that holds others lights up in its own colour when you drop into it.
+• The block that is running lifts gently instead of wearing a dark outline.
+• Blocks slide into place when you add, move, delete or undo, and the program scrolls to the block you just added.
+• The trash can bounces when you throw a block in, and the whole circle can be tapped.
+• All of it follows Reduce Motion in Settings.
