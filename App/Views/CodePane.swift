@@ -45,38 +45,11 @@ struct CodePane: View {
             // controls: inside, it needed the ink as a tint to be legible, and
             // on visionOS the tint went to the *capsule* instead of the label,
             // leaving a black lozenge with invisible text on it.
-            // Measured, and the code laid out in a frame at least that big.
-            //
-            // A program narrower than the pane sat in the *middle* of it, which
-            // is not where source starts: in a scroll view that scrolls both
-            // ways the content is offered no width to fill, so it takes its own
-            // and the scroll view centres what is left over. That was answered
-            // by `defaultScrollAnchor(.topLeading)`, and it stopped answering —
-            // on the visionOS shot for 1.2.0, with this file unchanged since
-            // 1.1.0, the code was back in the middle of the paper. Naming the
-            // `.alignment` role explicitly was tried and changed nothing.
-            //
-            // So nothing is left undersized to be placed. The frame below is at
-            // least the scroll view's own size and puts the text in its top
-            // leading corner, which is a layout rather than a scroll behaviour
-            // and does not depend on what an OS release decides an anchor
-            // covers. Code wider or taller than the pane still exceeds the
-            // frame and scrolls. The size is read with a `GeometryReader`, not
-            // `onGeometryChange`, which under-reports in these panes (#95, #102).
-            GeometryReader { proxy in
-                ScrollView([.vertical, .horizontal]) {
-                    Text(highlightedCode)
-                        .font(.system(.callout, design: .monospaced))
-                        .textSelection(.enabled)
-                        .padding()
-                        .frame(
-                            minWidth: proxy.size.width, minHeight: proxy.size.height,
-                            alignment: .topLeading)
-                }
-                // Still wanted for code *larger* than the pane: it is what
-                // starts the view at the top-leading corner instead of wherever
-                // the scroll view would otherwise put its initial offset.
-                .defaultScrollAnchor(.topLeading)
+            CodeScroll {
+                Text(highlightedCode)
+                    .font(.system(.callout, design: .monospaced))
+                    .textSelection(.enabled)
+                    .padding()
             }
             .background(Color.white, in: Self.sheet)
             .clipShape(Self.sheet)
@@ -125,4 +98,54 @@ func copyCodeToPasteboard(_ string: String) {
     #else
         UIPasteboard.general.string = string
     #endif
+}
+
+/// The code's scroll view, which puts a program narrower than the pane in its
+/// top-leading corner — by a different means on visionOS.
+///
+/// A program narrower than the pane sat in the *middle* of it, which is not
+/// where source starts. A `.leading` frame cannot fix that on its own: in a
+/// scroll view that scrolls both ways the content is offered no width to fill,
+/// so it takes its own and the scroll view centres what is left over.
+/// `defaultScrollAnchor(.topLeading)` is what places undersized content, on
+/// both axes at once, and on iPadOS and macOS it still does.
+///
+/// On visionOS it stopped. The 1.2.0 captures, shot on visionOS 26.5 with this
+/// code unchanged since 1.1.0, had the program back in the middle of the paper,
+/// and naming the `.alignment` role explicitly changed nothing. There the text
+/// is laid out in a frame at least the scroll view's own size, read with a
+/// `GeometryReader`, so nothing is left undersized to be placed.
+///
+/// **That frame is visionOS-only on purpose, and has to stay that way.**
+/// Applied on every platform it froze iPadOS: relaunching the app into a second
+/// document left the window black, every render commit failing with
+/// `invalid destination port`, and the screenshot rig's UI test was killed
+/// waiting for the app to go idle. It was bisected across 1.1.0…1.2.0 to the
+/// one commit that made the frame unconditional — every commit before it opens
+/// the document — so the iPad and the Mac keep the anchor they always had.
+private struct CodeScroll<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        #if os(visionOS)
+            GeometryReader { proxy in
+                ScrollView([.vertical, .horizontal]) {
+                    content
+                        .frame(
+                            minWidth: proxy.size.width, minHeight: proxy.size.height,
+                            alignment: .topLeading)
+                }
+                // Still wanted for code *larger* than the pane: it starts the
+                // view at the top-leading corner rather than wherever the scroll
+                // view would otherwise put its initial offset.
+                .defaultScrollAnchor(.topLeading)
+            }
+        #else
+            ScrollView([.vertical, .horizontal]) {
+                content
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .defaultScrollAnchor(.topLeading)
+        #endif
+    }
 }
