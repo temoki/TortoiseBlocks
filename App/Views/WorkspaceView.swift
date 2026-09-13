@@ -369,7 +369,7 @@ struct BlockListView: View {
 }
 
 /// Insertion point between rows. Invisible until a drag hovers over it,
-/// then shows the accent insertion line. The trailing gap of an empty
+/// then parts to make room for it (#77). The trailing gap of an empty
 /// repeat body renders as an explicit "drop here" zone instead.
 struct DropGap: View {
     let address: BodyAddress
@@ -378,6 +378,23 @@ struct DropGap: View {
     var isEmphasized = false
 
     @State private var isTargeted = false
+
+    /// How far the rows part to show where the block will land (#77). Near a
+    /// simple row's height, so the space that opens is the size of the thing
+    /// that is about to fill it — the gap is the promise, not a hint.
+    @ScaledMetric private var openHeight: CGFloat = 44
+    /// What a closed gap reports to the `VStack` it sits in: the row-to-row
+    /// margin, and nothing more (#21).
+    @ScaledMetric private var closedFootprint: CGFloat = 10
+    /// What a closed gap is *hit-tested* over — one row's pitch, so that the
+    /// gaps tile the list with no dead ground between them (#77).
+    ///
+    /// At 24pt they did not: a row is around 44, so most of every row was
+    /// ground where no gap was targeted at all. Dragging across the program
+    /// then closed every gap and opened one again at each boundary, and the
+    /// list pulsed the whole way down. Something has to be open at all times,
+    /// and the way to get that is to leave nowhere that isn't a gap.
+    @ScaledMetric private var closedHitHeight: CGFloat = 54
 
     var body: some View {
         Group {
@@ -400,11 +417,12 @@ struct DropGap: View {
                     .padding(.vertical, 2)
             }
             else {
-                Capsule()
-                    .fill(isTargeted ? Color.accentColor : Color.clear)
-                    .frame(height: isTargeted ? 4 : 2)
+                // No line in it. A 4pt accent capsule floating in 44pt of
+                // opened space read as two different answers to the same
+                // question — the space *is* the answer, and it is the size of
+                // the block that will fill it.
+                Color.clear
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 3)
                     // Grows the drop-target hit area to roughly ±12pt (#21)
                     // without widening the row-to-row margin: the negative
                     // padding shrinks what this view reports to the
@@ -416,8 +434,17 @@ struct DropGap: View {
                     // extends into the row *above* (painted earlier) but a
                     // row *below* (painted after, so it covers the
                     // overlap) may still win right at its own top edge.
-                    .frame(height: 24)
-                    .padding(.vertical, -7)
+                    // Closed, this reports `closedFootprint` to the VStack
+                    // while being hit-tested over a whole row's pitch (#21,
+                    // #77) — the negative padding is what holds those two
+                    // apart. Targeted, it opens for real: the rows below move
+                    // down and the space is the size of a block. Reported
+                    // height and hit area are the same number then, so the
+                    // negative padding goes with them.
+                    .frame(height: isTargeted ? openHeight : closedHitHeight)
+                    .padding(
+                        .vertical,
+                        isTargeted ? 0 : -(closedHitHeight - closedFootprint) / 2)
             }
         }
         .contentShape(.rect)
@@ -427,7 +454,9 @@ struct DropGap: View {
         } isTargeted: {
             isTargeted = $0
         }
-        .animation(.easeOut(duration: 0.12), value: isTargeted)
+        // Reduce Motion switches the travel off, not the gap: where the block
+        // is going has to be visible either way.
+        .motion(Motion.dropGap, value: isTargeted)
         // Drop-only, so VoiceOver can't operate it: the invisible variant would
         // be an empty stop between every pair of rows, and the "Drop Here" of
         // an empty mouth would be read as if it were something to do. The

@@ -33,6 +33,12 @@ enum Motion {
     /// and the button has to be pressable again immediately.
     static let controlState = Animation.easeInOut(duration: 0.2)
 
+    /// A drop target opening under a dragged block (#77). Faster than an
+    /// edit, because it has to keep up with a finger rather than confirm
+    /// something that already happened — and it runs while the layout is
+    /// moving, which is the one place a long animation reads as lag.
+    static let dropGap = Animation.snappy(duration: 0.15)
+
     /// Bringing a row into view — the playback follow, and the block the
     /// palette just made (#71). Applied imperatively around `scrollTo`, so
     /// this is the one constant `motion(_:value:)` doesn't carry.
