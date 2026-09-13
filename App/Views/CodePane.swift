@@ -45,20 +45,39 @@ struct CodePane: View {
             // controls: inside, it needed the ink as a tint to be legible, and
             // on visionOS the tint went to the *capsule* instead of the label,
             // leaving a black lozenge with invisible text on it.
-            ScrollView([.vertical, .horizontal]) {
-                Text(highlightedCode)
-                    .font(.system(.callout, design: .monospaced))
-                    .textSelection(.enabled)
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
+            // Measured, and the code laid out in a frame at least that big.
+            //
             // A program narrower than the pane sat in the *middle* of it, which
-            // is not where source starts. The `.leading` frame above cannot fix
-            // that on its own: in a scroll view that scrolls both ways the
-            // content is offered no width to fill, so it takes its own and the
-            // scroll view centres what is left over. The anchor is what places
-            // undersized content, on both axes at once.
-            .defaultScrollAnchor(.topLeading)
+            // is not where source starts: in a scroll view that scrolls both
+            // ways the content is offered no width to fill, so it takes its own
+            // and the scroll view centres what is left over. That was answered
+            // by `defaultScrollAnchor(.topLeading)`, and it stopped answering —
+            // on the visionOS shot for 1.2.0, with this file unchanged since
+            // 1.1.0, the code was back in the middle of the paper. Naming the
+            // `.alignment` role explicitly was tried and changed nothing.
+            //
+            // So nothing is left undersized to be placed. The frame below is at
+            // least the scroll view's own size and puts the text in its top
+            // leading corner, which is a layout rather than a scroll behaviour
+            // and does not depend on what an OS release decides an anchor
+            // covers. Code wider or taller than the pane still exceeds the
+            // frame and scrolls. The size is read with a `GeometryReader`, not
+            // `onGeometryChange`, which under-reports in these panes (#95, #102).
+            GeometryReader { proxy in
+                ScrollView([.vertical, .horizontal]) {
+                    Text(highlightedCode)
+                        .font(.system(.callout, design: .monospaced))
+                        .textSelection(.enabled)
+                        .padding()
+                        .frame(
+                            minWidth: proxy.size.width, minHeight: proxy.size.height,
+                            alignment: .topLeading)
+                }
+                // Still wanted for code *larger* than the pane: it is what
+                // starts the view at the top-leading corner instead of wherever
+                // the scroll view would otherwise put its initial offset.
+                .defaultScrollAnchor(.topLeading)
+            }
             .background(Color.white, in: Self.sheet)
             .clipShape(Self.sheet)
         }
