@@ -207,12 +207,27 @@ invisible in a flat one.
 
 **Drop model**: a `DropGap` between rows carries `(BodyAddress, index)`, so
 insertion semantics need no y-coordinate math and every mouth — an if's else
-included — is a target. Tap-to-add, with the "Add Here" toggle
-(`InsertionTargetButton`) on container headers and the else divider, is the
-accessibility alternative and must stay. A permanent trash circle rides a
-`safeAreaInset` at the bottom of the workspace (`WorkspaceTrashZone`, #30) —
-the way out of a drag you regret, since deleting a *placed* block was never
-the hidden part.
+included — is a target. The targeted one **parts to a block's height** (#77) —
+it holds the space the block is about to fill, rather than drawing a line
+where it will go. There is no line in it: a 4pt capsule floating in 44pt of
+opened space read as two answers to one question. Tap-to-add, with the "Add
+Here" toggle (`InsertionTargetButton`) on container headers and the else
+divider, is the accessibility alternative and must stay. A permanent trash
+circle rides a `safeAreaInset` at the bottom of the workspace
+(`WorkspaceTrashZone`, #30) — the way out of a drag you regret, since deleting
+a *placed* block was never the hidden part.
+
+**The gaps tile, and that is what makes the parting bearable.** A closed gap
+reports the row-to-row margin to its `VStack` and is hit-tested over a whole
+row's *pitch*, the two held apart by negative padding (the #21 trick, widened).
+At the 24pt it used to be, most of every row was ground no gap claimed: dragging
+down the program closed every gap and opened another at each boundary, and the
+list pulsed the whole way. **Something has to be open at all times, and the way
+to get that is to leave nowhere that isn't a gap.** The oscillation this
+invites — the open gap moving out from under the finger — does not happen,
+because the gap that opens is the one being pointed at and it grows around that
+point. All of this was judged on an iPad, which is the only place it can be:
+the question is what happens under a finger.
 
 **The can does two things, and the second one made it accessible** (#48). A drop
 throws away the block you are holding; a *tap* offers to throw away the program,
