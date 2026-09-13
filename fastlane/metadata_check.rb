@@ -39,18 +39,17 @@ module MetadataCheck
   # app's name depend on lane order, silently. They have to match.
   SHARED = ["name.txt", "subtitle.txt", "privacy_url.txt"].freeze
 
-  # Empty is a problem everywhere except here, and only because App Store
-  # Connect has no field to fill: "What's New" belongs to an *update*, and
-  # visionOS 1.1.0 is the app's first version on that platform. deliver says so
-  # and moves on — `Skipping 'release_notes'... this is the first version of
-  # the app` — so text written here cannot reach the store however many times
-  # it is pushed, and shows up in every `metadata_diff` instead. Two permanent
-  # phantom lines is how a diff people read becomes a diff people skip.
+  # Fields allowed to be empty, by metadata directory. None, now.
   #
-  # **Delete this the moment visionOS takes a second version**, which is also
-  # when the notes have to be written: an update with no What's New is refused,
-  # and by then it is this exemption that would be hiding the empty file.
-  MAY_BE_EMPTY = { "metadata-visionos" => ["release_notes.txt"] }.freeze
+  # visionOS's "What's New" was exempt while 1.1.0 was that platform's first
+  # version: the field belongs to an *update*, so text written there could not
+  # reach the store and showed up in every `metadata_diff` instead. 1.2.0 is
+  # its second version, the notes are written, and the exemption is gone —
+  # kept as an empty table rather than deleted so a future first-version
+  # platform has somewhere to go, with the same warning attached: delete the
+  # entry the moment that platform ships a second version, because an update
+  # with no What's New is refused and the exemption would hide the empty file.
+  MAY_BE_EMPTY = {}.freeze
 
   # Sizes Apple accepts for the display types this app ships. An unexpected
   # size is a mistake worth stopping on, not a shape to guess at. A platform

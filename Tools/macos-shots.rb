@@ -60,23 +60,74 @@ def size(path)
   IO.popen(["magick", "identify", "-format", "%w %h", path.to_s], &:read).split.map(&:to_i)
 end
 
+# How far a corner's wedge can reach into a capture, in pixels. The wedge is
+# about 54px square on a 2× capture; the box only has to hold it.
+CORNER = 128
+
+# More of the box than this gone means the fill ran into the window itself.
+# A real wedge is under 5% of it.
+LEAKED = 0.25
+
 # The window with its rounded corners knocked out.
 #
 # `XCUIElement.screenshot()` hands back the window's *bounding box*, fully
-# opaque, with the corners filled near-black — composite that and the window
-# gets four black wedges. The corners are flood-filled rather than masked with
-# a drawn radius: the shape is macOS's own continuous curve, not a circle, and
-# the wedges are the only near-black regions touching the corners of the image.
+# opaque, and outside the rounded corners is **whatever is on screen behind the
+# window** — near-black on a dark desktop, which is what this was first written
+# against, and composited as-is the window wears four black wedges. The corners
+# are flood-filled rather than masked with a drawn radius: the shape is macOS's
+# own continuous curve, not a circle.
+#
+# A flood fill only finds the wedge when the wedge differs from the window,
+# though. With a light window behind a corner the fill runs straight through
+# the white canvas and takes the whole background with it — the plate shows
+# through every white pixel and nothing fails. So each corner is filled inside
+# its own box, which bounds the damage, and a corner whose fill spread through
+# the box borrows the other corner on its edge, mirrored: a window is symmetric
+# left to right, while its top and bottom wedges differ by a few rows. Both
+# corners of an edge light stops the run, because there is nothing to copy.
 def round_corners(source, target)
   width, height = size(source)
-  magick(
-    source.to_s, "-alpha", "set", "-fuzz", "12%",
-    "-fill", "none", "-draw", "color 0,0 floodfill",
-    "-fill", "none", "-draw", "color #{width - 1},0 floodfill",
-    "-fill", "none", "-draw", "color 0,#{height - 1} floodfill",
-    "-fill", "none", "-draw", "color #{width - 1},#{height - 1} floodfill",
-    target.to_s
-  )
+  workspace = Pathname.new(Dir.mktmpdir)
+  origins = {
+    top_left: [0, 0], top_right: [width - CORNER, 0],
+    bottom_left: [0, height - CORNER], bottom_right: [width - CORNER, height - CORNER]
+  }
+  partners = { top_left: :top_right, top_right: :top_left,
+               bottom_left: :bottom_right, bottom_right: :bottom_left }
+
+  masks = origins.to_h do |corner, (x, y)|
+    mask = workspace / "#{corner}-mask.png"
+    seed = "#{x.zero? ? 0 : CORNER - 1},#{y.zero? ? 0 : CORNER - 1}"
+    magick(source.to_s, "-crop", "#{CORNER}x#{CORNER}+#{x}+#{y}", "+repage",
+           "-alpha", "set", "-fuzz", "12%", "-fill", "none", "-draw", "color #{seed} floodfill",
+           "-alpha", "extract", mask.to_s)
+    gone = 1 - IO.popen(["magick", "identify", "-format", "%[fx:mean]", mask.to_s], err: File::NULL, &:read).to_f
+    [corner, { path: mask, clean: gone < LEAKED }]
+  end
+
+  layers = origins.map do |corner, (x, y)|
+    mask = masks[corner]
+    unless mask[:clean]
+      partner = masks[partners[corner]]
+      unless partner[:clean]
+        abort("#{source}: both #{corner.to_s.split('_').first} corners have something light " \
+              "behind them, so neither shows the window's shape — put something dark behind " \
+              "the window and shoot again")
+      end
+      borrowed = workspace / "#{corner}-borrowed.png"
+      magick(partner[:path].to_s, "-flop", borrowed.to_s)
+      mask = { path: borrowed }
+    end
+    layer = workspace / "#{corner}.png"
+    magick(source.to_s, "-crop", "#{CORNER}x#{CORNER}+#{x}+#{y}", "+repage", "-alpha", "set",
+           mask[:path].to_s, "-compose", "CopyOpacity", "-composite", layer.to_s)
+    [layer, x, y]
+  end
+
+  magick(source.to_s, "-alpha", "set", "-compose", "Copy",
+         *layers.flat_map { |layer, x, y| [layer.to_s, "-geometry", "+#{x}+#{y}", "-composite"] },
+         target.to_s)
+  FileUtils.rm_rf(workspace)
 end
 
 def compose(window, plate, target)

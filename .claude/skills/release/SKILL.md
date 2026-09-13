@@ -293,9 +293,11 @@ Store." So the declaration is saved and stuck at `state: DRAFT` — visible
 through `GET /v1/apps/{id}/accessibilityDeclarations` — and publishing it is a
 step *after* the first release, not before. This app declares VoiceOver,
 Larger Text (iPad only; the field is nil for Mac), Dark Interface,
-Differentiate Without Color and Sufficient Contrast, and declines Reduced
-Motion (`accessibilityReduceMotion` is read nowhere), Voice Control (untested)
-and captions/audio descriptions (there is no media).
+Differentiate Without Color and Sufficient Contrast — and, **from 1.2.0,
+Reduced Motion**: every animation reads `accessibilityReduceMotion` through
+`App/Views/Motion.swift` (#70–#78), so the declaration in App Store Connect
+has to be updated to say so once 1.2.0 is live. It declines Voice Control
+(untested) and captions/audio descriptions (there is no media).
 
 **Every bundle identifier must exist in the Developer portal before Xcode
 Cloud can release.** Its automatic signing issues *profiles*; it cannot
