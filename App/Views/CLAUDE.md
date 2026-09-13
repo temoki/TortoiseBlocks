@@ -419,3 +419,29 @@ finger. This app ships to iPad, Mac and Vision Pro and no iPhone
 device it runs on. It fails silently — no error, no warning, nothing happens —
 which is exactly how a full implementation of it got written and then thrown
 away. Sound (#80) is the only channel left for answering a touch.
+
+**iPadOS fills whatever a drag preview leaves transparent** (#93), and none of
+what follows is visible on a Mac — every one of these was found the first day a
+device could show a drag preview at all (#90 blocked that until an OS update).
+
+A block came up with white in its rounded corners, because the system
+composites a preview onto an opaque backing and paints the parts the snapshot
+does not cover. `contentShape(.dragPreview,)` names the block's own outline and
+the corners come back. It belongs on the *preview content*, not in
+`BlockChrome`: the real rows wear that modifier too, and a shape declared there
+reaches the whole preview — which on a container is the header's rectangle, and
+clips the spine and the foot clean off the C.
+
+**A container cannot hand it a shape at all.** The C is drawn additively from
+three pieces, on purpose (nothing has to know the mouth's geometry), and that
+is exactly what leaves no single outline to declare: covering the arms while
+skipping the mouth needs the header's height, which no `Shape` can read. So a
+dragged container goes on a card instead — a rounded rectangle at the C's own
+outer radius of 10, in `.background`, so it holds up in both appearances.
+
+Two things follow, both judged on device and accepted. The card shows through
+the gap between the last child and the foot, where the pane would show in the
+workspace. And the height cap's fade now dissolves into the card rather than
+into nothing, because the system paints the named shape opaque: "more below"
+still reads, it just reads on a card. The alternative — leaving the four outer
+corners white — was built, looked at, and judged worse.

@@ -553,6 +553,14 @@ struct BlockRowView: View {
                 .buttonStyle(WorkspaceChipButtonStyle())
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .blockChrome(block.kind.category.color)
+                // Where the block ends (#93). iPadOS composites a preview onto
+                // an opaque backing and fills whatever the snapshot leaves
+                // transparent, so the rounded corners came up white. It is
+                // named here rather than inside `blockChrome`, which the real
+                // rows wear too: a shape declared there reaches the *whole*
+                // preview, and on a container that is the header's rectangle —
+                // which clips the spine and the foot off the C.
+                .contentShape(.dragPreview, RowCorners.standalone.shape)
             }
             // One stop per block instead of three: the kind, its value
             // chips, and the running state read as a single sentence —
@@ -654,9 +662,26 @@ struct ContainerBlockRow<Header: View>: View {
                     containerShape
                         .buttonStyle(WorkspaceChipButtonStyle())
                         .environment(\.showsBlockEditing, false)
+                        // A card, because a C cannot be described as one shape
+                        // (#93). iPadOS fills whatever a preview leaves
+                        // transparent, and for a container that is the header's
+                        // and foot's outer corners — the mouth, oddly, comes out
+                        // right. There is no shape to hand `contentShape` that
+                        // covers the arms and skips the mouth: the C is drawn
+                        // additively from three pieces and its header's height
+                        // is not known anywhere a `Shape` could read it.
+                        //
+                        // So the whole block goes on a surface instead, and the
+                        // corners are the card's. The cost is the fade below:
+                        // the system paints the named shape opaque, so the
+                        // content dissolves into the card rather than into
+                        // nothing. "More below" still reads; it just reads on a
+                        // card.
+                        .background(.background, in: previewCard)
                         .frame(maxHeight: previewHeightLimit, alignment: .top)
                         .clipped()
                         .mask(alignment: .top) { previewFade }
+                        .contentShape(.dragPreview, previewCard)
                 }
                 .rowContextMenu(blockID: block.id, workspace: workspace)
                 // The menu holds it, and a menu is reachable — but an action says
@@ -691,6 +716,12 @@ struct ContainerBlockRow<Header: View>: View {
             bodyArms
         }
     }
+
+    /// The surface a dragged container sits on — the C's own outer radius, so
+    /// the card is the silhouette the block already had rather than a new one.
+    /// Not `static`: this type is generic over its header, and a generic type
+    /// cannot hold one.
+    private var previewCard: RoundedRectangle { .rect(cornerRadius: 10) }
 
     /// Opaque until near the bottom, then out. Only the last stretch of a
     /// clipped preview fades, so a container short enough to fit is untouched
@@ -1125,6 +1156,10 @@ enum RowCorners {
     /// The C's bottom arm, closing the shape.
     case containerFoot
 
+    /// The outline itself, for the places that need a `Shape` rather than the
+    /// radii — the block chrome's fill, and the drag preview's own shape.
+    var shape: UnevenRoundedRectangle { .rect(cornerRadii: radii) }
+
     var radii: RectangleCornerRadii {
         switch self {
         case .standalone:
@@ -1158,7 +1193,7 @@ private struct BlockChrome: ViewModifier {
 
     @Environment(\.colorScheme) private var scheme
 
-    private var shape: UnevenRoundedRectangle { .rect(cornerRadii: corners.radii) }
+    private var shape: UnevenRoundedRectangle { corners.shape }
 
     /// The ring *does* follow the appearance, where the fill and the label
     /// don't. Its job is to stand out against two things at once — the pastel
@@ -1172,12 +1207,6 @@ private struct BlockChrome: ViewModifier {
             .foregroundStyle(BlockCategory.ink)
             .rowShape()
             .background(color, in: shape)
-            // What the drag preview is allowed to be (#90). iPadOS composites
-            // a preview onto an opaque backing and fills whatever the snapshot
-            // leaves transparent, so a block came up with white in its rounded
-            // corners. Naming the shape is what tells it where the block ends.
-            // macOS never showed this, which is why it took a device to find.
-            .contentShape(.dragPreview, shape)
             .overlay {
                 shape.stroke(ring, lineWidth: isHighlighted ? 3 : (isDropTargeted ? 2 : 0))
             }
