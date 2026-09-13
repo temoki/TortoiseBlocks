@@ -33,6 +33,11 @@ enum Motion {
     /// and the button has to be pressable again immediately.
     static let controlState = Animation.easeInOut(duration: 0.2)
 
+    /// The running block, lifting and settling back (#78). Short, because the
+    /// playhead moves ten times a second at ×1 and a longer one would still be
+    /// arriving when the next block takes over.
+    static let highlight = Animation.easeOut(duration: 0.15)
+
     /// A drop target opening under a dragged block (#77). Faster than an
     /// edit, because it has to keep up with a finger rather than confirm
     /// something that already happened — and it runs while the layout is
