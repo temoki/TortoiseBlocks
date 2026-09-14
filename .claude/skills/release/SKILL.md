@@ -294,9 +294,11 @@ through `GET /v1/apps/{id}/accessibilityDeclarations` — and publishing it is a
 step *after* the first release, not before. This app declares VoiceOver,
 Larger Text (iPad only; the field is nil for Mac), Dark Interface,
 Differentiate Without Color and Sufficient Contrast — and, **from 1.2.0,
-Reduced Motion**: every animation reads `accessibilityReduceMotion` through
-`App/Views/Motion.swift` (#70–#78), so the declaration in App Store Connect
-has to be updated to say so once 1.2.0 is live. It declines Voice Control
+Reduced Motion**, declared in App Store Connect with the 1.2.0 submission:
+every animation reads `accessibilityReduceMotion` through
+`App/Views/Motion.swift` (#70–#78). That declaration is a promise about every
+later version too, so a new animation goes through `Motion` rather than
+around it. It declines Voice Control
 (untested) and captions/audio descriptions (there is no media).
 
 **Every bundle identifier must exist in the Developer portal before Xcode
