@@ -149,8 +149,8 @@ evenings otherwise.
 Thumbnail は [thumbnail-240.png](thumbnail-240.png)。動画は
 `https://youtu.be/b2wOul8UPWA` をギャラリー先頭に。
 
-iPad のキャプチャはステータスバーの日付が日本語（`9月13日(日)`）のまま。
-App Store の en-US リストと同じものなので直していない。
+iPad のキャプチャのステータスバーは、撮影ロケールの言語で撮影日の日付が入る
+（`Tools/ipad-shots.rb` がシミュレータの言語を切り替えて撮る）。
 
 ## 当日
 
