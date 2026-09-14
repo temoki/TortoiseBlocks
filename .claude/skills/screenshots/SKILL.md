@@ -117,13 +117,24 @@ Five failures, each of which produces a capture that looks perfectly well made:
   Preparing a run reinstalls the app, and a reinstall gives it a new data
   container, so anything seeded there beforehand is gone.
 
-Two more the driver handles. The app is **uninstalled before each group of
+Three more the driver handles. The app is **uninstalled before each group of
 shots**: opening a document from outside the app's own folder imports a copy
 under a deduplicated name, against a history that outlives deleting the files,
 so the spiral came back titled `spiral-1` in its own title bar. And shots are
 **grouped so each drawing is opened once per run**. The status bar is pinned to
 **9:41** for the run — without it the captures carry whatever the clock said,
 and a reshoot never matches the set it joins.
+
+And the **simulator's system language is switched for each locale**, with a
+restart. The app's language arrives as a launch argument, but the status bar
+belongs to the system and writes its date in the system's language, so for
+as long as the device was Japanese every English capture carried `9月13日(日)`.
+The date itself cannot be pinned: `status_bar override --time` takes an ISO
+date (`2026-01-09T00:41:00.000Z` — the offset form is refused), but writes it
+in English whatever the system language is, and put a Sunday on a Friday. So a
+capture carries the day it was shot, in its own language, the same across one
+run; English also gains an `AM`. The device's own language is written back
+when the run ends, however it ends.
 
 Testing is non-parallel on purpose: a parallel run clones the simulator, and
 the clone is not the device the documents were seeded on.

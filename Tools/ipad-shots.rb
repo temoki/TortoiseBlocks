@@ -14,7 +14,7 @@
 # `TortoiseBlocksUITests/ScreenshotTests.swift` is the hands; this is the
 # shot list and the plumbing.
 #
-# Three things here are not tidiness, and each cost an hour to find.
+# Four things here are not tidiness, and each cost an hour to find.
 #
 # The app is **uninstalled before every run**. Opening a document that is not
 # in the app's own folder imports a copy, and the name is deduplicated against
@@ -29,6 +29,15 @@
 # The `TEST_RUNNER_` variables are set on **this process's environment**, not
 # passed as `KEY=value` arguments to xcodebuild. Both are accepted; only one
 # arrives.
+#
+# The **simulator's own language is switched for each locale**, and the device
+# restarted. The app is told its language at launch, but the status bar is the
+# system's, and it writes the date in the system's language — so every English
+# capture said `9月13日(日)` beside an English app. Nothing can pin that date:
+# `status_bar override --time` accepts an ISO date, but writes it in English
+# whatever the system language is (and gave 9 January 2026 as a Sunday). So the
+# date is the day of the shoot, in the language of the capture, the same across
+# one run.
 
 require "fileutils"
 require "tmpdir"
@@ -43,6 +52,13 @@ DEVICE_NAME = "iPad Pro 13-inch (M5)"
 
 # App Store locale directory → the language the app is launched in.
 LOCALES = { "en-US" => "en", "ja" => "ja" }.freeze
+
+# App Store locale directory → the simulator's system language, which is what
+# the status bar's date is written in.
+SYSTEM_LANGUAGES = {
+  "en-US" => { languages: %w[en-US], locale: "en_US" },
+  "ja" => { languages: %w[ja-JP], locale: "ja_JP" }
+}.freeze
 
 # The shot list: which drawing, and which pane to end up on. The same four the
 # listing has always had.
@@ -73,6 +89,35 @@ def device
   udid
 end
 
+def system_language(udid)
+  languages = simctl("spawn", udid, "defaults", "read", "-g", "AppleLanguages").scan(/[A-Za-z]{2,3}(?:-[A-Za-z0-9]+)*/)
+  { languages: languages, locale: simctl("spawn", udid, "defaults", "read", "-g", "AppleLocale").strip }
+end
+
+def write_system_language(udid, language)
+  simctl("spawn", udid, "defaults", "write", "-g", "AppleLanguages", "-array", *language[:languages])
+  simctl("spawn", udid, "defaults", "write", "-g", "AppleLocale", language[:locale])
+end
+
+# 9:41, the way every Apple screenshot has been since the first iPhone was
+# shown. It is also the only way this is reproducible: without it the captures
+# carry whatever the clock said, and a reshoot never matches the set it joins.
+def override_status_bar(udid)
+  simctl(
+    "status_bar", udid, "override",
+    "--time", "9:41", "--batteryState", "charged", "--batteryLevel", "100",
+    "--wifiMode", "active", "--wifiBars", "3", "--cellularMode", "notSupported"
+  )
+end
+
+# A language takes effect only after a restart, and a restart can take the
+# status bar override and the seeded documents with it, so both are put back.
+def restart(udid)
+  simctl("shutdown", udid)
+  simctl("boot", udid)
+  simctl("bootstatus", udid)
+end
+
 wanted = ARGV.reject { |argument| argument.start_with?("-") }
 shots = wanted.empty? ? SHOTS : SHOTS.select { |shot| wanted.any? { |w| shot[:name].include?(w) } }
 abort("Nothing matches #{wanted.join(', ')}") if shots.empty?
@@ -80,18 +125,13 @@ abort("Nothing matches #{wanted.join(', ')}") if shots.empty?
 udid = device
 puts "device #{udid}"
 
-# 9:41, the way every Apple screenshot has been since the first iPhone was
-# shown. It is also the only way this is reproducible: without it the captures
-# carry whatever the clock said, and a reshoot never matches the set it joins.
-simctl(
-  "status_bar", udid, "override",
-  "--time", "9:41", "--batteryState", "charged", "--batteryLevel", "100",
-  "--wifiMode", "active", "--wifiBars", "3", "--cellularMode", "notSupported"
-)
+# Whatever the simulator was set to goes back, however the run ends — a device
+# left in English is a surprise the next time somebody opens it. Written, not
+# restarted into: it takes effect on the next boot.
+original_language = system_language(udid)
+at_exit { write_system_language(udid, original_language) }
 
 seed = Pathname.new(Dir.home) / "Library/Developer/CoreSimulator/Devices" / udid / "data/tmp/tbshots"
-FileUtils.mkdir_p(seed)
-FileUtils.cp(Pathname.glob(SOURCES / "*.tortoise").map(&:to_s), seed)
 
 # Shots grouped so that no drawing is opened twice in one run.
 #
@@ -107,8 +147,23 @@ groups = shots.each_with_object([]) do |shot, list|
   slot ? slot << shot : list << [shot]
 end
 
+current_language = nil
 LOCALES.to_a.product(groups).each do |(locale, language), group|
   puts "#{locale}: #{group.map { |s| s[:name] }.join(', ')}"
+
+  unless current_language == locale
+    wanted_language = SYSTEM_LANGUAGES.fetch(locale)
+    unless system_language(udid) == wanted_language
+      puts "  switching the simulator to #{wanted_language[:locale]} and restarting it"
+      write_system_language(udid, wanted_language)
+      restart(udid)
+    end
+    override_status_bar(udid)
+    FileUtils.mkdir_p(seed)
+    FileUtils.cp(Pathname.glob(SOURCES / "*.tortoise").map(&:to_s), seed)
+    current_language = locale
+  end
+
   simctl("uninstall", udid, BUNDLE_ID)
 
   workspace = Pathname.new(Dir.mktmpdir)
