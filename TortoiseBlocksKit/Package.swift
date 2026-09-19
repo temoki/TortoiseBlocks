@@ -1,4 +1,4 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 6.4
 import PackageDescription
 
 let package = Package(
@@ -12,7 +12,7 @@ let package = Package(
         .library(name: "TortoiseBlocksKit", targets: ["TortoiseBlocksKit"])
     ],
     dependencies: [
-        .package(url: "https://github.com/temoki/TortoiseGraphics2", exact: "2.1.0")
+        .package(url: "https://github.com/temoki/TortoiseGraphics2", exact: "2.2.0")
     ],
     targets: [
         .target(

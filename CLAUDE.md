@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 cd TortoiseBlocksKit && swift test        # Kit unit tests (fast, UI-independent)
 
-# Format / lint (config: /.swift-format, upstream-mirrored; Xcode 26's `swift format`).
+# Format / lint (config: /.swift-format, upstream-mirrored; Xcode 27's `swift format`).
 # Note: `~/.swiftly/bin/swift-format` is a legacy binary that ignores the config —
 # always use the `swift format` subcommand.
 swift format --in-place --recursive App ThumbnailExtension TortoiseBlocksUITests TortoiseBlocksKit/Sources TortoiseBlocksKit/Tests
