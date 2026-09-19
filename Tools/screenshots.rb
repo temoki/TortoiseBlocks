@@ -7,9 +7,9 @@
 #   ruby Tools/screenshots.rb --all      # re-optimise every capture, not just new ones
 #
 # **Every capture arrives with an alpha channel**, and App Store Connect
-# refuses one. That is not carelessness at the export step: the Mac shots are
-# composed in Figma and the iPad ones come from the simulator's screenshot
-# button, and neither can be told to write RGB. So the channel is removed here
+# refuses one. That is not carelessness at the export step: the iPad and Mac
+# captures come out of XCUITest and the Vision Pro ones from `simctl io`, and
+# none of the three can be told to write RGB. So the channel is removed here
 # rather than argued with there — and since it has always been fully opaque,
 # removing it is lossless. That is checked, not assumed: a capture with real
 # transparency stops the run, because compositing it onto a background this
