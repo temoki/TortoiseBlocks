@@ -128,26 +128,42 @@ struct CompactRootView: View {
     @State private var paletteSize: PaletteSheetSize = .half
 
     var body: some View {
+        // **A `NavigationStack` of our own, with its bar hidden.** Both halves
+        // of that are forced.
+        //
+        // The stack, because `.bottomBar` items placed into the
+        // `DocumentGroup`'s own navigation controller simply do not appear —
+        // the screen comes up with the trash can and no ⊞ or ▶ at all. Inside
+        // a stack of ours they do.
+        //
+        // The hiding, because the scene hands its title chrome to that stack's
+        // bar as well as its own, so an opened document drew `< star ⌄` twice,
+        // stacked (the same shape as #31, one platform along, and invisible
+        // until a *named* document is opened — a new one merges the two and
+        // looks right). `toolbar(removing: .title)` takes the name and leaves
+        // the chevron, which is a second bar holding one dead button; hiding
+        // the bar outright is what leaves the phone one row of chrome.
+        //
+        // Which is why undo and redo are down here too: with that bar gone
+        // there is nowhere else for them, and the bottom of a phone is where a
+        // thumb is anyway.
         NavigationStack {
             WorkspaceView(workspace: workspace, runner: runner)
-                // Undo and redo stay in the bar; the two ways off this
-                // screen go to the bottom, where a thumb is (#113).
-                //
-                // Not four items in the top bar, which is where this started:
-                // at 402pt iOS fits two beside the document's name and moves
-                // the rest into a ⋯ overflow — and the ones it moves are the
-                // last written, so ⊞ and ▶, the only two the screen is for,
-                // were the ones that disappeared. Reordering only chooses
-                // which button a child loses. One capsule instead of two
-                // groups does not buy enough either: the change from
-                // "Untitled" to "Untitled 4" was the whole margin.
+                .hidingNavigationBar()
                 .toolbar {
-                    WorkspaceToolbar(workspace: workspace)
                     ToolbarItemGroup(placement: .compactActions) {
+                        Button("Undo", systemImage: "arrow.uturn.backward") {
+                            workspace.undo()
+                        }
+                        .disabled(!workspace.canUndo)
+                        Button("Redo", systemImage: "arrow.uturn.forward") {
+                            workspace.redo()
+                        }
+                        .disabled(!workspace.canRedo)
+                        Spacer()
                         Button("Blocks", systemImage: "square.grid.2x2") {
                             sheet = .palette
                         }
-                        Spacer()
                         // Running and showing the drawing are one action here:
                         // there is nowhere for a drawing to already be, so a
                         // button that only opened the canvas would open an
