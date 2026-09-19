@@ -9,11 +9,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# macos-26 everywhere: the app deploys to macOS 26 / iOS 26, and compiling
-# the Icon Composer app icon for macOS needs the host's own icon rendering —
-# on the macOS 15 image actool's AssetCatalogAgent-AssetRuntime crashed on
-# the .icns variant while the iOS one built fine. It also puts CI on the same
-# Xcode 26.6 as local development.
+# xcode-27 everywhere for the macOS jobs: TortoiseGraphics2 2.2.0 declares
+# swift-tools-version 6.4, which an Xcode 26 toolchain cannot even parse, so
+# the runner has to carry Xcode 27. A recent host image is what the app icon
+# needs anyway — compiling the Icon Composer icon for macOS uses the host's
+# own icon rendering, and on the macOS 15 image actool's
+# AssetCatalogAgent-AssetRuntime crashed on the .icns variant while the iOS
+# one built fine. It also puts CI on the same Xcode 27 as local development.
 jobs:
   # A signing team must never reach the repository. It is not a secret — a
   # Team ID sits in every distributed app's provisioning profile — but a fork
@@ -55,7 +57,7 @@ jobs:
 
   format-lint:
     name: Format Lint
-    runs-on: macos-26
+    runs-on: xcode-27
     steps:
       - uses: actions/checkout@v7
 
@@ -71,7 +73,7 @@ jobs:
 
   kit-test:
     name: Kit Tests
-    runs-on: macos-26
+    runs-on: xcode-27
     steps:
       - uses: actions/checkout@v7
 
@@ -91,7 +93,7 @@ jobs:
 
   app-build:
     name: App Build (${{ matrix.name }})
-    runs-on: macos-26
+    runs-on: xcode-27
     strategy:
       fail-fast: false
       matrix:

@@ -1,13 +1,13 @@
 {
-  "originHash" : "6f793ae5ce9d59bfe288dda5c0a74b4c288b2bae63418b026cf2f644effa56e9",
+  "originHash" : "229252a3c2e15f9c32d873f1630d37b9c417aed54ec59164146e6c74bd568ab4",
   "pins" : [
     {
       "identity" : "tortoisegraphics2",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/temoki/TortoiseGraphics2",
       "state" : {
-        "revision" : "83941fe71e20d39941f72d7f38d16d82308e3635",
-        "version" : "2.1.0"
+        "revision" : "127b441bb6b961b789d3ed3b90773642e03f451e",
+        "version" : "2.2.0"
       }
     }
   ],

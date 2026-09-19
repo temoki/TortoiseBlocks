@@ -62,7 +62,7 @@ graphics engine written in Swift.
 
 ## Requirements
 
-- **Xcode** 26+ (Swift 6.2)
+- **Xcode** 27+ (Swift 6.4)
 - **Platforms** iPadOS 26+ · macOS 26+ · visionOS 26+ — the three-pane editor
   on iPad and Mac, and on Vision Pro a viewer for what they made, with no
   editing in it at all
