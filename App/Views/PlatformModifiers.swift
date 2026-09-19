@@ -120,6 +120,22 @@ extension Scene {
     }
 }
 
+extension View {
+    /// Hides a navigation bar of ours while leaving the bottom one (#113).
+    ///
+    /// `ToolbarPlacement.navigationBar` is `@available(macOS, unavailable)` —
+    /// a Mac window has no such bar. macOS is also never compact, so the view
+    /// that wants this never renders there; naming the platforms that *have* a
+    /// navigation bar is what keeps a new one from silently taking the no-op.
+    func hidingNavigationBar() -> some View {
+        #if os(macOS)
+            self
+        #else
+            toolbar(.hidden, for: .navigationBar)
+        #endif
+    }
+}
+
 extension ToolbarItemPlacement {
     /// The bar along the bottom of a compact screen (#113), where a thumb is.
     ///
