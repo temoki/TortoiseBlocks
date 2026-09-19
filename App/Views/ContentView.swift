@@ -27,14 +27,40 @@ struct ContentView: View {
     }
 }
 
-/// The one layout, on every platform (#29) — iPad, Mac, and the visionOS
-/// window, which is a regular-width scene and needs nothing of its own (#11).
-/// Compact width — an iPhone, or an iPad window squeezed into Slide Over — is
-/// not a design target: three panes' worth of information (palette, program,
-/// canvas) folded into one 390pt column never came out usable. A window narrow
-/// enough to go compact gets `NavigationSplitView`'s own collapse, not a layout
-/// of ours.
+/// Picks the layout by width (#113). Regular — iPad, Mac, and the visionOS
+/// window, which is a regular-width scene and needs nothing of its own (#11) —
+/// keeps the three-column split view. Compact — an iPhone, or an iPad window
+/// squeezed into Slide Over — gets `CompactRootView`.
+///
+/// This branch is exactly what #29 deleted, and it is back because the fallback
+/// #29 trusted does not exist. `NavigationSplitView` collapses to its
+/// *sidebar* and pushes nothing, because these three columns are not a
+/// selection-driven master-detail: measured on an iPhone 17, the entire
+/// accessibility tree of an open document was the palette, a back button to the
+/// document browser, and a scroll bar — no workspace, no canvas, and nothing to
+/// press that reached either. The standard collapse is not a narrow version of
+/// this app; it is a dead end, so compact needs a layout of its own.
 struct RootView: View {
+    let workspace: WorkspaceEditor
+    let runner: RunnerModel
+
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    var body: some View {
+        // Two layouts rather than one that adapts: the panes are the same
+        // three views, but what holds them (columns against a stack plus
+        // sheets) has no middle ground worth expressing as modifiers.
+        if horizontalSizeClass == .compact {
+            CompactRootView(workspace: workspace, runner: runner)
+        }
+        else {
+            RegularRootView(workspace: workspace, runner: runner)
+        }
+    }
+}
+
+/// The three-pane layout: palette | workspace | canvas.
+struct RegularRootView: View {
     let workspace: WorkspaceEditor
     let runner: RunnerModel
 
@@ -72,11 +98,151 @@ struct RootView: View {
             // can drag could only ever drag narrower.
             WorkspaceView(workspace: workspace, runner: runner)
                 .navigationSplitViewColumnWidth(min: 300, ideal: 440, max: 560)
+                .toolbar { WorkspaceToolbar(workspace: workspace) }
         } detail: {
             // 280pt keeps the canvas usable (#23) — narrower and its own
             // playback row starts contesting space with the drawing.
             CanvasPane(workspace: workspace, runner: runner)
                 .navigationSplitViewColumnWidth(min: 280, ideal: 420)
+        }
+    }
+}
+
+/// The iPhone layout (#113): the workspace *is* the screen, and the two panes
+/// that cannot sit beside it are sheets raised from its toolbar.
+///
+/// The program is the root rather than the palette or the canvas because it is
+/// the one pane a child returns to between every other action — the palette is
+/// visited to fetch a block, the canvas to watch what the blocks did.
+struct CompactRootView: View {
+    let workspace: WorkspaceEditor
+    let runner: RunnerModel
+
+    /// **One piece of state for both sheets, deliberately.** Two `sheet`
+    /// modifiers on the same view silently drop all but the last — the same
+    /// trap the two `fileExporter`s in `CanvasPane` are written around.
+    @State private var sheet: CompactSheet?
+    /// Kept here rather than in the sheet so the size survives closing it: a
+    /// child who shrank the palette to drag from it wants it that size next
+    /// time too.
+    @State private var paletteSize: PaletteSheetSize = .half
+
+    var body: some View {
+        NavigationStack {
+            WorkspaceView(workspace: workspace, runner: runner)
+                // Undo and redo stay in the bar; the two ways off this
+                // screen go to the bottom, where a thumb is (#113).
+                //
+                // Not four items in the top bar, which is where this started:
+                // at 402pt iOS fits two beside the document's name and moves
+                // the rest into a ⋯ overflow — and the ones it moves are the
+                // last written, so ⊞ and ▶, the only two the screen is for,
+                // were the ones that disappeared. Reordering only chooses
+                // which button a child loses. One capsule instead of two
+                // groups does not buy enough either: the change from
+                // "Untitled" to "Untitled 4" was the whole margin.
+                .toolbar {
+                    WorkspaceToolbar(workspace: workspace)
+                    ToolbarItemGroup(placement: .compactActions) {
+                        Button("Blocks", systemImage: "square.grid.2x2") {
+                            sheet = .palette
+                        }
+                        Spacer()
+                        // Running and showing the drawing are one action here:
+                        // there is nowhere for a drawing to already be, so a
+                        // button that only opened the canvas would open an
+                        // empty one. `play.fill` is the transport's own glyph,
+                        // so ▶ means the same thing in both places a child
+                        // meets it. (Not `tortoise`: paired with `hare` that is
+                        // the *speed* symbol, and this app has a speed menu.)
+                        Button("Run", systemImage: "play.fill") {
+                            runner.run(workspace.blocks)
+                            sheet = .canvas
+                        }
+                        .disabled(workspace.blocks.isEmpty)
+                    }
+                }
+        }
+        .sheet(item: $sheet) { which in
+            switch which {
+            case .palette: CompactPaletteSheet(workspace: workspace, size: $paletteSize)
+            case .canvas: CompactCanvasSheet(workspace: workspace, runner: runner)
+            }
+        }
+    }
+}
+
+/// Which pane `CompactRootView` is showing over the workspace.
+enum CompactSheet: String, Identifiable {
+    case palette
+    case canvas
+
+    var id: String { rawValue }
+}
+
+/// The palette, over the workspace (#113).
+///
+/// **Both ways in work, and they mean different things.** A tap places a block
+/// and closes the sheet — one block, then look at it. A drag carries one out
+/// onto the program showing behind, which *is* possible from a sheet (measured,
+/// against the expectation that it would not be) as long as the sheet is short
+/// enough to be dropping onto something and the background is left interactive
+/// — see `paletteSheetSize(_:peek:)`, which owns both halves of that.
+struct CompactPaletteSheet: View {
+    let workspace: WorkspaceEditor
+    @Binding var size: PaletteSheetSize
+
+    /// The bar, the grab handle, and two blocks under them. Scaled, because
+    /// what has to fit is rows of text.
+    @ScaledMetric private var peekHeight: CGFloat = 180
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            // **Closing on the tap is the point, not a convenience.** A
+            // tapped block goes in at the insertion target, which on a program
+            // of any length is below the fold — and #71 is the whole argument
+            // that a block added where it cannot be seen reads as nothing
+            // having happened. Shrinking the sheet does not fix *that* case
+            // (measured: with the spiral sample loaded, the tapped block still
+            // landed off-screen), so the sheet gets out of the way and lets
+            // the workspace's own scroll-to-the-new-block do its job. A drag
+            // needs none of this, because you are looking at where it lands.
+            PaletteView(workspace: workspace) { dismiss() }
+                .navigationTitle("Blocks")
+                .sheetNavigationBar()
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Close", systemImage: "xmark") { dismiss() }
+                    }
+                }
+        }
+        .paletteSheetSize($size, peek: peekHeight)
+    }
+}
+
+/// The canvas, over the workspace (#113) — the same `CanvasPane` the iPad shows
+/// in its detail column, including the transport and the export menu.
+///
+/// The close button is ours. On iPad the pane's leading chevron belongs to the
+/// split view; a sheet has no such thing, and dragging it down is the only way
+/// out a child would otherwise have.
+struct CompactCanvasSheet: View {
+    let workspace: WorkspaceEditor
+    let runner: RunnerModel
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            CanvasPane(workspace: workspace, runner: runner)
+                .sheetNavigationBar()
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Close", systemImage: "xmark") { dismiss() }
+                    }
+                }
         }
     }
 }

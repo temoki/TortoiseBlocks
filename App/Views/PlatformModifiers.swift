@@ -50,6 +50,26 @@ extension View {
         #endif
     }
 
+    /// A sheet's own bar (#113): no back chevron, and a title that doesn't eat
+    /// a detent.
+    ///
+    /// The chevron is the document scene's, not a stack's — a `DocumentGroup`
+    /// hands its chrome to every navigation bar under it, sheets included, and
+    /// in a sheet it points at nothing. (`toolbar(removing: .title)`, which is
+    /// what `CanvasPane` uses against the *title* half of the same chrome,
+    /// leaves the chevron behind.)
+    ///
+    /// Both modifiers are unavailable on macOS, which is never compact and so
+    /// never presents these sheets.
+    func sheetNavigationBar() -> some View {
+        #if !os(macOS)
+            navigationBarBackButtonHidden()
+                .navigationBarTitleDisplayMode(.inline)
+        #else
+            self
+        #endif
+    }
+
     /// Holds an icon-only control to the 44pt finger minimum on iPadOS (and to
     /// the same floor on visionOS, where the target is a gaze rather than a
     /// finger — 44 is the iPad number, not a measured visionOS one).
@@ -94,6 +114,79 @@ extension Scene {
     func defaultWindowSize() -> some Scene {
         #if os(macOS)
             defaultSize(width: 1280, height: 800)
+        #else
+            self
+        #endif
+    }
+}
+
+extension ToolbarItemPlacement {
+    /// The bar along the bottom of a compact screen (#113), where a thumb is.
+    ///
+    /// `.bottomBar` is `@available(macOS, unavailable)` — a Mac window has no
+    /// such bar. macOS is also never compact, so `CompactRootView` never
+    /// renders there and the fallback is only what keeps the file compiling;
+    /// naming the platforms that *have* a bottom bar, rather than the one that
+    /// does not, is what stops a new platform from silently taking it.
+    static var compactActions: ToolbarItemPlacement {
+        #if os(macOS)
+            .automatic
+        #else
+            .bottomBar
+        #endif
+    }
+}
+
+/// How much of the screen the palette sheet takes (#113).
+///
+/// A type of ours rather than `PresentationDetent`s held in the view, because
+/// that type does not exist on macOS *at all* — it is not merely a modifier
+/// that no-ops there — so a `@State` of that type would not compile in a file
+/// the Mac builds. See `paletteSheetSize(_:peek:)`.
+enum PaletteSheetSize {
+    /// The bar and a couple of blocks: the size you drag *from*, with the
+    /// program behind it in plain view.
+    case peek
+    case half
+    case full
+}
+
+extension View {
+    /// The palette sheet's three sizes, and the thing that makes the small
+    /// ones worth having: input reaching the workspace behind it.
+    ///
+    /// **`presentationBackgroundInteraction` is load-bearing.** Everything
+    /// behind a sheet is inert by default, so without it a block dragged out
+    /// of the palette has nothing to land on — the drop is refused by the
+    /// presentation, not by drag and drop, and it looks identical either way.
+    /// Enabled up through `.medium` only: at full height there is nothing
+    /// showing to drop onto.
+    ///
+    /// A selection is passed rather than letting the sheet pick, because a
+    /// detent set opens at its *smallest* — which here is the peek, two blocks
+    /// of a palette of twenty.
+    func paletteSheetSize(_ selection: Binding<PaletteSheetSize>, peek: CGFloat) -> some View {
+        #if !os(macOS)
+            presentationDetents(
+                [.height(peek), .medium, .large],
+                selection: Binding(
+                    get: {
+                        switch selection.wrappedValue {
+                        case .peek: .height(peek)
+                        case .half: .medium
+                        case .full: .large
+                        }
+                    },
+                    set: { detent in
+                        selection.wrappedValue =
+                            switch detent {
+                            case .height(peek): .peek
+                            case .large: .full
+                            default: .half
+                            }
+                    })
+            )
+            .presentationBackgroundInteraction(.enabled(upThrough: .medium))
         #else
             self
         #endif

@@ -264,6 +264,16 @@
         }
       }
     },
+    "Close" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "とじる"
+          }
+        }
+      }
+    },
     "Code" : {
       "localizations" : {
         "ja" : {

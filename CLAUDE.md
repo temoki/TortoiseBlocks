@@ -18,6 +18,8 @@ xcodebuild -project TortoiseBlocks.xcodeproj -scheme TortoiseBlocks \
   -destination 'platform=macOS' -quiet build
 xcodebuild -project TortoiseBlocks.xcodeproj -scheme TortoiseBlocks \
   -destination 'platform=iOS Simulator,name=iPad Pro 11-inch (M5)' -quiet build
+xcodebuild -project TortoiseBlocks.xcodeproj -scheme TortoiseBlocks \
+  -destination 'platform=iOS Simulator,name=iPhone 17' -quiet build
 
 # Manual verification loop (macOS):
 pkill -x TortoiseBlocks; open ~/Library/Developer/Xcode/DerivedData/TortoiseBlocks-*/Build/Products/Debug/TortoiseBlocks.app
@@ -316,8 +318,16 @@ And a macOS QuickLook extension has to be sandboxed to be loaded, so it carries
 even though the app itself has none. `pluginkit -mAvvv | grep -i tortoise`
 confirms registration — the `-p com.apple.quicklook.thumbnail` filter does not
 match it and will make a working extension look missing.
-`TARGETED_DEVICE_FAMILY` is `"2,7"` — iPad, Mac and Vision Pro, no iPhone
-(#29, #11).
+`TARGETED_DEVICE_FAMILY` is `"1,2,7"` — iPhone, iPad, Mac and Vision Pro
+(#113, #11). The iPhone is **portrait only**, and that is a real design
+boundary rather than a default:
+`INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone` names `Portrait` alone
+(upside-down is not offered — a Face ID iPhone refuses it anyway), while the
+iPad keeps all four. It also means the phone is *always* compact, so nothing
+about the layout depends on a size class that can change under it. Verify a
+change here in the built product (`plutil -p`), not in the build setting: both
+of these keys do reach the bundle, but the generated-plist step honors a fixed
+list of names and drops the ones it doesn't know without a word.
 Documents are `.tortoise` files, but the exported UTI keeps the
 `tortoiseblocks` spelling (`space.hiraku.tortoiseblocks.project`, and
 `.block` for the drag payload), which is also the bundle ID's — the
