@@ -214,6 +214,10 @@ extension BlockCategory {
 /// `RootView`).
 struct PaletteView: View {
     let workspace: WorkspaceEditor
+    /// Called after a tap puts a block in the program. nil in the iPad's
+    /// column, where the palette is never in the way of what it just did;
+    /// `CompactPaletteSheet` uses it to get out of the way (#113).
+    var onInsert: (() -> Void)?
 
     @ScaledMetric private var sectionGap: CGFloat = 16
 
@@ -221,7 +225,8 @@ struct PaletteView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: sectionGap) {
                 ForEach(Palette.sections) { section in
-                    PaletteSectionView(section: section, workspace: workspace)
+                    PaletteSectionView(
+                        section: section, workspace: workspace, onInsert: onInsert)
                 }
             }
             .padding()
@@ -232,6 +237,7 @@ struct PaletteView: View {
 struct PaletteSectionView: View {
     let section: PaletteSection
     let workspace: WorkspaceEditor
+    var onInsert: (() -> Void)?
 
     @ScaledMetric private var entryGap: CGFloat = 6
 
@@ -245,7 +251,9 @@ struct PaletteSectionView: View {
                 // one — the palette is the longest list in the app.
                 .accessibilityAddTraits(.isHeader)
             ForEach(section.entries) { entry in
-                PaletteEntryButton(entry: entry, category: section.category, workspace: workspace)
+                PaletteEntryButton(
+                    entry: entry, category: section.category, workspace: workspace,
+                    onInsert: onInsert)
             }
         }
     }
@@ -288,6 +296,7 @@ struct PaletteEntryButton: View {
     let entry: PaletteEntry
     let category: BlockCategory
     let workspace: WorkspaceEditor
+    var onInsert: (() -> Void)?
 
     /// The entry's width, for the drag preview on iPadOS — see `BlockRowView`
     /// (#95).
@@ -296,6 +305,7 @@ struct PaletteEntryButton: View {
     var body: some View {
         Button {
             workspace.add(entry.kind)
+            onInsert?()
         } label: {
             Label {
                 Text(entry.title)

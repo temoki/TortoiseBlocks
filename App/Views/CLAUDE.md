@@ -317,14 +317,78 @@ so the palette couldn't highlight for workspace drags alone). Dropping a
 palette-origin block on it is a no-op — `BlockTree.removing` returns nil for
 an ID that isn't in the tree, which is exactly right.
 
-**Compact width is not a design target** (#29). There is one layout,
-`RootView`'s three-column `NavigationSplitView`; the "つくる / うごかす" tab
-pair and its bottom palette strip are gone, because three panes' worth of
-information never folded into one 390pt column usably. An iPad window narrow
-enough to report compact (Slide Over, a squeezed window) gets
-`NavigationSplitView`'s own collapse — that is the whole fallback, and no
-`horizontalSizeClass` branch should come back. Don't restore a compact
-layout without reopening the scope decision.
+**Compact width has a layout of its own again** (#113, reopening #29). `RootView`
+is now a `horizontalSizeClass` branch: regular gets `RegularRootView`'s
+three-column `NavigationSplitView`, compact gets `CompactRootView` — an iPhone
+in portrait, and equally an iPad window squeezed into Slide Over.
+
+#29 removed the old compact layout (the "つくる / うごかす" tab pair and its
+bottom palette strip) *and* the branch, leaving narrow windows to
+`NavigationSplitView`'s own collapse. **That fallback does not exist.** A split
+view collapses to its *sidebar* and pushes the other columns only for a
+selection-driven master-detail, which these three columns are not: measured on
+an iPhone 17 (402×874), the entire accessibility tree of an open document was
+the palette, a back button to the document browser, and a scroll bar. No
+workspace, no canvas, nothing to press that reached either. It is a dead end,
+not a narrow layout, and it was one on an iPad in Slide Over the whole time.
+
+What replaced it keeps all three panes and moves two of them off the screen:
+the **workspace is the root** — it is the pane a child comes back to between
+every other action — and the palette and the canvas are **sheets** raised from
+its bottom bar. Three things about that are measured rather than chosen.
+
+**The two buttons are in the bottom bar because four do not fit in the top one.**
+At 402pt, beside the document's name and its rename chevron, iOS fits two
+trailing items and moves the rest into a ⋯ overflow — and it overflows the
+*last written*, so ⊞ and ▶, the only two the screen is for, were the ones that
+vanished. Reordering only picks which button the child loses; one
+`ToolbarItemGroup` instead of two does not buy enough either (the margin was
+the difference between "Untitled" and "Untitled 4"). In the bottom bar they
+also land either side of the trash can, which keeps its own `safeAreaInset` —
+⊞ left, 🗑 centre, ▶ right, one row, all three in thumb reach.
+
+**Both ways into the program work on a phone, and they mean different things.**
+A **tap** places a block and closes the sheet: the block goes in at the
+insertion target, which on a program of any length is below the fold, and #71
+is the whole argument that a block added where it cannot be seen reads as
+nothing having happened. Shrinking the sheet does not fix that case (measured:
+with the spiral sample loaded, the tapped block still landed off-screen), so
+the sheet gets out of the way instead and lets the workspace's own
+scroll-to-the-new-block do its job. `PaletteView` takes an `onInsert` for it,
+nil in the iPad's column, where the palette is never in front of what it just
+did.
+
+A **drag** carries a block out of the sheet onto the program showing behind it,
+and it stays open — you are looking at where it lands, so none of the above
+applies. That a drag crosses a sheet at all was measured rather than assumed;
+the expectation here was that it could not, and the expectation was wrong. It
+costs two things, both in `paletteSheetSize(_:peek:)` so the view says nothing
+about either. **`presentationBackgroundInteraction` is load-bearing**: what is
+behind a sheet is inert by default, so without it the drop is refused by the
+*presentation* rather than by drag and drop, and the two look identical. And
+the sheet needs a size small enough to be dropping onto something, hence three
+of them — a peek (the bar and two blocks, `@ScaledMetric`, the size you drag
+from), half, and full. The selection is passed explicitly because a detent set
+opens at its **smallest**, which would be that peek.
+
+`PresentationDetent` is not merely unavailable on macOS, it does not exist
+there, so the sizes are carried as a `PaletteSheetSize` of ours and become
+detents inside the modifier — a `@State` of the SwiftUI type would not compile
+in a file the Mac builds.
+
+**A sheet in a `DocumentGroup` inherits the document's chrome**, and
+`toolbar(removing: .title)` — `CanvasPane`'s answer to the title half of it —
+leaves the back chevron behind, pointing at nothing. `sheetNavigationBar()`
+(`PlatformModifiers`) is what drops it, along with taking the title inline.
+
+Two things are given up on a phone, both deliberately. **The executing-block
+highlight is not visible during playback**, because the canvas covers the
+program; nothing about the index alignment changes, there is just nothing to
+see. And **labels wrap sooner**: a row draws 370pt here against the iPad's 408,
+each nesting level costs 18, and the 440 the workspace column is measured at
+cannot be had on a 402pt screen. The wrap is the correct last resort (see the
+row-compression rule above), not a bug — judge it on a *nested Japanese*
+program, which is where it shows.
 
 **Row icons share one slot width.** SF Symbols differ in width by up to 9pt
 at body size, and `Label` lets each title start wherever its own icon ended,

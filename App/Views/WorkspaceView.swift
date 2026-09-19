@@ -180,18 +180,6 @@ struct WorkspaceView: View {
         // under the can against 12pt above it. Note it has to be applied here
         // rather than to the inset's own content, where it does nothing.
         .ignoresSafeArea(.container, edges: .bottom)
-        .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                Button("Undo", systemImage: "arrow.uturn.backward") {
-                    workspace.undo()
-                }
-                .disabled(!workspace.canUndo)
-                Button("Redo", systemImage: "arrow.uturn.forward") {
-                    workspace.redo()
-                }
-                .disabled(!workspace.canRedo)
-            }
-        }
     }
 
     /// Brings a row into view, and records that it did. Both callers write the
@@ -228,6 +216,31 @@ private struct SampleButton: View {
             } icon: {
                 Text(verbatim: emoji)
             }
+        }
+    }
+}
+
+/// The program pane's toolbar: undo, then redo.
+///
+/// A `ToolbarContent` type applied by the root views rather than a `.toolbar`
+/// inside `WorkspaceView`, because `CompactRootView` has two buttons of its own
+/// to put *after* these (#113) — and toolbar items are ordered by how deeply
+/// their modifier sits, so a group added from outside `WorkspaceView` lands in
+/// front of one added inside it, which is the wrong way round. One modifier,
+/// one order, written where it is read.
+struct WorkspaceToolbar: ToolbarContent {
+    let workspace: WorkspaceEditor
+
+    var body: some ToolbarContent {
+        ToolbarItemGroup(placement: .primaryAction) {
+            Button("Undo", systemImage: "arrow.uturn.backward") {
+                workspace.undo()
+            }
+            .disabled(!workspace.canUndo)
+            Button("Redo", systemImage: "arrow.uturn.forward") {
+                workspace.redo()
+            }
+            .disabled(!workspace.canRedo)
         }
     }
 }
