@@ -73,19 +73,34 @@ def simctl(*arguments)
   IO.popen(["xcrun", "simctl", *arguments], err: %i[child out], &:read)
 end
 
+# The newest iOS runtime that has this device, and **the runtime is not a
+# detail**: on iOS 26.5 the seeded document does not open at all. The scene
+# below stays on the launch screen and every capture is of that — a picture
+# that passes `metadata_check` and shows the wrong thing. 27.0 opens it. This
+# is also why a device left over from an older runtime is not good enough to
+# take whichever one is booted.
+#
+# Runtimes sort as strings here because they are
+# "com.apple.CoreSimulator.SimRuntime.iOS-27-0", which orders correctly for as
+# long as the numbers stay one digit; the check below is what actually protects
+# the run.
 def device
   json = JSON.parse(simctl("list", "devices", "available", "-j"))
   candidates = json["devices"].flat_map do |runtime, list|
-    runtime.include?("iOS") ? list.select { |d| d["name"] == DEVICE_NAME } : []
+    runtime.include?("iOS") ? list.select { |d| d["name"] == DEVICE_NAME }.map { |d| [runtime, d] } : []
   end
   abort("No #{DEVICE_NAME} simulator.") if candidates.empty?
 
-  booted = candidates.find { |d| d["state"] == "Booted" } || candidates.first
-  udid = booted["udid"]
-  if booted["state"] != "Booted"
+  runtime, chosen = candidates.max_by { |r, _| r }
+  version = runtime[/iOS-(\d+)-(\d+)/, 0].to_s.sub("iOS-", "").tr("-", ".")
+  abort("#{DEVICE_NAME} is only on iOS #{version}; 27.0 or newer opens documents, 26.5 does not.") if version < "27"
+
+  udid = chosen["udid"]
+  if chosen["state"] != "Booted"
     simctl("boot", udid)
     simctl("bootstatus", udid)
   end
+  puts "runtime iOS #{version}"
   udid
 end
 
@@ -159,6 +174,11 @@ LOCALES.to_a.product(groups).each do |(locale, language), group|
       restart(udid)
     end
     override_status_bar(udid)
+    # **Light, said outright.** The captures this set joins are light, and a
+    # simulator's appearance is whatever the device was left in — one created
+    # on a new runtime came up dark, which is a perfectly well-made capture of
+    # the wrong thing.
+    simctl("ui", udid, "appearance", "light")
     FileUtils.mkdir_p(seed)
     FileUtils.cp(Pathname.glob(SOURCES / "*.tortoise").map(&:to_s), seed)
     current_language = locale
