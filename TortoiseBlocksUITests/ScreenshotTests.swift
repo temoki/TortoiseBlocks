@@ -30,9 +30,28 @@ final class ScreenshotTests: XCTestCase {
         let pane: Pane
     }
 
+    /// Where a shot ends up. `canvas` and `code` are the two panes every
+    /// platform has; `blocks` and `palette` are screens only a phone has, the
+    /// program on its own and the palette sheet over it (#114).
     private enum Pane: String {
         case canvas
         case code
+        case blocks
+        case palette
+    }
+
+    /// Whether this run is on a phone, which is a different set of screens
+    /// rather than the same ones laid out narrower (#113): the transport and
+    /// the code pane live in a sheet that has to be raised, and the palette is
+    /// a sheet of its own. Read from the device rather than passed in, so the
+    /// driver's shot list stays a list of pictures.
+    @MainActor
+    private static var isPhone: Bool {
+        #if os(iOS)
+            UIDevice.current.userInterfaceIdiom == .phone
+        #else
+            false
+        #endif
     }
 
     override func setUp() {
@@ -100,7 +119,12 @@ final class ScreenshotTests: XCTestCase {
         //
         // A Mac has no orientation, and `XCUIDevice` has no such member there.
         #if os(iOS)
-            XCUIDevice.shared.orientation = .landscapeLeft
+            // The phone is portrait only (#113), and its captures are
+            // portrait; there is nothing to turn and the setting would be
+            // refused in silence.
+            if !Self.isPhone {
+                XCUIDevice.shared.orientation = .landscapeLeft
+            }
         #endif
 
         // Straight to the drawing, rather than tapping through the document
@@ -113,71 +137,78 @@ final class ScreenshotTests: XCTestCase {
         // beforehand is gone by the time this opens it. Outside the container
         // the files survive, and LaunchServices grants the app access to what
         // it is handed, exactly as it does for a file opened from Files.
-        let document = URL(fileURLWithPath: documents)
-            .appendingPathComponent("\(shot.sample).tortoise")
-        XCUIDevice.shared.system.open(document)
-
-        let scrubber = app.sliders.firstMatch
-        XCTAssertTrue(
-            scrubber.waitForExistence(timeout: 30),
-            "\(locale)/\(shot.name): the document never opened")
-
-        // **The drawing has to be run; there is no shortcut to the end.** The
-        // scrubber is `Disabled` until something has been run — its value
-        // reads 「まだ なにも うごかしていません」 — so dragging it there does
-        // nothing at all, silently, and produces a capture that looks
-        // perfectly well made of an empty canvas. So does
-        // `adjust(toNormalizedSliderPosition:)`, and so does `⌘R`
-        // (`AppCommands`), the simulator having no hardware keyboard attached.
-        //
-        // The button is addressed as `play.fill`, the SF Symbol's own name:
-        // SwiftUI hands it through as the accessibility identifier, so it is
-        // the same in both languages while the label ("うごかす") is not.
-        let play = app.buttons["play.fill"]
-        XCTAssertTrue(
-            play.waitForExistence(timeout: 15), "\(locale)/\(shot.name): no play button")
-        play.tap()
-
-        // Then wait for the drawing to stop growing, by watching the
-        // scrubber's own accessibility value. Better than sleeping for a
-        // guessed duration: the tree is twice the spiral, so a fixed wait is
-        // either wrong for one of them or wasteful for all of them.
-        let idle = scrubber.value as? String
-        var last = idle
-        var settled = 0
-        let deadline = Date().addingTimeInterval(90)
-        while Date() < deadline {
-            Thread.sleep(forTimeInterval: 0.5)
-            let now = scrubber.value as? String
-            settled = (now == last) ? settled + 1 : 0
-            last = now
-            // Four quiet polls, and not still the value it had before the run
-            // started — otherwise "nothing has happened yet" reads as "done".
-            if settled >= 4, now != idle { break }
+        if Self.isPhone {
+            openFromBrowser(app, sample: shot.sample, locale: locale, name: shot.name)
+        }
+        else {
+            let document = URL(fileURLWithPath: documents)
+                .appendingPathComponent("\(shot.sample).tortoise")
+            XCUIDevice.shared.system.open(document)
         }
 
-        if shot.pane == .code {
-            // Canvas is the first choice and Code the second
-            // (`CanvasViewToggle`) — an order, not a label.
+        // **A phone raises the transport in a sheet, so it is not on screen
+        // yet** (#113). On iPad and Mac the scrubber is the sign that the
+        // document opened; on a phone that sign is the run button in the
+        // bottom bar, which is also what raises the canvas over the program.
+        if Self.isPhone {
+            // Addressed by SF Symbol for the same reason as everything else
+            // here: the label is 「うごかす」 in one language and "Run" in the
+            // other, and SwiftUI passes the symbol through as the identifier.
+            let run = app.buttons["play.fill"].firstMatch
+            XCTAssertTrue(
+                run.waitForExistence(timeout: 30),
+                "\(locale)/\(shot.name): the document never opened")
+
+            switch shot.pane {
+            case .blocks:
+                break  // The program on its own; this screen is already it.
+            case .palette:
+                let palette = app.buttons["square.grid.2x2"].firstMatch
+                XCTAssertTrue(
+                    palette.waitForExistence(timeout: 15),
+                    "\(locale)/\(shot.name): no palette button")
+                palette.tap()
+            case .canvas, .code:
+                run.tap()
+                let scrubber = app.sliders.firstMatch
+                XCTAssertTrue(
+                    scrubber.waitForExistence(timeout: 30),
+                    "\(locale)/\(shot.name): the canvas sheet never opened")
+                // No "before" value to compare against: the run starts with
+                // the sheet, so the transport does not exist until it is
+                // already under way. Nothing is in doubt about whether it
+                // started.
+                waitForDrawing(scrubber, startedBefore: nil)
+                if shot.pane == .code { showCode(app, locale: locale, name: shot.name) }
+            }
+        }
+        else {
+            let scrubber = app.sliders.firstMatch
+            XCTAssertTrue(
+                scrubber.waitForExistence(timeout: 30),
+                "\(locale)/\(shot.name): the document never opened")
+
+            // **The drawing has to be run; there is no shortcut to the end.**
+            // The scrubber is `Disabled` until something has been run — its
+            // value reads 「まだ なにも うごかしていません」 — so dragging it
+            // there does nothing at all, silently, and produces a capture that
+            // looks perfectly well made of an empty canvas. So does
+            // `adjust(toNormalizedSliderPosition:)`, and so does `⌘R`
+            // (`AppCommands`), the simulator having no hardware keyboard
+            // attached.
             //
-            // **The same `Picker(.segmented)` is a different element on each
-            // platform**: a `SegmentedControl` of buttons on iOS, a
-            // `RadioGroup` of radio buttons in the toolbar on macOS. Looking
-            // for the iOS one on a Mac finds nothing and times out saying only
-            // that there is no toggle.
-            #if os(macOS)
-                let toggle = app.radioGroups.firstMatch
-                XCTAssertTrue(
-                    toggle.waitForExistence(timeout: 10),
-                    "\(locale)/\(shot.name): no pane toggle")
-                toggle.radioButtons.element(boundBy: 1).click()
-            #else
-                let toggle = app.segmentedControls.firstMatch
-                XCTAssertTrue(
-                    toggle.waitForExistence(timeout: 10),
-                    "\(locale)/\(shot.name): no pane toggle")
-                toggle.buttons.element(boundBy: 1).tap()
-            #endif
+            // The button is addressed as `play.fill`, the SF Symbol's own
+            // name: SwiftUI hands it through as the accessibility identifier,
+            // so it is the same in both languages while the label
+            // ("うごかす") is not.
+            let play = app.buttons["play.fill"]
+            XCTAssertTrue(
+                play.waitForExistence(timeout: 15), "\(locale)/\(shot.name): no play button")
+            play.tap()
+
+            waitForDrawing(scrubber, startedBefore: scrubber.value as? String)
+
+            if shot.pane == .code { showCode(app, locale: locale, name: shot.name) }
         }
 
         // The canvas flushes its frames on the next redraw; a capture taken in
@@ -194,10 +225,20 @@ final class ScreenshotTests: XCTestCase {
         #else
             let screenshot = XCUIScreen.main.screenshot()
             // Cheap, and it has already caught the one failure that produces a
-            // perfectly good picture of the wrong thing.
-            XCTAssertGreaterThan(
-                screenshot.image.size.width, screenshot.image.size.height,
-                "\(locale)/\(shot.name): the device did not rotate")
+            // perfectly good picture of the wrong thing. A phone is the other
+            // way round: portrait is what it is locked to, so a landscape
+            // capture there means the lock stopped working, not that a
+            // rotation was missed.
+            if Self.isPhone {
+                XCTAssertGreaterThan(
+                    screenshot.image.size.height, screenshot.image.size.width,
+                    "\(locale)/\(shot.name): the phone is not portrait")
+            }
+            else {
+                XCTAssertGreaterThan(
+                    screenshot.image.size.width, screenshot.image.size.height,
+                    "\(locale)/\(shot.name): the device did not rotate")
+            }
         #endif
 
         let attachment = Self.attachment(for: screenshot)
@@ -206,6 +247,133 @@ final class ScreenshotTests: XCTestCase {
         add(attachment)
 
         app.terminate()
+    }
+
+    /// Opens the sample's document from the app's own document browser (#114).
+    ///
+    /// **A phone cannot be handed a document by URL at all.** Measured every
+    /// way round: `XCUIDevice.system.open` raises a *save* panel rather than
+    /// opening the file, wherever the file sits — the device's tmp, the app's
+    /// own Documents, either. `simctl openurl` does open it, but only into a
+    /// cold launch and only from the driver, whose open the following
+    /// `xcodebuild test` then kills by installing. And an iOS app cannot open
+    /// one of its own documents in code: `openDocument` is macOS-only.
+    /// Tapping is what is left, so the driver seeds the app's *own* folder and
+    /// this walks to it. An iPad is handed the URL as before.
+    ///
+    /// **Two of the four steps are by index, and both have to be.** The tab
+    /// bar reads Recents / Shared / Browse, and the locations read iCloud
+    /// Drive / On My iPhone / Recently Deleted — system labels, and their
+    /// accessibility identifiers carry the *localized* name
+    /// (`DOC.sidebar.item.このiPhone内`), so there is nothing language-stable
+    /// to match on. From there the names are ours and the same in every
+    /// language: the folder is the app's, and the file is the file.
+    @MainActor
+    private func openFromBrowser(
+        _ app: XCUIApplication, sample: String, locale: String, name: String
+    ) {
+        let tabs = app.tabBars.firstMatch
+        XCTAssertTrue(
+            tabs.waitForExistence(timeout: 30), "\(locale)/\(name): no document browser")
+        tabs.buttons.element(boundBy: 2).tap()
+
+        // **A ladder, not a walk, because the browser remembers where it was.**
+        // A second run in the same session opened Browse *inside* the app's
+        // folder rather than at the list of locations, and a fixed four-step
+        // walk then failed on a step that was already behind it (measured: the
+        // second locale of a reshoot, every time). So each rung is tried from
+        // the bottom up, and only the ones still ahead are climbed.
+        if tap(app, cell: "\(sample).tortoise") { return }
+
+        if !tap(app, cell: "Tortoise Blocks") {
+            // The locations: iCloud Drive, On My iPhone, Recently Deleted.
+            // By index like the tab bar, and for the same reason — their
+            // accessibility identifiers carry the *localized* name
+            // (`DOC.sidebar.item.このiPhone内`), so there is nothing
+            // language-stable to match on.
+            let location = app.cells.matching(
+                NSPredicate(format: "identifier BEGINSWITH 'DOC.sidebar.item.'")
+            ).element(boundBy: 1)
+            XCTAssertTrue(
+                location.waitForExistence(timeout: 15),
+                "\(locale)/\(name): no On My iPhone")
+            location.tap()
+            XCTAssertTrue(
+                tap(app, cell: "Tortoise Blocks", timeout: 15),
+                "\(locale)/\(name): no app folder")
+        }
+
+        XCTAssertTrue(
+            tap(app, cell: "\(sample).tortoise", timeout: 15),
+            "\(locale)/\(name): no \(sample).tortoise")
+    }
+
+    /// Taps the first cell whose identifier starts with `prefix`, if there is
+    /// one. A file's reads "star.tortoise, tortoise" and a folder's
+    /// "Tortoise Blocks, Container", so the prefix is the name itself — ours
+    /// in both cases, and so the same in every language.
+    @MainActor
+    private func tap(_ app: XCUIApplication, cell prefix: String, timeout: TimeInterval = 5)
+        -> Bool
+    {
+        let cell = app.cells.matching(
+            NSPredicate(format: "identifier BEGINSWITH %@", prefix)
+        ).firstMatch
+        guard cell.waitForExistence(timeout: timeout) else { return false }
+
+        cell.tap()
+        return true
+    }
+
+    /// Waits for the drawing to stop growing, by watching the scrubber's own
+    /// accessibility value. Better than sleeping for a guessed duration: the
+    /// tree is twice the spiral, so a fixed wait is either wrong for one of
+    /// them or wasteful for all of them.
+    ///
+    /// `startedBefore` is the value the scrubber held *before* the run was
+    /// started, where the caller had one to read. Quiet polls that still hold
+    /// that value mean "nothing has happened yet", not "done" — which is a
+    /// real failure on iPad and Mac, where the transport is on screen before
+    /// anything runs. A phone has no such value: its transport arrives with
+    /// the sheet the run opened.
+    @MainActor
+    private func waitForDrawing(_ scrubber: XCUIElement, startedBefore idle: String?) {
+        var last = scrubber.value as? String
+        var settled = 0
+        let deadline = Date().addingTimeInterval(90)
+        while Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.5)
+            let now = scrubber.value as? String
+            settled = (now == last) ? settled + 1 : 0
+            last = now
+            // Four quiet polls, and not still the value it had before the run
+            // started — otherwise "nothing has happened yet" reads as "done".
+            if settled >= 4, idle == nil || now != idle { break }
+        }
+    }
+
+    /// Switches the pane to the generated Swift.
+    ///
+    /// Canvas is the first choice and Code the second (`CanvasViewToggle`) —
+    /// an order, not a label.
+    ///
+    /// **The same `Picker(.segmented)` is a different element on each
+    /// platform**: a `SegmentedControl` of buttons on iOS, a `RadioGroup` of
+    /// radio buttons in the toolbar on macOS. Looking for the iOS one on a Mac
+    /// finds nothing and times out saying only that there is no toggle.
+    @MainActor
+    private func showCode(_ app: XCUIApplication, locale: String, name: String) {
+        #if os(macOS)
+            let toggle = app.radioGroups.firstMatch
+            XCTAssertTrue(
+                toggle.waitForExistence(timeout: 10), "\(locale)/\(name): no pane toggle")
+            toggle.radioButtons.element(boundBy: 1).click()
+        #else
+            let toggle = app.segmentedControls.firstMatch
+            XCTAssertTrue(
+                toggle.waitForExistence(timeout: 10), "\(locale)/\(name): no pane toggle")
+            toggle.buttons.element(boundBy: 1).tap()
+        #endif
     }
 
     /// The screenshot as an attachment, the right way up.
