@@ -128,30 +128,30 @@ struct CompactRootView: View {
     @State private var paletteSize: PaletteSheetSize = .half
 
     var body: some View {
-        // **A `NavigationStack` of our own, with its bar hidden.** Both halves
-        // of that are forced.
+        // **A `NavigationStack` of our own, and its bar stays.** The stack is
+        // forced: `.bottomBar` items placed into the `DocumentGroup`'s own
+        // navigation controller do not appear, so ⊞ and ▶ vanish with it.
         //
-        // The stack, because `.bottomBar` items placed into the
-        // `DocumentGroup`'s own navigation controller simply do not appear —
-        // the screen comes up with the trash can and no ⊞ or ▶ at all. Inside
-        // a stack of ours they do.
+        // Its bar is what carries the document's name here, which is why
+        // hiding it — tried, in the first pass at #116 — is wrong. Measured on
+        // an iPhone 17 Pro Max, the two ways a document opens do not present
+        // the same way:
         //
-        // The hiding, because the scene hands its title chrome to that stack's
-        // bar as well as its own, so an opened document drew `< star ⌄` twice,
-        // stacked (the same shape as #31, one platform along, and invisible
-        // until a *named* document is opened — a new one merges the two and
-        // looks right). `toolbar(removing: .title)` takes the name and leaves
-        // the chevron, which is a second bar holding one dead button; hiding
-        // the bar outright is what leaves the phone one row of chrome.
+        // *From the app's own browser*, a tap pushes onto that browser's
+        // navigation controller and this stack's bar is the **only** one. Hide
+        // it and the screen has no back button and no name at all — the child
+        // is in a document with no way out.
         //
-        // Which is why undo and redo are down here too: with that bar gone
-        // there is nowhere else for them, and the bottom of a phone is where a
-        // thumb is anyway.
+        // *From a URL* (Files, `simctl openurl`), the document is presented
+        // with a bar of its own **as well**, and the scene hands its title
+        // chrome to both: `< star ⌄` over `< star ⌄`. That duplication is
+        // cosmetic, it is the rarer path, and no setting separates the two
+        // cases — so it is the one that is lived with. The trade was the other
+        // way round for one commit, and the wrong way round.
         NavigationStack {
             WorkspaceView(workspace: workspace, runner: runner)
-                .hidingNavigationBar()
                 .toolbar {
-                    ToolbarItemGroup(placement: .compactActions) {
+                    ToolbarItemGroup(placement: .primaryAction) {
                         Button("Undo", systemImage: "arrow.uturn.backward") {
                             workspace.undo()
                         }
@@ -160,10 +160,25 @@ struct CompactRootView: View {
                             workspace.redo()
                         }
                         .disabled(!workspace.canRedo)
-                        Spacer()
+                    }
+                    // The two ways off this screen, at the bottom, where a
+                    // thumb is — and either side of the trash can, which keeps
+                    // its own inset: ⊞, 🗑, ▶ in one row.
+                    ToolbarItemGroup(placement: .compactActions) {
                         Button("Blocks", systemImage: "square.grid.2x2") {
                             sheet = .palette
                         }
+                        // **Said outright, because a toolbar swallows it.**
+                        // SwiftUI hands an `Image(systemName:)` through as the
+                        // accessibility identifier — which is how the
+                        // transport's `play.fill` and the trash can's `trash`
+                        // are addressed without naming a localized label — but
+                        // a button placed in a `ToolbarItem` arrives with an
+                        // empty one. These two are the whole of what a phone's
+                        // screenshots have to press, so they say their own
+                        // names.
+                        .accessibilityIdentifier("square.grid.2x2")
+                        Spacer()
                         // Running and showing the drawing are one action here:
                         // there is nowhere for a drawing to already be, so a
                         // button that only opened the canvas would open an
@@ -176,6 +191,11 @@ struct CompactRootView: View {
                             sheet = .canvas
                         }
                         .disabled(workspace.blocks.isEmpty)
+                        // The transport's centre button carries this name too,
+                        // and deliberately: pressed, both run the program. The
+                        // two are never on screen at once — this one raises
+                        // the sheet the other lives in.
+                        .accessibilityIdentifier("play.fill")
                     }
                 }
         }
