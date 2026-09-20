@@ -124,6 +124,24 @@ extension Scene {
     }
 }
 
+extension ToolbarContent {
+    /// Turns off the glass capsule a `ToolbarItemGroup` paints behind its
+    /// items (#119), for a group holding a control that draws its own shape.
+    ///
+    /// `sharedBackgroundVisibility` is `@available(visionOS, unavailable)`,
+    /// like `ToolbarSpacer` before it — visionOS lays its toolbar out as an
+    /// ornament and does the grouping itself, so there is no shared background
+    /// to turn off. Naming the platform that lacks it keeps the `#if` out of
+    /// `CanvasToolbar`, which exists for that reason in the first place.
+    func withoutSharedBackground() -> some ToolbarContent {
+        #if os(visionOS)
+            self
+        #else
+            sharedBackgroundVisibility(.hidden)
+        #endif
+    }
+}
+
 extension ToolbarItemPlacement {
     /// The bar along the bottom of a compact screen (#113), where a thumb is.
     ///

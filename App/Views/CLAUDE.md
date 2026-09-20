@@ -103,6 +103,19 @@ appears). The palette entry is a drag source, so its hover lives inside
 the body, not the modifier, which is why this first read as "`hoverEffect`
 crashes on visionOS": it does not, the pairing does.
 
+**A control that draws its own shape has to opt out of its toolbar group's**
+(#119). In 26 a `ToolbarItemGroup` paints a glass capsule behind whatever it
+holds, which is right for plain buttons and wrong for anything already
+capsule-shaped: the canvas/code `Picker(.segmented)` came out as a capsule
+inside a capsule, the outer one a size larger and slightly off.
+`sharedBackgroundVisibility(.hidden)` on the group is the fix, and it is only
+ever wanted on the group holding *that* control — the one beside it keeps its
+background, because ⟳ and the export menu have no shape of their own.
+
+It reads as cosmetic and is not: the outer capsule's padding was taking the
+width the segments needed, so in portrait the labels truncated to 「キ… コ…」.
+Look at the labels, not just the outline, when judging a change here.
+
 **26's glass is not used on any surface of ours, and that was tested rather
 than assumed** (#79). All three candidates were built and looked at, and all
 three came back out.
