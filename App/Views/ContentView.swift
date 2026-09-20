@@ -432,9 +432,20 @@ struct CanvasToolbar: ToolbarContent {
             ToolbarSpacer(.flexible, placement: .primaryAction)
         #endif
 
+        // **The group's own glass, turned off for this one control.** In 26 a
+        // `ToolbarItemGroup` draws a capsule behind whatever it holds, and a
+        // `Picker(.segmented)` draws a capsule of its own — so this item came
+        // out as a capsule inside a capsule, the outer one a size larger and
+        // slightly off (#119). The group below keeps its background because
+        // ⟳ and the export menu are plain buttons with no shape of their own.
+        //
+        // Not only cosmetic: the outer capsule's padding was taking width the
+        // segments needed, and in portrait the labels were being truncated to
+        // 「キ… コ…」. They fit once it is gone.
         ToolbarItemGroup(placement: .primaryAction) {
             CanvasViewToggle(showsCode: $showsCode)
         }
+        .withoutSharedBackground()
 
         #if !os(visionOS)
             ToolbarSpacer(.fixed, placement: .primaryAction)
