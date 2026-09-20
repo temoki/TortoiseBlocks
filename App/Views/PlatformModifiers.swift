@@ -1,5 +1,9 @@
 import SwiftUI
 
+#if canImport(UIKit)
+    import UIKit
+#endif
+
 // Small cross-cutting modifiers that hide their `#if os(...)` inside a
 // modifier (the SwiftUI-way rule), so call sites stay platform-agnostic.
 //
@@ -120,22 +124,6 @@ extension Scene {
     }
 }
 
-extension View {
-    /// Hides a navigation bar of ours while leaving the bottom one (#113).
-    ///
-    /// `ToolbarPlacement.navigationBar` is `@available(macOS, unavailable)` —
-    /// a Mac window has no such bar. macOS is also never compact, so the view
-    /// that wants this never renders there; naming the platforms that *have* a
-    /// navigation bar is what keeps a new one from silently taking the no-op.
-    func hidingNavigationBar() -> some View {
-        #if os(macOS)
-            self
-        #else
-            toolbar(.hidden, for: .navigationBar)
-        #endif
-    }
-}
-
 extension ToolbarItemPlacement {
     /// The bar along the bottom of a compact screen (#113), where a thumb is.
     ///
@@ -203,6 +191,14 @@ extension View {
                     })
             )
             .presentationBackgroundInteraction(.enabled(upThrough: .medium))
+            // **An opaque sheet, over a page of coloured blocks.** At less
+            // than full height the sheet is glass, and what shows through a
+            // palette is the program behind it — a second, ghostly one, in
+            // the same colours as the blocks being read. `.background` is not
+            // enough: `BackgroundStyle` resolves to whatever the context's
+            // background is, which inside a sheet is that same glass.
+            // `systemBackground` is a colour, and is opaque.
+            .presentationBackground(Color(.systemBackground))
         #else
             self
         #endif

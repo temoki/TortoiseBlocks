@@ -1,54 +1,54 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Shoots the iPad App Store captures, all of them, from the simulator.
+# Shoots the iPhone App Store captures, from the simulator.
 #
-#   ruby Tools/ipad-shots.rb          # every shot, both locales
-#   ruby Tools/ipad-shots.rb star     # only the shots whose name matches
+#   ruby Tools/iphone-shots.rb          # every shot, both locales
+#   ruby Tools/iphone-shots.rb palette  # only the shots whose name matches
 #
-# **Why a UI test and not launch arguments**, which is how the visionOS
-# captures are made: rotation. `simctl` cannot turn an iPad, and driving the
-# Simulator's own menu means granting keystroke permission to whatever runs
-# this. `XCUIDevice` rotates in a line — and the same mechanism then presses
-# play and switches panes, so the app keeps no screenshot-only code at all.
-# `TortoiseBlocksUITests/ScreenshotTests.swift` is the hands; this is the
-# shot list and the plumbing.
+# **They go in the same directory as the iPad's** (#114). App Store Connect has
+# one iOS version carrying both display types, `deliver` takes one screenshots
+# directory per platform, and it tells an iPhone capture from an iPad one by
+# its dimensions — so `appstore/screenshots/ios/<locale>/` holds both sets, and
+# the leading number in a filename orders each set within its own display type.
+# The `iphone` in these names is for the person reading the directory.
 #
-# Four things here are not tidiness, and each cost an hour to find.
+# **The device is an iPhone 17 Pro Max**, because 1320x2868 is one of the two
+# sizes Apple accepts for the 6.9-inch display. The iPhone 17 is 1206x2622,
+# which is a perfectly good picture that App Store Connect refuses.
 #
-# The app is **uninstalled before every run**. Opening a document that is not
-# in the app's own folder imports a copy, and the name is deduplicated against
-# a history that outlives deleting the files — so the title bar creeps to
-# `star-9` and the capture is unusable. Uninstalling resets it.
+# **The pictures are not the iPad's four.** There is nowhere on a phone to show
+# palette, program and canvas at once, so the set shows the screens instead:
+# the program with its bottom bar, the canvas sheet the ▶ raises, the code
+# sheet, and the palette sheet over a program. `ScreenshotTests.swift` knows
+# how to reach each of them; the panes `blocks` and `palette` exist only here.
 #
-# The documents are seeded into the **device's** tmp, not the app's container.
-# Preparing a test run reinstalls the app, and a reinstall gives it a new data
-# container, so anything seeded there beforehand is gone by the time the test
-# opens it.
+# **The documents go in the app's own folder, and the test taps them.** This
+# is the one real difference from the iPad rig, and it is forced: a phone
+# cannot be handed a document by URL at all (see `openFromBrowser` in
+# `ScreenshotTests`). So the app is installed here, before the tests, its
+# container is seeded, and nothing uninstalls afterwards — an uninstall would
+# take the documents with it. Opening in place also means no import, so the
+# name-deduplication the iPad rig groups its shots around (`spiral-1` in a
+# title bar) cannot happen, and every shot for a locale goes in one run.
 #
-# The `TEST_RUNNER_` variables are set on **this process's environment**, not
-# passed as `KEY=value` arguments to xcodebuild. Both are accepted; only one
-# arrives.
-#
-# The **simulator's own language is switched for each locale**, and the device
-# restarted. The app is told its language at launch, but the status bar is the
-# system's, and it writes the date in the system's language — so every English
-# capture said `9月13日(日)` beside an English app. Nothing can pin that date:
-# `status_bar override --time` accepts an ISO date, but writes it in English
-# whatever the system language is (and gave 9 January 2026 as a Sunday). So the
-# date is the day of the shoot, in the language of the capture, the same across
-# one run.
+# Everything else is the iPad rig's, for the same reasons it is there:
+# `ScreenshotTests.swift` does the pressing, the status bar is pinned to 9:41,
+# the simulator's system language is switched per locale (the status bar's date
+# is the system's, not the app's), and `TEST_RUNNER_*` has to be on
+# xcodebuild's own environment rather than passed as arguments. Rotation is the
+# one thing this does not do: the phone is portrait only (#113).
 
 require "fileutils"
-require "tmpdir"
 require "json"
 require "pathname"
+require "tmpdir"
 
 ROOT = Pathname.new(__dir__).parent
 DESTINATION = ROOT / "appstore" / "screenshots" / "ios"
 SOURCES = ROOT / "appstore" / "screenshot-sources"
 BUNDLE_ID = "space.hiraku.tortoiseblocks"
-DEVICE_NAME = "iPad Pro 13-inch (M5)"
+DEVICE_NAME = "iPhone 17 Pro Max"
 
 # App Store locale directory → the language the app is launched in.
 LOCALES = { "en-US" => "en", "ja" => "ja" }.freeze
@@ -60,13 +60,13 @@ SYSTEM_LANGUAGES = {
   "ja" => { languages: %w[ja-JP], locale: "ja_JP" }
 }.freeze
 
-# The shot list: which drawing, and which pane to end up on. The same four the
-# listing has always had.
+# The shot list: which drawing, and which screen to end up on. One picture per
+# screen the phone has, in the order a child meets them.
 SHOTS = [
-  { name: "1_star_canvas", sample: "star", pane: "canvas" },
-  { name: "2_spiral_canvas", sample: "spiral", pane: "canvas" },
-  { name: "3_spiral_code", sample: "spiral", pane: "code" },
-  { name: "4_tree_canvas", sample: "tree", pane: "canvas" }
+  { name: "1_iphone_star_blocks", sample: "star", pane: "blocks" },
+  { name: "2_iphone_star_canvas", sample: "star", pane: "canvas" },
+  { name: "3_iphone_spiral_code", sample: "spiral", pane: "code" },
+  { name: "4_iphone_tree_palette", sample: "tree", pane: "palette" }
 ].freeze
 
 def simctl(*arguments)
@@ -74,16 +74,15 @@ def simctl(*arguments)
 end
 
 # The newest iOS runtime that has this device, and **the runtime is not a
-# detail**: on iOS 26.5 the seeded document does not open at all. The scene
-# below stays on the launch screen and every capture is of that — a picture
-# that passes `metadata_check` and shows the wrong thing. 27.0 opens it. This
-# is also why a device left over from an older runtime is not good enough to
-# take whichever one is booted.
-#
-# Runtimes sort as strings here because they are
+# detail**: on iOS 26.5 `XCUIDevice.system.open` does not open a document at
+# all. It imports it — the file lands in the app's Inbox and the browser stays
+# up, or a "save as" panel appears — and every capture is then of the launch
+# screen. Opening a seeded document is how both this rig and the iPad's reach
+# a drawing, so a device on the wrong runtime silently shoots nothing usable.
+# iOS 27.0 opens it. Runtimes sort as strings here because they are
 # "com.apple.CoreSimulator.SimRuntime.iOS-27-0", which orders correctly for as
-# long as the numbers stay one digit; the check below is what actually protects
-# the run.
+# long as the numbers stay one digit; the check below is what actually
+# protects the run.
 def device
   json = JSON.parse(simctl("list", "devices", "available", "-j"))
   candidates = json["devices"].flat_map do |runtime, list|
@@ -105,7 +104,8 @@ def device
 end
 
 def system_language(udid)
-  languages = simctl("spawn", udid, "defaults", "read", "-g", "AppleLanguages").scan(/[A-Za-z]{2,3}(?:-[A-Za-z0-9]+)*/)
+  languages = simctl("spawn", udid, "defaults", "read", "-g",
+                     "AppleLanguages").scan(/[A-Za-z]{2,3}(?:-[A-Za-z0-9]+)*/)
   { languages: languages, locale: simctl("spawn", udid, "defaults", "read", "-g", "AppleLocale").strip }
 end
 
@@ -141,29 +141,26 @@ udid = device
 puts "device #{udid}"
 
 # Whatever the simulator was set to goes back, however the run ends — a device
-# left in English is a surprise the next time somebody opens it. Written, not
-# restarted into: it takes effect on the next boot.
+# left in English is a surprise the next time somebody opens it.
 original_language = system_language(udid)
 at_exit { write_system_language(udid, original_language) }
 
-seed = Pathname.new(Dir.home) / "Library/Developer/CoreSimulator/Devices" / udid / "data/tmp/tbshots"
+# The app goes on now, so that its container exists to seed. `xcodebuild test`
+# installs over this rather than replacing it, which is what keeps the
+# documents there.
+product = JSON.parse(
+  `xcodebuild -project "#{ROOT}/TortoiseBlocks.xcodeproj" -scheme TortoiseBlocks \
+     -destination "id=#{udid}" -showBuildSettings -json 2>/dev/null`
+)
+settings = product.first["buildSettings"]
+app = Pathname.new(settings["BUILT_PRODUCTS_DIR"]) / settings["FULL_PRODUCT_NAME"]
+abort("No built app at #{app} — build the scheme first.") unless app.exist?
+simctl("install", udid, app.to_s)
 
-# Shots grouped so that no drawing is opened twice in one run.
-#
-# Opening a document that is not in the app's own folder imports a copy, and
-# the copy's name is deduplicated against a history that outlives deleting the
-# files — so the second capture of the spiral came back titled `spiral-1`.
-# Uninstalling resets that history, so the fix is to uninstall between the
-# groups rather than to open the file once and photograph it twice: two
-# captures of one document are two *panes*, and going back to the canvas after
-# the code pane is more state to keep straight than a second launch is worth.
-groups = shots.each_with_object([]) do |shot, list|
-  slot = list.find { |group| group.none? { |other| other[:sample] == shot[:sample] } }
-  slot ? slot << shot : list << [shot]
-end
+seed = Pathname.new(simctl("get_app_container", udid, BUNDLE_ID, "data").strip) / "Documents"
 
 current_language = nil
-LOCALES.to_a.product(groups).each do |(locale, language), group|
+LOCALES.to_a.product([shots]).each do |(locale, language), group|
   puts "#{locale}: #{group.map { |s| s[:name] }.join(', ')}"
 
   unless current_language == locale
@@ -174,17 +171,17 @@ LOCALES.to_a.product(groups).each do |(locale, language), group|
       restart(udid)
     end
     override_status_bar(udid)
+    # The container survives the language restart, but is re-seeded anyway:
+    # a run that ends mid-way can leave a document renamed or deleted.
     # **Light, said outright.** The captures this set joins are light, and a
-    # simulator's appearance is whatever the device was left in — one created
-    # on a new runtime came up dark, which is a perfectly well-made capture of
-    # the wrong thing.
+    # simulator's appearance is whatever the device was left in — a freshly
+    # created one on a new runtime came up dark, which is a perfectly
+    # well-made capture of the wrong thing.
     simctl("ui", udid, "appearance", "light")
     FileUtils.mkdir_p(seed)
     FileUtils.cp(Pathname.glob(SOURCES / "*.tortoise").map(&:to_s), seed)
     current_language = locale
   end
-
-  simctl("uninstall", udid, BUNDLE_ID)
 
   workspace = Pathname.new(Dir.mktmpdir)
   result = workspace / "shots.xcresult"
@@ -216,8 +213,8 @@ LOCALES.to_a.product(groups).each do |(locale, language), group|
 
   manifest = JSON.parse((exported / "manifest.json").read)
   filed = manifest.flat_map { |test| test["attachments"] }.filter_map do |attachment|
-    # "ja|1_star_canvas_0_<uuid>.png" — the part before the pipe is where it
-    # goes, the part after is what it is called.
+    # "ja|1_iphone_star_blocks_0_<uuid>.png" — the part before the pipe is
+    # where it goes, the part after is what it is called.
     where, rest = attachment["suggestedHumanReadableName"].split("|", 2)
     next if rest.nil?
 

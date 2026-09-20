@@ -55,8 +55,17 @@ module MetadataCheck
   # size is a mistake worth stopping on, not a shape to guess at. A platform
   # missing from this table is not checked at all, so a new screenshots
   # directory has to be added here to be seen.
+  #
+  # "ios" carries two display types, because App Store Connect's iOS version
+  # carries both: an iPhone screenshot and an iPad one are the same version's
+  # assets, told apart by their dimensions, and deliver takes one directory per
+  # platform (#114). The iPhone is portrait only (#113), so a landscape one
+  # there would be a bug rather than a shape to accept. Apple also accepts
+  # 1290x2796 for the 6.9-inch display; this rig shoots an iPhone 17 Pro Max,
+  # which is the other one.
   SIZES = {
-    "ios" => [[2064, 2752], [2752, 2064]],                       # iPad 13-inch
+    "ios" => [[2064, 2752], [2752, 2064],                        # iPad 13-inch
+              [1320, 2868]],                                     # iPhone 6.9-inch
     "macos" => [[1280, 800], [1440, 900], [2560, 1600], [2880, 1800]],
     "visionos" => [[3840, 2160]]                                 # Apple Vision Pro
   }.freeze
@@ -164,7 +173,16 @@ module MetadataCheck
           shots = directory.children.select { |c| c.extname.casecmp(".png").zero? }.sort
           found = []
           found << [where, "no screenshots"] if shots.empty?
-          found << [where, "#{shots.count} screenshots, at most 10 per locale"] if shots.count > 10
+          # **Ten per display type, not per directory.** Apple's limit is per
+          # display type, and since #114 one directory can hold two of them —
+          # counting the files would refuse eleven iPhone-and-iPad captures
+          # that App Store Connect is perfectly happy with. Grouped by size,
+          # which is exactly how deliver tells them apart.
+          shots.group_by { |shot| png_info(shot)&.first(2) }.each do |size, group|
+            next if size.nil? || group.count <= 10
+
+            found << [where, "#{group.count} #{size.join('x')} screenshots, at most 10 per size"]
+          end
           found + shots.flat_map { |shot| shot_problems(shot, "#{where}/#{shot.basename}", accepted) }
         end
       end
