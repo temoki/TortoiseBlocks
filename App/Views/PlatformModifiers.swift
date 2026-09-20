@@ -124,6 +124,31 @@ extension Scene {
     }
 }
 
+extension View {
+    /// Asks for the document's own navigation bar to be drawn (#118).
+    ///
+    /// **It is there either way; without this it draws nothing.** Opened from
+    /// the app's own document browser while the iPad is in landscape, the bar
+    /// carrying the document's name and the way back comes up blank — and
+    /// measurably so: the accessibility tree has it at the same coordinates as
+    /// in the working case, its back button hit-tests, and tapping the
+    /// invisible spot really does return to the browser. Nothing of ours is
+    /// covering it (a cover would take the hit test). It is on top, and it
+    /// paints nothing. Saying `.visible` outright is what makes it paint.
+    ///
+    /// `ToolbarPlacement.navigationBar` is unavailable on macOS, which has no
+    /// such bar; the Mac keeps its window title. visionOS has no
+    /// `DocumentGroup` at all (#53), so this never runs there either — it only
+    /// has to compile.
+    func documentNavigationBarVisible() -> some View {
+        #if os(macOS)
+            self
+        #else
+            toolbar(.visible, for: .navigationBar)
+        #endif
+    }
+}
+
 extension ToolbarContent {
     /// Turns off the glass capsule a `ToolbarItemGroup` paints behind its
     /// items (#119), for a group holding a control that draws its own shape.

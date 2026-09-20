@@ -66,6 +66,22 @@ with `.toolbar(removing: .title)` (#31). The back chevron beside it is not
 ours to remove — neither dropping that column's toolbar nor
 `navigationBarBackButtonHidden` touches it.
 
+**And that bar has to be asked for, or on one path it draws nothing** (#118).
+Opened from the app's *own* document browser while the iPad is in landscape,
+the document's bar came up blank: no name, no way back, a child in a document
+with no way out. It is not a missing bar and it is not ours covering one — the
+accessibility tree has the bar at the same coordinates as in the working case,
+its back button hit-tests, and tapping the invisible spot really does return to
+the browser. It is on top, and it paints nothing. `documentNavigationBarVisible()`
+(`.toolbar(.visible, for: .navigationBar)`) is what makes it paint, which reads
+as saying the obvious until you have watched it not happen.
+
+Judge a change here on **all four** of the combinations, because only one of
+them was broken and three looked perfect throughout: opened by URL (Files) and
+opened from the app's browser, each in portrait and in landscape. The title
+must appear exactly once in every one — reintroducing #31's doubled title is
+the other way this goes wrong.
+
 **visionOS needs three things the other two get for free** (#11), and all three
 are `#if os(visionOS)` rather than shared, because on iPadOS and macOS each
 would be a second copy of something that already exists.

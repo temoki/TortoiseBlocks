@@ -105,6 +105,10 @@ struct RegularRootView: View {
             CanvasPane(workspace: workspace, runner: runner)
                 .navigationSplitViewColumnWidth(min: 280, ideal: 420)
         }
+        // The document's own bar is there whether or not this is said, but
+        // opened from the app's browser in landscape it draws nothing at all —
+        // see `documentNavigationBarVisible` (#118).
+        .documentNavigationBarVisible()
     }
 }
 
