@@ -66,22 +66,40 @@ with `.toolbar(removing: .title)` (#31). The back chevron beside it is not
 ours to remove — neither dropping that column's toolbar nor
 `navigationBarBackButtonHidden` touches it.
 
-**visionOS needs three things the other two get for free** (#11), and all three
-are `#if os(visionOS)` rather than shared, because on iPadOS and macOS each
-would be a second copy of something that already exists.
+**The way back to the browser is ours, not the system's** (#118). The app puts
+a folder button at the head of the sidebar's bar — `documentBrowserToolbar()`,
+calling `dismiss`, which is what a `DocumentGroup` document closes itself with.
 
-*A way back to the browser.* iPadOS puts a chevron beside the document title
-and macOS has File ▸ Open with a window per document; visionOS has neither, so
-the window carries the drawing it was opened with and the only route to another
-was to close it and launch again. `documentBrowserToolbar()` puts a folder
-button in the sidebar's bar, and `dismiss` — what a `DocumentGroup` document
-closes itself with — is what it calls. **Where `dismiss` is read from decides
-whether it does anything.** Read inside the toolbar item's own view, which is
-the obvious place, it resolves against the toolbar's context and the button is
-inert: it highlights on press and nothing happens. It has to come from the
-environment of the *content* the toolbar is attached to, which is why this is a
-`ViewModifier` and not a view inside the `toolbar` block. Nothing warns you —
-the code compiles and the button draws.
+It is there because the system's own way back is not reliably where anyone
+looks. Opened from the app's *own* document browser with the iPad in landscape,
+the document comes up with **no name and no back button at the top left**; the
+only one is a bare chevron in the *canvas* column, two thirds of the way across
+the screen. It works — measured, it returns to the browser — and no child will
+find it. This is a known SwiftUI bug, reproducible with Xcode's own Document
+App template and filed as FB20062294 ([forum
+thread](https://developer.apple.com/forums/thread/799139)); four things were
+tried and none of them moved it: `toolbar(removing: .title)` on the canvas
+pane, `toolbar(.visible, for: .navigationBar)`, and `toolbarRole` in all three
+of its values.
+
+The cost is accepted rather than avoided: opened **by URL** instead — from
+Files — the system does place its chrome, and then there are two ways back, its
+row above ours. That path is the rarer one, and nothing distinguishes the two
+cases from inside the app.
+
+**Where `dismiss` is read from decides whether it does anything.** Read inside
+the toolbar item's own view, which is the obvious place, it resolves against
+the toolbar's context and the button is inert: it highlights on press and
+nothing happens. It has to come from the environment of the *content* the
+toolbar is attached to, which is why this is a `ViewModifier` and not a view
+inside the `toolbar` block. Nothing warns you — the code compiles and the
+button draws. And the button names itself with an explicit
+`accessibilityIdentifier`: a `ToolbarItem` does not pass an
+`Image(systemName:)` through as one, where everything else in this app does.
+
+**visionOS needs two things the other two get for free** (#11), and both are
+`#if os(visionOS)` rather than shared, because on iPadOS and macOS each would
+be a second copy of something that already exists.
 
 *The name is deliberately in one place.* The sidebar carries the
 DocumentGroup's own title with its rename chevron, and `CanvasPane` still drops

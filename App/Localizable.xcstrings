@@ -404,6 +404,16 @@
         }
       }
     },
+    "Drawings" : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "えのいちらん"
+          }
+        }
+      }
+    },
     "Drawing" : {
       "localizations" : {
         "ja" : {

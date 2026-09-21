@@ -124,6 +124,52 @@ extension Scene {
     }
 }
 
+/// A way back to the document browser, in the sidebar's own bar (#118).
+///
+/// **The system's own way back is not reliably where a person looks.** Opened
+/// from the app's document browser on an iPad in landscape, the document comes
+/// up with no name and no back button at the top left — the only one is a bare
+/// chevron in the *canvas* column, two thirds of the way across the screen.
+/// It works (measured: it returns to the browser), and nothing will make a
+/// child find it. This is a known SwiftUI bug, reproducible with Xcode's own
+/// Document App template and filed as FB20062294; `.toolbarRole` in all three
+/// of its values changes nothing, and nor does asking for the bar outright.
+/// So the app carries its own.
+///
+/// **A `ViewModifier` and not a view inside a `toolbar` block**, because that
+/// is what decides whether it works: `dismiss` read inside the toolbar item's
+/// own view resolves against the toolbar's context and the button is inert —
+/// it highlights on press and nothing happens. It has to come from the
+/// environment of the content the toolbar is attached to.
+private struct DocumentBrowserToolbar: ViewModifier {
+    @Environment(\.dismiss) private var dismiss
+
+    func body(content: Content) -> some View {
+        content.toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Drawings", systemImage: "folder") { dismiss() }
+                    // A button in a `ToolbarItem` arrives with an empty
+                    // accessibility identifier — SwiftUI passes an
+                    // `Image(systemName:)` through everywhere else, but not
+                    // here (#119 hit the same thing).
+                    .accessibilityIdentifier("folder")
+            }
+        }
+    }
+}
+
+extension View {
+    /// See `DocumentBrowserToolbar`. A no-op on macOS, which has a window per
+    /// document and File ▸ Open, and where `dismiss` would close the window.
+    func documentBrowserToolbar() -> some View {
+        #if os(macOS)
+            self
+        #else
+            modifier(DocumentBrowserToolbar())
+        #endif
+    }
+}
+
 extension ToolbarContent {
     /// Turns off the glass capsule a `ToolbarItemGroup` paints behind its
     /// items (#119), for a group holding a control that draws its own shape.
