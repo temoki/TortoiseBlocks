@@ -170,6 +170,23 @@ extension View {
     }
 }
 
+extension View {
+    /// The glass capsule a button gets for free inside a system toolbar, for
+    /// buttons that are not in one (#123).
+    ///
+    /// `ButtonStyle.glass` is unavailable on visionOS, like `ToolbarSpacer`
+    /// and `sharedBackgroundVisibility` before it. `CompactRootView`, which is
+    /// the only caller, never renders there — visionOS has no `DocumentGroup`
+    /// at all (#53) — so this only has to compile.
+    func glassButtons() -> some View {
+        #if os(visionOS)
+            self
+        #else
+            buttonStyle(.glass)
+        #endif
+    }
+}
+
 extension ToolbarContent {
     /// Turns off the glass capsule a `ToolbarItemGroup` paints behind its
     /// items (#119), for a group holding a control that draws its own shape.

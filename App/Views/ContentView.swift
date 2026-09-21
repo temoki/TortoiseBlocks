@@ -150,63 +150,54 @@ struct CompactRootView: View {
         // cosmetic, it is the rarer path, and no setting separates the two
         // cases — so it is the one that is lived with. The trade was the other
         // way round for one commit, and the wrong way round.
-        NavigationStack {
-            WorkspaceView(workspace: workspace, runner: runner)
-                .toolbar {
-                    ToolbarItemGroup(placement: .primaryAction) {
-                        Button("Undo", systemImage: "arrow.uturn.backward") {
-                            workspace.undo()
-                        }
+        // **No `NavigationStack` of our own** (#123). One was here to carry
+        // `.bottomBar`, whose items do not appear in the `DocumentGroup`'s own
+        // navigation controller — and its bar took the document's title chrome
+        // as well, so a document opened from *Files* came up with the name
+        // twice, two rows of it, on a screen 874pt tall. #116 accepted that as
+        // the price of the in-app path, where that bar was the only one; now
+        // that the way back is ours (#122), the stack can go and both paths
+        // read the same: one row, name, back, undo and redo.
+        //
+        // What replaces `.bottomBar` is an inset of our own, which lands
+        // alongside the trash can's rather than below it — ⊞, 🗑, ▶ in one
+        // row, the arrangement the toolbar happened to give. It keeps its own
+        // inset rather than joining the can's because the can is conditional
+        // (nothing to throw away means no can) and ⊞ is needed most when the
+        // program is empty.
+        WorkspaceView(workspace: workspace, runner: runner)
+            .toolbar {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    Button("Undo", systemImage: "arrow.uturn.backward") { workspace.undo() }
                         .disabled(!workspace.canUndo)
-                        Button("Redo", systemImage: "arrow.uturn.forward") {
-                            workspace.redo()
-                        }
+                    Button("Redo", systemImage: "arrow.uturn.forward") { workspace.redo() }
                         .disabled(!workspace.canRedo)
-                    }
-                    // The two ways off this screen, at the bottom, where a
-                    // thumb is — and either side of the trash can, which keeps
-                    // its own inset: ⊞, 🗑, ▶ in one row.
-                    ToolbarItemGroup(placement: .compactActions) {
-                        Button("Blocks", systemImage: "square.grid.2x2") {
-                            sheet = .palette
-                        }
-                        // **Said outright, because a toolbar swallows it.**
-                        // SwiftUI hands an `Image(systemName:)` through as the
-                        // accessibility identifier — which is how the
-                        // transport's `play.fill` and the trash can's `trash`
-                        // are addressed without naming a localized label — but
-                        // a button placed in a `ToolbarItem` arrives with an
-                        // empty one. These two are the whole of what a phone's
-                        // screenshots have to press, so they say their own
-                        // names.
-                        .accessibilityIdentifier("square.grid.2x2")
-                        Spacer()
-                        // Running and showing the drawing are one action here:
-                        // there is nowhere for a drawing to already be, so a
-                        // button that only opened the canvas would open an
-                        // empty one. `play.fill` is the transport's own glyph,
-                        // so ▶ means the same thing in both places a child
-                        // meets it. (Not `tortoise`: paired with `hare` that is
-                        // the *speed* symbol, and this app has a speed menu.)
-                        Button("Run", systemImage: "play.fill") {
-                            runner.run(workspace.blocks)
-                            sheet = .canvas
-                        }
-                        .disabled(workspace.blocks.isEmpty)
-                        // The transport's centre button carries this name too,
-                        // and deliberately: pressed, both run the program. The
-                        // two are never on screen at once — this one raises
-                        // the sheet the other lives in.
-                        .accessibilityIdentifier("play.fill")
-                    }
                 }
-        }
-        .sheet(item: $sheet) { which in
-            switch which {
-            case .palette: CompactPaletteSheet(workspace: workspace, size: $paletteSize)
-            case .canvas: CompactCanvasSheet(workspace: workspace, runner: runner)
             }
-        }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                HStack {
+                    Button("Blocks", systemImage: "square.grid.2x2") { sheet = .palette }
+                        .accessibilityIdentifier("square.grid.2x2")
+                    Spacer()
+                    Button("Run", systemImage: "play.fill") {
+                        runner.run(workspace.blocks)
+                        sheet = .canvas
+                    }
+                    .disabled(workspace.blocks.isEmpty)
+                    .accessibilityIdentifier("play.fill")
+                }
+                .labelStyle(.iconOnly)
+                .font(.title2)
+                .glassButtons()
+                .padding(.horizontal)
+                .padding(.vertical, 12)
+            }
+            .sheet(item: $sheet) { which in
+                switch which {
+                case .palette: CompactPaletteSheet(workspace: workspace, size: $paletteSize)
+                case .canvas: CompactCanvasSheet(workspace: workspace, runner: runner)
+                }
+            }
     }
 }
 
