@@ -151,6 +151,19 @@ number in the filename, and the sizes are the ones Apple accepts as-is (iPad
 window sizes that produced them. The two documents the captures were shot from
 sit in `appstore/screenshot-sources/`, deliberately *outside* `screenshots/`.
 
+**A display type is not named after the size it holds**, so do not infer one.
+Read back off the 1.3.0 push, the four this app files into are
+`APP_IPHONE_67`, `APP_IPAD_PRO_3GEN_129`, `APP_DESKTOP` and
+`APP_APPLE_VISION_PRO` — and the first of those is where the 6.9-inch captures
+this rig shoots (1320×2868) landed, under a name that reads 6.7. Whether a
+6.9-spelled type exists at all was not measured; what was measured is where
+these files went. Nothing here depends on the spelling today, deliberately —
+the push's reconciliation compares per *locale* rather than per display type,
+because which size goes where is Apple's decision and a deterministic one — so
+these are for whoever has to branch on one. The way to confirm a capture was
+filed where it belongs is to read the listing back: a Vision Pro capture is the
+size of an Apple TV one, and that collision is a real trap further down.
+
 **Making the captures is the `screenshots` skill** — the rigs
 (`Tools/ipad-shots.rb`, `Tools/visionos-shots.rb`), the flatten-and-optimise
 pass every reshoot has to end with, and the traps that produce a picture of the
