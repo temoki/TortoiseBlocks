@@ -21,6 +21,16 @@
 # `TBNotReady` if it gives up — and a shot that does not report ready is
 # relaunched rather than photographed. Waiting on `EntityLoad`, which is only
 # the USDZ arriving, files pictures of empty rooms.
+#
+# `TBReady` is the app's word about its own state, and the app can lose the
+# room between saying it and the shutter — it went down under a concurrent rig
+# once and filed three byte-identical pictures of the empty living room, which
+# `metadata_check` passes and a `git diff` of PNGs hides. So the capture is
+# also asked about itself: the three windows put a whole palette of saturated
+# pastels into the frame and the room has none, which separates them by a
+# factor of four (a real capture measures 0.07–0.09, a room 0.01–0.02). Below
+# the floor the picture is thrown away and the shot relaunched, the same as a
+# launch that never reported ready.
 
 require "fileutils"
 require "json"
@@ -59,6 +69,11 @@ ATTEMPTS = 3
 # After `TBReady`, before the shutter. The seek has landed by then; this is the
 # canvas redrawing to it and the window settling.
 SETTLE = 3
+
+# The least saturated ink a capture with the app in it has ever carried, halved.
+# Measured over the whole frame, on the committed set and on the empty rooms
+# that went out in their place.
+INK_FLOOR = 0.04
 
 def simctl(*arguments)
   IO.popen(["xcrun", "simctl", *arguments], &:read)
@@ -100,6 +115,16 @@ def ready?(udid, pid)
   false
 end
 
+# Whether the app is actually in the picture. Fraction of the frame that is
+# strongly saturated: the blocks window alone clears the floor several times
+# over, and nothing in the room comes close.
+def ink(capture)
+  IO.popen(
+    ["magick", capture.to_s, "-colorspace", "HSL", "-channel", "G", "-separate", "+channel",
+     "-threshold", "40%", "-format", "%[fx:mean]", "info:"], &:read
+  ).to_f
+end
+
 # Reinstalled before every attempt, not once before the run.
 #
 # visionOS restores an app's windows, so a launch inherits wherever the last
@@ -134,6 +159,14 @@ def capture(udid, shot, locale, language)
     target = DESTINATION / locale / "#{shot[:name]}.png"
     FileUtils.mkdir_p(target.dirname)
     simctl("io", udid, "screenshot", target.to_s)
+
+    measured = ink(target)
+    if measured < INK_FLOOR
+      FileUtils.rm_f(target)
+      warn("  an empty room on attempt #{attempt + 1} (ink #{measured.round(4)}), relaunching")
+      next
+    end
+
     return target
   end
   abort("#{shot[:name]} (#{locale}) never came up with a sheet after #{ATTEMPTS} attempts")

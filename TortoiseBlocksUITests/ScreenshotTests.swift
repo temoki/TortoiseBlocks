@@ -146,6 +146,25 @@ final class ScreenshotTests: XCTestCase {
             XCUIDevice.shared.system.open(document)
         }
 
+        // **On a Mac every query below is asked of the document's own window,
+        // not of the app.** A `DocumentGroup` launch puts an untitled window
+        // up as well, and it arrives *after* the close above — so there are
+        // two windows, two transports, and `play.fill` stops being a single
+        // element ("Multiple matching elements found", which mentions neither
+        // the untitled window nor the launch). Closing it is a race that was
+        // lost both ways round; naming the window we mean is not. It is named
+        // after the file, in every language, and it is also the one
+        // photographed at the end.
+        #if os(macOS)
+            let window = app.windows["\(shot.sample).tortoise"]
+            XCTAssertTrue(
+                window.waitForExistence(timeout: 30),
+                "\(locale)/\(shot.name): the document never opened")
+            let root: XCUIElement = window
+        #else
+            let root: XCUIElement = app
+        #endif
+
         // **A phone raises the transport in a sheet, so it is not on screen
         // yet** (#113). On iPad and Mac the scrubber is the sign that the
         // document opened; on a phone that sign is the run button in the
@@ -167,9 +186,9 @@ final class ScreenshotTests: XCTestCase {
                 XCTAssertTrue(
                     palette.waitForExistence(timeout: 15),
                     "\(locale)/\(shot.name): no palette button")
-                palette.tap()
+                press(palette)
             case .canvas, .code:
-                run.tap()
+                press(run)
                 let scrubber = app.sliders.firstMatch
                 XCTAssertTrue(
                     scrubber.waitForExistence(timeout: 30),
@@ -178,12 +197,13 @@ final class ScreenshotTests: XCTestCase {
                 // the sheet, so the transport does not exist until it is
                 // already under way. Nothing is in doubt about whether it
                 // started.
-                waitForDrawing(scrubber, startedBefore: nil)
-                if shot.pane == .code { showCode(app, locale: locale, name: shot.name) }
+                waitForDrawing(
+                    scrubber, startedBefore: nil, locale: locale, name: shot.name)
+                if shot.pane == .code { showCode(root, locale: locale, name: shot.name) }
             }
         }
         else {
-            let scrubber = app.sliders.firstMatch
+            let scrubber = root.sliders.firstMatch
             XCTAssertTrue(
                 scrubber.waitForExistence(timeout: 30),
                 "\(locale)/\(shot.name): the document never opened")
@@ -201,15 +221,39 @@ final class ScreenshotTests: XCTestCase {
             // name: SwiftUI hands it through as the accessibility identifier,
             // so it is the same in both languages while the label
             // ("うごかす") is not.
-            let play = app.buttons["play.fill"]
+            let play = root.buttons["play.fill"]
             XCTAssertTrue(
                 play.waitForExistence(timeout: 15), "\(locale)/\(shot.name): no play button")
-            play.tap()
+            press(play)
 
-            waitForDrawing(scrubber, startedBefore: scrubber.value as? String)
+            waitForDrawing(
+                scrubber, startedBefore: Self.position(of: scrubber), locale: locale,
+                name: shot.name)
 
-            if shot.pane == .code { showCode(app, locale: locale, name: shot.name) }
+            if shot.pane == .code { showCode(root, locale: locale, name: shot.name) }
         }
+
+        // **Save first, because running dirties the document.** A run writes
+        // the drawing's thumbnail into the file (#15), so the Mac's title bar
+        // wears an "Edited" subtitle — and whether it is still there when the
+        // shutter goes depends on whether autosave got in first, which is why
+        // the committed set carried it on one capture of four and a reshoot
+        // put it on three. Both halves are addressed by identifier, the menu
+        // item by its selector and the subtitle by AppKit's own name for it,
+        // because their text is "Edited" in one language and 「編集済み」 in
+        // the other. The documents are the driver's copies in a temp
+        // directory, so this writes nothing that is committed.
+        #if os(macOS)
+            let save = app.menuItems["saveDocument:"]
+            XCTAssertTrue(save.waitForExistence(timeout: 10), "\(locale)/\(shot.name): no Save")
+            save.click()
+
+            let edited = window.staticTexts["AX_EDITING_STATE"]
+            let clean = Date().addingTimeInterval(10)
+            while edited.exists, Date() < clean { Thread.sleep(forTimeInterval: 0.5) }
+            XCTAssertFalse(
+                edited.exists, "\(locale)/\(shot.name): the title bar still says Edited")
+        #endif
 
         // The canvas flushes its frames on the next redraw; a capture taken in
         // the same runloop turn catches the drawing half-made.
@@ -221,7 +265,7 @@ final class ScreenshotTests: XCTestCase {
         // depend on what the machine's own desktop happens to look like. On
         // iPad the screen *is* the picture.
         #if os(macOS)
-            let screenshot = app.windows.firstMatch.screenshot()
+            let screenshot = window.screenshot()
         #else
             let screenshot = XCUIScreen.main.screenshot()
             // Cheap, and it has already caught the one failure that produces a
@@ -336,20 +380,61 @@ final class ScreenshotTests: XCTestCase {
     /// real failure on iPad and Mac, where the transport is on screen before
     /// anything runs. A phone has no such value: its transport arrives with
     /// the sheet the run opened.
+    ///
+    /// **The value is not a String everywhere.** iOS hands over the scrubber's
+    /// spoken position; macOS hands over a *number* — `-1` until something has
+    /// run — so `value as? String` was nil at every poll on a Mac, which made
+    /// every poll quiet and `idle` nil, and the wait returned two seconds into
+    /// a run that had never started. Comparing the descriptions compares what
+    /// each platform actually reports.
+    ///
+    /// **Running out of time is a failure, not an answer.** Falling out of the
+    /// loop used to mean the capture was taken anyway, of whatever was on
+    /// screen.
     @MainActor
-    private func waitForDrawing(_ scrubber: XCUIElement, startedBefore idle: String?) {
-        var last = scrubber.value as? String
+    private func waitForDrawing(
+        _ scrubber: XCUIElement, startedBefore idle: String?, locale: String, name: String
+    ) {
+        var last = Self.position(of: scrubber)
         var settled = 0
         let deadline = Date().addingTimeInterval(90)
         while Date() < deadline {
             Thread.sleep(forTimeInterval: 0.5)
-            let now = scrubber.value as? String
+            let now = Self.position(of: scrubber)
             settled = (now == last) ? settled + 1 : 0
             last = now
             // Four quiet polls, and not still the value it had before the run
             // started — otherwise "nothing has happened yet" reads as "done".
-            if settled >= 4, idle == nil || now != idle { break }
+            if settled >= 4, idle == nil || now != idle { return }
         }
+        XCTFail(
+            "\(locale)/\(name): the drawing never ran — the scrubber sat at "
+                + "\(last ?? "nothing") for 90 seconds")
+    }
+
+    /// The scrubber's position as the platform reports it: a String on iOS, a
+    /// number on macOS.
+    @MainActor
+    private static func position(of scrubber: XCUIElement) -> String? {
+        scrubber.value.map { String(describing: $0) }
+    }
+
+    /// Presses a button.
+    ///
+    /// **`tap()` does nothing on a Mac.** It is not unavailable — it compiles,
+    /// it runs, it reports no failure, and the button is never pressed;
+    /// measured on the transport's run button, which stayed `Disabled` with
+    /// the scrubber at −1 for twelve seconds after the tap and came to life on
+    /// the first `click()`. That is how four Mac captures came out of a green
+    /// run with an empty canvas in them. `click()` is macOS-only in the other
+    /// direction, so the platform is chosen here rather than at each press.
+    @MainActor
+    private func press(_ element: XCUIElement) {
+        #if os(macOS)
+            element.click()
+        #else
+            element.tap()
+        #endif
     }
 
     /// Switches the pane to the generated Swift.
@@ -362,14 +447,14 @@ final class ScreenshotTests: XCTestCase {
     /// radio buttons in the toolbar on macOS. Looking for the iOS one on a Mac
     /// finds nothing and times out saying only that there is no toggle.
     @MainActor
-    private func showCode(_ app: XCUIApplication, locale: String, name: String) {
+    private func showCode(_ root: XCUIElement, locale: String, name: String) {
         #if os(macOS)
-            let toggle = app.radioGroups.firstMatch
+            let toggle = root.radioGroups.firstMatch
             XCTAssertTrue(
                 toggle.waitForExistence(timeout: 10), "\(locale)/\(name): no pane toggle")
             toggle.radioButtons.element(boundBy: 1).click()
         #else
-            let toggle = app.segmentedControls.firstMatch
+            let toggle = root.segmentedControls.firstMatch
             XCTAssertTrue(
                 toggle.waitForExistence(timeout: 10), "\(locale)/\(name): no pane toggle")
             toggle.buttons.element(boundBy: 1).tap()

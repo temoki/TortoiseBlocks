@@ -28,6 +28,20 @@ All three take a name filter (`ruby Tools/ipad-shots.rb star`) and end by
 calling `Tools/screenshots.rb` themselves. Build the scheme first; they install
 whatever is in DerivedData.
 
+**One rig at a time.** They share DerivedData, so a second one started while
+the first is alive meets `accessing build database … database is locked.
+Possibly there are two concurrent builds running in the same filesystem
+location` — and the other run dies too, sometimes as `Test crashed with signal
+term`, which says nothing about the cause. Check with `pgrep -f shots.rb`
+before starting one; a backgrounded rig reported as finished is not proof, and
+two of them overlapping is what filed a set of empty Vision Pro rooms.
+
+**A stuck app survives `kill -9`.** A run killed mid-flight can leave the app
+being traced by an orphaned `debugserver`, `ps` showing `SX`; every later Mac
+run then fails with `Failed to terminate space.hiraku.tortoiseblocks:<pid>`,
+naming that same dead-looking pid. Kill the *debugserver* — the app's parent —
+and the app goes with it.
+
 ## What a capture has to be
 
 `fastlane/metadata_check.rb` enforces all of this, on every pull request, from
@@ -164,6 +178,15 @@ come out of one run with nothing left switched on the device.
   once the canvas has attached, `TBNotReady` if it gives up, and the driver
   relaunches rather than photographing an empty room. Waiting on `EntityLoad`,
   which is only the USDZ arriving, files pictures of empty rooms.
+- **`TBReady` is the app's word, and the app can lose the room after saying
+  it.** Under a concurrent rig it went down between the marker and the
+  shutter, and five captures of six came back as the living room — three of
+  them byte-identical, one showing the home view's app icons. All of them
+  pass `metadata_check`, and a `git diff` of PNGs shows nothing. So the
+  capture is asked about itself as well: the three windows put a palette of
+  saturated pastels into the frame and the room has none (a real capture
+  measures 0.07–0.09 of the frame, a room 0.01–0.02), and anything under the
+  floor is thrown away and relaunched.
 
 ## macOS — a UI test and a plate
 
@@ -184,7 +207,32 @@ nor permissions. **The screen has to be unlocked and the display awake**, too:
 a locked Mac fails to activate the app ("Running Background") and hands back
 captures that are nothing like the window.
 
-Four ways the Mac differs from the iPad, all handled but all worth knowing:
+Seven ways the Mac differs from the iPad, all handled but all worth knowing:
+
+- **`tap()` does nothing on a Mac.** It is not unavailable — it compiles, it
+  runs, it reports no failure, and the button is never pressed. Measured on
+  the transport: after `play.tap()` the scrubber sat `Disabled` at −1 for
+  twelve seconds, and came to life on the first `click()`. That is what filed
+  four Mac captures of an empty canvas out of a green run. `click()` is
+  macOS-only in the other direction, so the tests choose the platform in one
+  helper (`press`).
+- **The scrubber's value is a number here, a string on iOS**, which is how the
+  above got past the wait: `value as? String` was nil at every poll, so every
+  poll looked quiet, and the wait returned two seconds into a run that had
+  never started. It compares descriptions now, and running out of time is a
+  test failure rather than a capture of whatever is on screen.
+- **A `DocumentGroup` launch puts an untitled window up as well**, and it
+  arrives *after* the close that follows `launch()` — so `play.fill` stops
+  being a single element again, with the same "Multiple matching elements
+  found" that restoration gives. Closing it is a race that was lost both ways
+  round. Every query is asked of the window named after the file instead,
+  which is also the one photographed.
+- **A run dirties the document**, because it writes the drawing's thumbnail
+  into it (#15), and the title bar then wears an "Edited" subtitle —
+  depending on whether autosave got there first, which put it on one capture
+  of four in one shoot and three in the next. The test saves before the
+  shutter (`saveDocument:`, by selector — its title is localized) and waits
+  for AppKit's own `AX_EDITING_STATE` to go.
 
 - **The window screenshot is fully opaque, and outside its rounded corners is
   whatever was on screen behind the window** — near-black on a dark desktop,
