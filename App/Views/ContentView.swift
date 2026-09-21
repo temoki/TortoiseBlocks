@@ -82,6 +82,8 @@ struct RegularRootView: View {
         NavigationSplitView {
             PaletteView(workspace: workspace)
                 .navigationSplitViewColumnWidth(paletteWidth)
+                // The way back, in the one place a person looks for it (#118).
+                .documentBrowserToolbar()
         } content: {
             // 440pt is measured, not chosen, and `ideal` carries more weight
             // than it looks. macOS and iPadOS both let the divider be dragged,
