@@ -155,6 +155,17 @@ end
 # live still does not match what is on disk. It is the "check the listing, not
 # the log" rule made into a step, after a push that reported success and had
 # written nothing at all.
+#
+# **The comparison is per locale, not per display type**, and that is the whole
+# of what changed when the iPhone captures arrived (#114). One directory now
+# holds two display types — App Store Connect's iOS version carries both, and
+# Apple files each capture by its pixel size — so a set of four iPad
+# screenshots was being compared against a directory of eight and failed every
+# time, on a push that had uploaded all eight correctly. Which size goes to
+# which display type is Apple's decision and a deterministic one; the invariant
+# worth holding here is that the locale's live set, across every display type,
+# is exactly what is on disk. Ordering still happens per set, over that set's
+# own share of the files, in the same filename order as before.
 private_lane :reconcile_screenshots do |options|
   Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(**asc_api_key)
   app = Spaceship::ConnectAPI::App.find(APP_IDENTIFIER)
@@ -165,6 +176,8 @@ private_lane :reconcile_screenshots do |options|
     next if local.empty?
 
     wanted = local.map { |path| [Digest::MD5.hexdigest(File.binread(path)), File.basename(path)] }
+    live = []
+    deduped = []
 
     localization.get_app_screenshot_sets.each do |set|
       # Apple fills sourceFileChecksum during processing; without it there is
@@ -191,15 +204,30 @@ private_lane :reconcile_screenshots do |options|
         end
       end
 
-      live = keep.map { |shot| [shot.source_file_checksum, shot.file_name] }
-      unless live.sort == wanted.sort
-        UI.user_error!(
-          "#{localization.locale} #{set.screenshot_display_type}: App Store Connect has " \
-          "#{live.map(&:last).sort.join(', ')} but appstore/ has #{wanted.map(&:last).sort.join(', ')}"
-        )
-      end
+      live.concat(keep.map { |shot| [shot.source_file_checksum, shot.file_name] })
+      deduped << [set, keep]
+    end
 
-      ordered = wanted.map { |checksum, _| keep.find { |shot| shot.source_file_checksum == checksum } }
+    # **Compared before anything is reordered.** Reordering takes the ids of a
+    # set in the order they should hold, so doing it while live and disk
+    # disagree means handing Apple a list that is missing whatever is wrong —
+    # writing on top of the evidence, in the one step that exists to read it.
+    unless live.sort == wanted.sort
+      UI.user_error!(
+        "#{localization.locale}: App Store Connect has " \
+        "#{live.map(&:last).sort.join(', ')} but appstore/ has #{wanted.map(&:last).sort.join(', ')}"
+      )
+    end
+
+    deduped.each do |set, keep|
+      # This set's own share of the locale's files, in the order they are named
+      # on disk. Every live checksum is a disk file by now, so nothing is lost
+      # in the filter.
+      ordered = wanted
+        .select { |checksum, _| keep.any? { |shot| shot.source_file_checksum == checksum } }
+        .map { |checksum, _| keep.find { |shot| shot.source_file_checksum == checksum } }
+      next if ordered.empty?
+
       set.reorder_screenshots(app_screenshot_ids: ordered.map(&:id))
       UI.success("#{localization.locale} #{set.screenshot_display_type}: #{ordered.count} screenshot(s), in order")
     end
