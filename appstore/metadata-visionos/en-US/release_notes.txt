@@ -1,4 +1,1 @@
-Following a drawing as it appears is easier.
-
-• In the blocks window, the block that is running lifts gently instead of wearing an outline.
-• Motion follows Reduce Motion in Settings.
+Internal improvements.

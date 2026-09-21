@@ -1,10 +1,8 @@
-BLOCKS THAT MOVE LIKE BLOCKS
+NOW ON IPHONE
 
-Building a program now feels more like handling real blocks.
+Tortoise Blocks runs on iPhone, and on iPad the way back to your drawings is where you look for it.
 
-• Drag a block and it lifts off looking just like itself — and a block with others inside carries them along.
-• The rows part to show exactly where your block will land, and a block that holds others lights up in its own colour when you drop into it.
-• The block that is running lifts gently instead of wearing a dark outline.
-• Blocks slide into place when you add, move, delete or undo, and the program scrolls to the block you just added.
-• The trash can bounces when you throw a block in, and the whole circle can be tapped.
-• All of it follows Reduce Motion in Settings.
+• On iPhone, the program fills the screen, and the blocks and the drawing open from the buttons along the bottom.
+• On iPhone, tapping a drawing in the Files app opens it straight away.
+• On iPad, a Drawings button now sits at the top left while a drawing is open, so there is always a way back to the list.
+• Other small fixes and internal improvements.
