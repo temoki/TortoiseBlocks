@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 # Composes the notes for a GitHub release from the commits since the previous
-# v* tag.
+# *released* v* tag.
+#
+# Released, because a tag may be a release candidate — `v1.3.0-rc.1`, the
+# suffix form release-tag.yml already strips before checking the version — and
+# the candidate is not a thing anyone has shipped. 1.3.0 was drafted against
+# its own RC and came out listing five commits of tooling and no app section
+# at all, with the iPhone support that was the whole release missing from it.
+# So the search skips anything with a suffix, in both directions: the notes for
+# an RC describe what it holds since the last release, which is what a tester
+# wants to read, and the release that follows it is not left describing the
+# gap between them.
 #
 # The split is by what a commit touched, because in this repository most of
 # them touch nothing a user could notice: of the nineteen between 0.1.0 and
@@ -21,7 +31,9 @@ app_paths=(App ThumbnailExtension TortoiseBlocksKit Support TortoiseBlocks.xcode
 
 previous="${2:-}"
 if [ -z "$previous" ]; then
-  previous=$(git describe --tags --abbrev=0 --match 'v*' "${tag}^" 2>/dev/null || true)
+  previous=$(
+    git describe --tags --abbrev=0 --match 'v*' --exclude 'v*-*' "${tag}^" 2>/dev/null || true
+  )
 fi
 
 if [ -z "$previous" ]; then
