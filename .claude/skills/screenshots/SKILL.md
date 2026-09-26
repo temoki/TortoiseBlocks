@@ -7,9 +7,9 @@ description: >-
   (Tools/ipad-shots.rb, Tools/macos-shots.rb, Tools/visionos-shots.rb), the
   flatten-and-optimise pass
   (Tools/screenshots.rb), what a sendable capture has to be, and the traps that
-  make a screenshot tool fail silently. Also the website's teaser video
-  (Tools/teaser/). Load this before reshooting, before adding a shot or a
-  platform, and whenever a capture looks wrong.
+  make a screenshot tool fail silently. Also the films — the website's teaser
+  and the App Store previews (Tools/film/). Load this before reshooting,
+  before adding a shot or a platform, and whenever a capture looks wrong.
 ---
 
 # Screenshots
@@ -259,15 +259,22 @@ Seven ways the Mac differs from the iPad, all handled but all worth knowing:
   what makes 1280×800pt — 2560×1600px — reproducible. Keep that `defaultSize`:
   a capture at any other size would need cropping or resampling.
 
-## The teaser video
+## The films: the teaser and the App Store previews
 
-The website's two-minute video is made the same way: `ruby Tools/teaser/teaser.rb`
-records `TortoiseBlocksUITests/TeaserTests.swift` on the 11-inch iPad simulator
-and cuts it into a silent 1080p film; music goes on by hand afterwards. The
-test is the script, and it logs every press, caption and camera move for the
-editor to work from. `Tools/teaser/README.md` has why each piece is as it is.
-It shares DerivedData with the rigs above, so it counts as one of them: one at
-a time.
+The website's two-minute video and the App Store's previews are made the same
+way as the captures: UI tests press, a script records and cuts.
+`ruby Tools/film/teaser.rb` records `TeaserTests` on the 11-inch iPad simulator
+into a silent 1080p film; `ruby Tools/film/previews.rb` makes one preview per
+device class — iPhone and iPad from `AppPreviewTests`, the Mac from
+`MacPreviewTests` on this Mac, Vision Pro from launch arguments — to Apple's
+sizes and rules (no zooming, 15–30s, an audio track). Music goes on by hand, and
+the previews are uploaded by hand: deliver does not take them.
+`Tools/film/README.md` has why each piece is as it is, including the traps that
+cost the most: `simctl io recordVideo` running through a visionOS launch keeps
+the immersive space from opening, a Mac window recorded as itself wears macOS's
+purple sharing control, and the recorder's decode times drift from its
+presentation times. The films share DerivedData with the rigs above, so they
+count as rigs: one at a time.
 
 Judge it the way the stills are judged, but on the film: a contact sheet
 shows what is in it (`ffmpeg -i teaser.mp4 -vf fps=1/3,scale=320:-1,tile=6x9`),
