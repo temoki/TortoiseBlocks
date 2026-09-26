@@ -168,10 +168,12 @@ Repeat, and the first run put a Start Fill where the repeat should have been.
 `palette(_:)` scrolls the palette with a finger until the entry is on screen.
 Coordinates are used anyway because the log needs the point that was pressed.
 
-**The palette entry is the leftmost button with that label.** "Forward" is
-also the transport's step button. It is a separate element with the same name,
-and a query that walks its matches one by one lost one between counting and
-fetching.
+**The palette entry is the leftmost button with that label.** The first run
+met a second, disabled button labelled "Forward" as the document opened, and a
+query that walked its matches one by one lost one between counting and
+fetching. Which button that was was never pinned down: the transport's step
+button is "Step Forward", not "Forward", whatever an earlier version of this
+note said.
 
 **A hardware keyboard is attached for the run.** The scripts switch the
 Simulator's `ConnectHardwareKeyboard` preference on and restart the device to

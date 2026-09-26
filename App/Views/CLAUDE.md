@@ -134,6 +134,21 @@ It reads as cosmetic and is not: the outer capsule's padding was taking the
 width the segments needed, so in portrait the labels truncated to 「キ… コ…」.
 Look at the labels, not just the outline, when judging a change here.
 
+**And the words do not always fit even then, so the toggle falls back to
+icons.** The toolbar's trailing items have a ceiling on their width. On the
+11-inch iPad the portrait canvas column still truncated to 「Ca… Co…」 and
+「キ… コ…」 after #119, and the landscape one to "Canv…" once a drawing had
+run. Pinning the control at its own width kept the words and sent ⟳ and export
+into a "•••" overflow instead; in Japanese the toggle went with them, which is
+worse. Taking either `ToolbarSpacer` away changed nothing. `CanvasViewToggle`
+therefore offers the words and then the icons, through `ViewThatFits`, each
+form `fixedSize` so it can never be squeezed into an ellipsis. What that gives,
+measured: the words on the 13-inch landscape (both languages), on the Mac (in
+Japanese) and the phone's sheet (in English), and English on the 11-inch
+landscape; the icons in portrait on
+both iPads and for Japanese on the 11-inch landscape. Judge a change here on
+the 11-inch, in portrait and in Japanese: that is the narrowest case.
+
 **26's glass is not used on any surface of ours, and that was tested rather
 than assumed** (#79). All three candidates were built and looked at, and all
 three came back out.
