@@ -762,10 +762,10 @@
             carrier.addChild(model)
             // Stand it *on* the paper rather than at its own origin. The origin
             // is the ground point under the shell's centre — the point the
-            // animal turns about — and the feet reach a little below it (6‰ of
-            // the body length, measured off the loaded model rather than
-            // assumed, so a re-generated tortoise cannot quietly start sinking
-            // into the page).
+            // animal turns about — and the soles stand on it today, but the
+            // flippers before them reached 6‰ below. Measured off the loaded
+            // model rather than assumed, so a re-generated tortoise cannot
+            // quietly start sinking into the page.
             model.position.z = -model.visualBounds(relativeTo: carrier).min.z + hover
             return carrier
         }
