@@ -11,9 +11,10 @@ how the editor's own views look is `App/Views/CLAUDE.md`.
 
 **The 3D tortoise is generated, not modelled** (#53).
 `App/Resources/Tortoise.usdz` comes out of `Tools/tortoise-model/build_tortoise.py`,
-a Blender script whose constants *are* the three-view drawing's measurements, and
-is checked in beside it so no build step needs Blender. **The reasoning for every
-number is in `Tools/tortoise-model/README.md`**; what app code may assume is:
+a Blender script whose constants *are* the design's measurements — the faceted
+shell from the three-view drawing, the character around it from the app icon —
+and is checked in beside it so no build step needs Blender. **The reasoning for
+every number is in `Tools/tortoise-model/README.md`**; what app code may assume is:
 
 - `upAxis = "Y"` with **forward at −Z** — wrong settings here are invisible until
   the tortoise drives sideways.
@@ -24,8 +25,8 @@ number is in `Tools/tortoise-model/README.md`**; what app code may assume is:
 - **Every material emits a third of its own colour.** A `.mixed` space lights the
   model with the real room, and a lamp-lit evening one drained the pastels to mud
   (luminance 39 of 255, gold reading brown; 111 with emission). Do not "fix" it as
-  a PBR error, and do not lighten the colours — they are sampled from the drawing,
-  which is the specification.
+  a PBR error, and do not lighten the colours — the icon's paler gold was tried
+  and washed out to cream once lit.
 
 It rides in `App/` as a synchronized-folder resource, landing flat at
 `Contents/Resources/Tortoise.usdz` — verified in the built bundle, the only way
@@ -60,8 +61,9 @@ wrong: the tortoise is `1/12` of the sheet's side (deliberately larger than the
 and the paper keeps a 64pt margin, since a hidden sprite earns no `autoFit`
 inset and the drawing would otherwise run to the paper's edge with the tortoise
 hanging off it. The lift onto the paper is *measured* from the loaded model,
-not assumed: the feet reach ~6‰ of the body length below the origin, which is
-the ground point under the shell's centre.
+not assumed: the soles now stand exactly on the origin, the ground point under
+the shell's centre, but the flippers before them reached 6‰ below it, and a
+regenerated model is free to change that again.
 **The visionOS simulator shows all of this** — paper, drawing and tortoise —
 and this note said the opposite for a while, which is worth keeping as a
 correction rather than an edit. The symptom was real: a blank sheet, a nil
