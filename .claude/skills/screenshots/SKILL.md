@@ -7,9 +7,9 @@ description: >-
   (Tools/ipad-shots.rb, Tools/macos-shots.rb, Tools/visionos-shots.rb), the
   flatten-and-optimise pass
   (Tools/screenshots.rb), what a sendable capture has to be, and the traps that
-  make a screenshot tool fail silently. Also the films — the website's teaser
-  and the App Store previews (Tools/film/). Load this before reshooting,
-  before adding a shot or a platform, and whenever a capture looks wrong.
+  make a screenshot tool fail silently. Load this before reshooting, before
+  adding a shot or a platform, and whenever a capture looks wrong. Videos —
+  the website's teaser and the App Store previews — are the `film` skill.
 ---
 
 # Screenshots
@@ -259,26 +259,12 @@ Seven ways the Mac differs from the iPad, all handled but all worth knowing:
   what makes 1280×800pt — 2560×1600px — reproducible. Keep that `defaultSize`:
   a capture at any other size would need cropping or resampling.
 
-## The films: the teaser and the App Store previews
+## The films
 
-The website's two-minute video and the App Store's previews are made the same
-way as the captures: UI tests press, a script records and cuts.
-`ruby Tools/film/teaser.rb` records `TeaserTests` on the 11-inch iPad simulator
-into a silent 1080p film; `ruby Tools/film/previews.rb` makes one preview per
-device class — iPhone and iPad from `AppPreviewTests`, the Mac from
-`MacPreviewTests` on this Mac, Vision Pro from launch arguments — to Apple's
-sizes and rules (no zooming, 15–30s, an audio track). Music goes on by hand, and
-the previews are uploaded by hand: deliver does not take them.
-`Tools/film/README.md` has why each piece is as it is, including the traps that
-cost the most: `simctl io recordVideo` running through a visionOS launch keeps
-the immersive space from opening, a Mac window recorded as itself wears macOS's
-purple sharing control, and the recorder's decode times drift from its
-presentation times. The films share DerivedData with the rigs above, so they
-count as rigs: one at a time.
-
-Judge it the way the stills are judged, but on the film: a contact sheet
-shows what is in it (`ffmpeg -i teaser.mp4 -vf fps=1/3,scale=320:-1,tile=6x9`),
-and only playing it shows whether it moves well.
+The website's teaser and the App Store previews are made the same way as the
+iPad and Mac captures, with UI tests pressing and a script recording, and they
+share DerivedData with these rigs. So they count as rigs: one at a time. How
+to make them is the `film` skill.
 
 ## Judging the result
 
