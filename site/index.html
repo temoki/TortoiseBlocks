@@ -196,9 +196,9 @@
      fetched. Only a script could stop the second one, and the language
      machinery here never hides behind a script.
 
-     The tag is YouTube's own embed code, pasted as it hands it over —
-     `frameborder`, the `si` parameter, the generic title and all. Only the
-     styling below is ours.
+     The tag is YouTube's own embed code — `frameborder`, the generic title
+     and all — less the `si` parameter, which only records who shared the
+     link. Only the styling below is ours.
 
      A player that says "error 153" is being read over `file://`, and the
      markup is not the reason. The iframe's origin is `null` there, YouTube
@@ -208,8 +208,9 @@
      `python3 -m http.server` inside it — rather than by opening the file.
 
      The box is 16:9 and reserved by aspect-ratio, so nothing reflows when the
-     player arrives; the recording is an iPad's, so YouTube pillarboxes it
-     inside that and the black is the player's own. `height: auto` is what
+     player arrives, and the film is cut to 1920×1080 (#132), so it fills the
+     box edge to edge. (The iPad recording before it was pillarboxed inside
+     the box, and the black was the player's own.) `height: auto` is what
      makes that work and is not decoration: the tag's `width`/`height` land
      as presentational hints, `width: 100%` outranks one of them but nothing
      here was overriding the other, and `aspect-ratio` is ignored while both
@@ -367,7 +368,7 @@
 
     <figure class="video">
       <iframe width="560" height="315"
-              src="https://www.youtube-nocookie.com/embed/b2wOul8UPWA?si=IgL-TDCW1Pq0vxxn"
+              src="https://www.youtube-nocookie.com/embed/BG4qyHeimHE"
               title="YouTube video player" frameborder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media;
                      gyroscope; picture-in-picture; web-share"
@@ -593,7 +594,7 @@
 
     <figure class="video">
       <iframe width="560" height="315"
-              src="https://www.youtube-nocookie.com/embed/b2wOul8UPWA?si=IgL-TDCW1Pq0vxxn"
+              src="https://www.youtube-nocookie.com/embed/BG4qyHeimHE"
               title="YouTube video player" frameborder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media;
                      gyroscope; picture-in-picture; web-share"
