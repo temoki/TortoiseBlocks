@@ -38,6 +38,10 @@ xcrun simctl launch <device> space.hiraku.tortoiseblocks \
 xcrun simctl io <device> screenshot shot.png     # 3840x2160, with an alpha channel
 xcrun simctl io <device> recordVideo walk.mov    # Ctrl-C to stop
 
+# The website's teaser video: records TeaserTests on the iPad simulator, then
+# cuts it to a silent 1080p film (Tools/teaser/README.md). ~15 minutes.
+ruby Tools/teaser/teaser.rb                # --compose re-cuts the last recording
+
 # The App Store listing (appstore/). The check needs no key and no bundle;
 # the other two need ASC_ISSUER_ID / ASC_KEY_ID / ASC_PRIVATE_KEY_PATH.
 ruby Tools/screenshots.rb                  # after ANY reshoot: strip alpha, optimise, rebuild site/shots and docs/
