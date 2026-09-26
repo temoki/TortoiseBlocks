@@ -467,6 +467,10 @@
                 // be a much worse trade than a picture that draws itself.
                 if let tortoise = await Self.loadTortoise() {
                     sheet.addChild(tortoise)
+                    // The legs, if the model has a skeleton to move them by.
+                    let gait = tortoise.children.first.flatMap {
+                        TortoiseGait(model: $0, length: Self.tortoiseLength)
+                    }
                     // Per *display frame*, not per view update. The two differ
                     // by two orders of magnitude here and the difference is the
                     // feature: `currentCommandIndex` changes about ten times a
@@ -475,8 +479,14 @@
                     // smoothly underneath it.
                     frameTicker.subscription = content.subscribe(
                         to: SceneEvents.Update.self, on: nil
-                    ) { _ in
-                        Self.walk(tortoise, with: model.runner, pointsPerMeter: pointsPerMeter)
+                    ) { event in
+                        guard
+                            let heading = Self.walk(
+                                tortoise, with: model.runner, pointsPerMeter: pointsPerMeter)
+                        else { return }
+                        gait?.step(
+                            position: tortoise.position, heading: heading,
+                            deltaTime: Float(event.deltaTime))
                     }
                 }
             } update: { content in
@@ -778,13 +788,16 @@
         /// `currentCommandIndex` instead — the value everything else in the app
         /// watches — would teleport it once per command while the line grew
         /// smoothly underneath.
+        ///
+        /// Returns the heading it turned the tortoise to, in radians, for the
+        /// legs to step by — or nil while there is no tortoise to show.
         @MainActor
         private static func walk(
             _ tortoise: Entity, with runner: RunnerModel, pointsPerMeter: CGFloat
-        ) {
+        ) -> Float? {
             guard let state = runner.player.currentTortoiseState, state.isVisible else {
                 tortoise.isEnabled = false
-                return
+                return nil
             }
             tortoise.isEnabled = true
 
@@ -816,8 +829,9 @@
             // Heading is clockwise from north; a turn about the sheet's +Z,
             // which points up out of the paper, is counter-clockwise seen from
             // above. Hence the sign.
-            tortoise.orientation = simd_quatf(
-                angle: -Float(state.heading * .pi / 180), axis: [0, 0, 1])
+            let heading = -Float(state.heading * .pi / 180)
+            tortoise.orientation = simd_quatf(angle: heading, axis: [0, 0, 1])
+            return heading
         }
     }
 

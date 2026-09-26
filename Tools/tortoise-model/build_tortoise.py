@@ -86,6 +86,24 @@ LEG_LEAN = 0.046  # how far outboard of its top each foot sits
 FRONT_LEG = (0.222, 0.186)  # |x|, y of the sole's centre
 REAR_LEG = (0.230, -0.172)
 
+# Walking.  Each leg is a bone of the skeleton the fused body is skinned to,
+# and the app swings it about its hip while the tortoise moves — see
+# `TortoiseGait` in the app.  The hip is a point on the leg's own axis just
+# inside the plastron, above where the leg meets it.
+HIP_Z = 0.100
+LEGS = {
+    "LegFrontLeft": (-FRONT_LEG[0], FRONT_LEG[1]),
+    "LegFrontRight": (FRONT_LEG[0], FRONT_LEG[1]),
+    "LegRearLeft": (-REAR_LEG[0], REAR_LEG[1]),
+    "LegRearRight": (REAR_LEG[0], REAR_LEG[1]),
+}
+# How a leg's pull fades into the body's.  Fully the leg's below the first
+# height and inside the leg's own radius plus the first reach; fully the
+# body's above the second height or beyond the second reach.  The band in
+# between is the fillet the fusing made, and it is what bends.
+LEG_WEIGHT_HEIGHT = (0.060, 0.105)
+LEG_WEIGHT_REACH = (0.015, 0.055)
+
 # Tail — a thick, gently drooping stalk that is the brush's handle.
 #
 # The icon curls it up over the back, and this one does not follow: the brush
@@ -611,13 +629,83 @@ def add_leg(bm, x, y):
         profile.append((LEG_R_FOOT - c + c * math.cos(a), c + c * math.sin(a)))
     profile += [(LEG_R_TOP, LEG_TOP_Z), (0.0, LEG_TOP_Z)]
     faces = revolve(bm, profile, 48, Vector((0.0, 0.0, 0.0)), Vector((0.0, 0.0, 1.0)))
-    out = Vector((x, y, 0.0)).normalized()
     for v in {v for f in faces for v in f.verts}:
         # Sheared rather than tilted: every height moves sideways by an amount
-        # that shrinks from LEG_LEAN at the sole to nothing at the top, so the
+        # that grows from nothing at the sole to LEG_LEAN at the top, so the
         # sole stays level.
-        lean = LEG_LEAN * (1.0 - v.co.z / LEG_TOP_Z)
-        v.co = Vector((x, y, 0.0)) + v.co + out * (lean - LEG_LEAN)
+        v.co = leg_axis(x, y, v.co.z) + Vector((v.co.x, v.co.y, 0.0))
+
+
+def leg_axis(x, y, z):
+    """The centre of the leg whose sole is at (x, y), at height z."""
+    out = Vector((x, y, 0.0)).normalized()
+    return Vector((x, y, z)) - out * (LEG_LEAN * z / LEG_TOP_Z)
+
+
+def smoothstep(edge0, edge1, x):
+    t = min(max((x - edge0) / (edge1 - edge0), 0.0), 1.0)
+    return t * t * (3.0 - 2.0 * t)
+
+
+def weigh_legs(obj):
+    """Give every vertex of the fused body to the torso, a leg, or a blend of
+    the two — the skinning the skeleton moves it by.
+
+    Worked out from where each vertex *is* rather than which part it came
+    from, because after the fusing there are no parts: the fillet between a
+    leg and the plastron belongs to both, and it gets a blend of both, which
+    is what lets it stretch instead of tearing when the leg swings.
+    """
+    groups = {name: obj.vertex_groups.new(name=name) for name in ("Torso", *LEGS)}
+    lo, hi = LEG_WEIGHT_HEIGHT
+    near, far = LEG_WEIGHT_REACH
+    for v in obj.data.vertices:
+        p = v.co
+        total = 0.0
+        for name, (x, y) in LEGS.items():
+            axis = leg_axis(x, y, p.z)
+            d = (Vector((p.x - axis.x, p.y - axis.y))).length
+            h = min(max(p.z / LEG_TOP_Z, 0.0), 1.0)
+            r = LEG_R_FOOT + (LEG_R_TOP - LEG_R_FOOT) * h
+            reach = 1.0 - smoothstep(r + near, r + far, d)
+            w = reach * (1.0 - smoothstep(lo, hi, p.z))
+            if w > 1e-3:
+                groups[name].add([v.index], w, "REPLACE")
+                total += w
+        if total < 1.0 - 1e-3:
+            groups["Torso"].add([v.index], 1.0 - total, "REPLACE")
+
+
+def build_skeleton(body, parent, k):
+    """The torso bone at the origin and a bone per leg from hip to sole, all
+    scaled by `k` so they land on the normalised body.
+
+    The torso bone points along +Y with no roll, which makes its rest
+    transform the identity: the legs are its children, so their rest
+    transforms come out in the model's own axes, and the app can swing a leg
+    about "sideways" without converting through a parent first.
+    """
+    data = bpy.data.armatures.new("Skeleton")
+    rig = bpy.data.objects.new("Skeleton", data)
+    bpy.context.collection.objects.link(rig)
+    rig.parent = parent
+    bpy.ops.object.select_all(action="DESELECT")
+    rig.select_set(True)
+    bpy.context.view_layer.objects.active = rig
+    bpy.ops.object.mode_set(mode="EDIT")
+    torso = data.edit_bones.new("Torso")
+    torso.head = (0.0, 0.0, 0.0)
+    torso.tail = (0.0, 0.1 * k, 0.0)
+    torso.roll = 0.0
+    for name, (x, y) in LEGS.items():
+        bone = data.edit_bones.new(name)
+        bone.head = leg_axis(x, y, HIP_Z) * k
+        bone.tail = leg_axis(x, y, 0.0) * k
+        bone.parent = torso
+    bpy.ops.object.mode_set(mode="OBJECT")
+    body.parent = rig
+    body.modifiers.new("Skeleton", "ARMATURE").object = rig
+    return rig
 
 
 def fuse(obj):
@@ -686,6 +774,7 @@ def build_body(material):
     # The meshing hands back a surface that has forgotten its material.
     obj.data.materials.clear()
     obj.data.materials.append(material)
+    weigh_legs(obj)
     return obj
 
 
@@ -970,6 +1059,8 @@ def build(out_dir):
     bpy.context.collection.objects.link(root)
     for p in parts:
         p.parent = root
+    # After the scaling, so the bones are placed on the body as it now is.
+    build_skeleton(body, root, k)
     return root, parts
 
 
@@ -1053,6 +1144,9 @@ def export_usdz(path):
         export_materials=True,
         export_uvmaps=True,
         export_normals=True,
+        # The skeleton and the body's skinning, as UsdSkel.  The operator's
+        # default, written out because the walking depends on it.
+        export_armatures=True,
         export_lights=False,
         export_cameras=False,
         generate_preview_surface=True,
