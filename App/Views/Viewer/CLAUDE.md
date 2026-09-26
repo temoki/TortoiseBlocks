@@ -27,6 +27,9 @@ every number is in `Tools/tortoise-model/README.md`**; what app code may assume 
   (luminance 39 of 255, gold reading brown; 111 with emission). Do not "fix" it as
   a PBR error, and do not lighten the colours — the icon's paler gold was tried
   and washed out to cream once lit.
+- **The golden body is skinned to joints named `Torso`, `LegFrontLeft`,
+  `LegFrontRight`, `LegRearLeft` and `LegRearRight`**, which is how the legs
+  walk. A model without them loads and glides, with no error anywhere.
 
 It rides in `App/` as a synchronized-folder resource, landing flat at
 `Contents/Resources/Tortoise.usdz` — verified in the built bundle, the only way
@@ -64,6 +67,30 @@ hanging off it. The lift onto the paper is *measured* from the loaded model,
 not assumed: the soles now stand exactly on the origin, the ground point under
 the shell's centre, but the flippers before them reached 6‰ below it, and a
 regenerated model is free to change that again.
+
+**The tortoise walks, and how much is the maintainer's call, not physics.**
+`TortoiseGait` poses the skinned legs every display frame from how far the
+tortoise moved since the last one — diagonal pairs, a leg tucking up and out
+as it comes forward, the body rocking toward the standing side and rising by
+as much as the other side would sink — and eases to rest when it stops. The
+amounts are large on purpose: legs a tenth of the body long from hip to sole
+barely move at realistic angles, and the first pass (20°, the pace that keeps a
+foot planted) moved a foot 3% of the body and read as no movement at all. What
+shipped — 50°, two to three times that pace, a 10° rock — was chosen from
+simulator recordings. The drawing's tempo gives every command the same time
+however long its line, so on a long line the animal outruns any stride; the
+legs cap at five cycles a second and the feet slide past that.
+The skinned body is **not** the "Body" entity the file names: RealityKit makes
+the `SkelRoot` into the `ModelEntity` (called "Skeleton") and leaves "Body" an
+empty `Entity`, so the gait finds it by having joints. `jointTransforms` on it
+is the whole API — a write lands in its `SkeletalPosesComponent` too, so there
+is nothing else to keep in step.
+**Judge the legs from a recording, never from a row of stills.** A walking
+tortoise also turns, and a turn changes the silhouette of every leg from frame
+to frame; a sheet of consecutive frames looked like legs moving when they
+barely were, and it was the maintainer who saw that they were not. Holding
+two opposite moments of the cycle and comparing them is the honest still; the
+honest check is `-TBPlay YES -TBSpeed 1` (×0.2) and `simctl io recordVideo`.
 **The visionOS simulator shows all of this** — paper, drawing and tortoise —
 and this note said the opposite for a while, which is worth keeping as a
 correction rather than an edit. The symptom was real: a blank sheet, a nil

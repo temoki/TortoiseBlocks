@@ -30,11 +30,13 @@ pkill -x TortoiseBlocks; open ~/Library/Developer/Xcode/DerivedData/TortoiseBloc
 # spiral|tree), `-TBDraw` runs the drawing that far (0…1) and stops, and
 # `-TBSheet side,reach,drop` frames it (metres). The sheet is aimed at the
 # camera, so no recentring — but a run occasionally comes up without it, so
-# look at the capture.
+# look at the capture. The walk is motion, so it is checked on a recording:
+# `-TBPlay YES` keeps the drawing playing and `-TBSpeed 1` slows it to ×0.2.
 xcrun simctl install <device> ~/Library/Developer/Xcode/DerivedData/TortoiseBlocks-*/Build/Products/Debug-xrsimulator/TortoiseBlocks.app
 xcrun simctl launch <device> space.hiraku.tortoiseblocks \
   -TBPlace YES -TBSample star -TBDraw 1 -TBSheet 0.5,0.95,0.42
 xcrun simctl io <device> screenshot shot.png     # 3840x2160, with an alpha channel
+xcrun simctl io <device> recordVideo walk.mov    # Ctrl-C to stop
 
 # The App Store listing (appstore/). The check needs no key and no bundle;
 # the other two need ASC_ISSUER_ID / ASC_KEY_ID / ASC_PRIVATE_KEY_PATH.

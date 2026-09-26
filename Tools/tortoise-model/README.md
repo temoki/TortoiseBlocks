@@ -14,7 +14,8 @@ tool rather than the lazy one: the numbers in `build_tortoise.py` are the
 design's measurements, so a proportion can be argued about and changed in one
 place instead of being pushed around by hand and then lost. The golden parts
 are then fused into one surface, so the joins between them are rounded
-without anyone modelling a join.
+without anyone modelling a join, and that surface is skinned to a small
+skeleton so the app can make the tortoise walk.
 
 ## Running it
 
@@ -94,10 +95,17 @@ the app and not just to the asset.
 - Bounds, for framing, in the exported (Y-up) axes: `x ±0.303`, `y 0 .. 0.434`
   (height), `z -0.525` (nose) `.. +0.475` (brush). The brush tip is at
   `(0, 0.014, 0.475)`, just clear of the paper.
+- **The golden body is skinned to a skeleton of five joints**: `Torso` at the
+  origin, and under it `LegFrontLeft`, `LegFrontRight`, `LegRearLeft` and
+  `LegRearRight`, each at its hip, pointing down to the sole. The app finds
+  the joints by these names (`TortoiseGait`), so renaming one stops the legs
+  moving — silently, because a model without them just glides. `Torso`'s rest
+  transform is the identity, which is what lets the app swing a leg about
+  the model's own axes; the rest pose is the model as built.
 - Nine meshes under one `Tortoise` xform — the shell, one fused golden body,
   the brush, the beret, two eyes, two catchlights and the mouth — nine
   materials, two small textures (the shell's ramp, and the same ramp dimmed
-  for emission); about 34,000 triangles and 0.5MB.
+  for emission); about 34,000 triangles and 0.58MB.
 - **Every material emits a third of its own colour** (`EMISSION`). Not
   decoration — see below.
 
@@ -162,14 +170,24 @@ comes out is several hundred thousand triangles and is decimated to
 `GOLD_TRIANGLES`, which is why its triangles are irregular: it is smooth
 enough that nothing shows.
 
+It is also why the legs walk by **skinning** rather than as parts of their
+own. A leg that turned as a separate piece would bring the crease back at the
+hip; a skinned one bends the fillet with it. The weights are worked out from
+where each vertex *is* (`weigh_legs`), since after the fusing there is no
+record of which part it came from: fully the leg's low down and close to its
+axis, fully the torso's up in the plastron, and blended through the fillet
+band between them (`LEG_WEIGHT_HEIGHT`, `LEG_WEIGHT_REACH`). The blend is
+what stretches when a leg swings; without it the join tears.
+
 **The normals are rewritten after Blender has written them.** Blender stores a
 normal per triangle *corner* whatever the shading, and on a smooth mesh every
 corner at a vertex carries the same one — most of the file was the same
 numbers again. `per_vertex_normals` keeps one per vertex wherever the corners
 agree, and leaves the faceted shell as it was; that pass is the difference
-between 1.5MB and 0.5MB. It writes a *new* file on purpose: saving a crate
-file over itself appends the edited values and keeps the old ones, and the
-file comes out bigger than it went in.
+between 1.5MB and 0.5MB (before the skeleton, which adds about 70KB). It
+writes a *new* file on purpose: saving a crate file over itself appends the
+edited values and keeps the old ones, and the file comes out bigger than it
+went in.
 
 **The paint's edge is ragged.** The brush used to end in a flared cone with
 alternate hairs cut a third short — chosen, after three level-tipped versions

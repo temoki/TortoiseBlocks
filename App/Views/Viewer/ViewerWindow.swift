@@ -99,6 +99,9 @@
                 //                     put the drawing down
                 //   -TBSample <name>  square | star | spiral | tree
                 //   -TBDraw <0…1>     run the drawing that far and stop
+                //   -TBPlay YES       then keep playing from there, for a
+                //                     recording of the tortoise walking
+                //   -TBSpeed <level>  the transport's speed, 1…10 (5 is ×1)
                 //   -TBSheet s,r,d    the sheet's side, how far ahead of the
                 //                     eyes it lands, and how far below them
                 //
@@ -108,6 +111,12 @@
                 // here rather than on a headset: a real room cannot be framed
                 // the same way twice and is somebody's home besides, while
                 // these four arguments describe a picture exactly.
+                //
+                // `-TBPlay` and `-TBSpeed` exist for the walk (`TortoiseGait`),
+                // which a still cannot show: the check is a recording
+                // (`simctl io recordVideo`) of a drawing that keeps playing,
+                // usually at level 1 (×0.2), where a step lasts long enough to
+                // see the legs change feet.
                 //
                 // `-TBSheet` is the framing one, and it exists because
                 // nothing in the simulator can reach out and pinch the sheet
@@ -158,6 +167,9 @@
                 }
                 let (blocks, title) = Self.sample(named: Self.value(of: "-TBSample", in: arguments))
                 model.load(blocks, title: title)
+                if let speed = Self.value(of: "-TBSpeed", in: arguments).flatMap(Double.init) {
+                    model.runner.player.speedOverride = speed
+                }
                 // Both, because that is what the platform's argument looks
                 // like when it is working: the drawing on the table, the
                 // blocks it is made from, and the code they become, all at
@@ -167,7 +179,8 @@
                 openWindow(id: ViewerModel.codeWindowID)
 
                 await settle(
-                    drawingTo: Self.value(of: "-TBDraw", in: arguments).flatMap(Double.init))
+                    drawingTo: Self.value(of: "-TBDraw", in: arguments).flatMap(Double.init),
+                    playing: arguments.contains("-TBPlay"))
             }
         }
 
@@ -222,7 +235,7 @@
         /// all, and from the outside that is indistinguishable from one that is
         /// merely slow. Told which it is, the script can relaunch instead of
         /// filing a picture of an empty room.
-        private func settle(drawingTo fraction: Double?) async {
+        private func settle(drawingTo fraction: Double?, playing: Bool) async {
             let clock = ContinuousClock()
             let deadline = clock.now + .seconds(20)
             while model.runner.player.currentTortoiseState == nil, clock.now < deadline {
@@ -238,6 +251,7 @@
                 let clamped = min(max(fraction, 0), 1)
                 model.runner.seek(to: Int((Double(commands - 1) * clamped).rounded()))
             }
+            if playing { model.runner.player.isPaused = false }
             Self.shoot.notice("TBReady")
         }
 
