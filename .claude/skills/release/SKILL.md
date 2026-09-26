@@ -169,7 +169,10 @@ size of an Apple TV one, and that collision is a real trap further down.
 pass every reshoot has to end with, and the traps that produce a picture of the
 wrong thing. Nothing reaches App Store Connect without going through it: every
 source this project shoots from writes an alpha channel, which Apple refuses.
-The text is `appstore/metadata/<locale>/`, one file per field — **except
+**App previews are the one piece of the listing that fastlane does not
+carry.** deliver uploads screenshots but not previews, so they are made by the
+`film` skill and put up by hand in App Store Connect, and nothing in
+`appstore/` holds them. The text is `appstore/metadata/<locale>/`, one file per field — **except
 visionOS**, which is pushed from `appstore/metadata-visionos/` instead (#53).
 That split is not tidiness: the App Store shows a Vision Pro shopper the
 visionOS description and nothing else, and the app is a different product

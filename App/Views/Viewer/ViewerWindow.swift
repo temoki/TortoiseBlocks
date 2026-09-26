@@ -99,8 +99,9 @@
                 //                     put the drawing down
                 //   -TBSample <name>  square | star | spiral | tree
                 //   -TBDraw <0…1>     run the drawing that far and stop
-                //   -TBPlay YES       then keep playing from there, for a
-                //                     recording of the tortoise walking
+                //   -TBPlay YES|<s>   then keep playing from there, for a
+                //                     recording of the tortoise walking —
+                //                     after <s> seconds, if a number
                 //   -TBSpeed <level>  the transport's speed, 1…10 (5 is ×1)
                 //   -TBSheet s,r,d    the sheet's side, how far ahead of the
                 //                     eyes it lands, and how far below them
@@ -116,7 +117,12 @@
                 // which a still cannot show: the check is a recording
                 // (`simctl io recordVideo`) of a drawing that keeps playing,
                 // usually at level 1 (×0.2), where a step lasts long enough to
-                // see the legs change feet.
+                // see the legs change feet. The delay is for a recording that
+                // has to catch the first line: `simctl io recordVideo` running
+                // while the app launches stops the immersive space opening at
+                // all (`TBNotReady`, every time), so a recording can only start
+                // once the sheet is up — and by then an undelayed drawing is
+                // already under way. `TBPlaying` marks the moment it starts.
                 //
                 // `-TBSheet` is the framing one, and it exists because
                 // nothing in the simulator can reach out and pinch the sheet
@@ -178,9 +184,10 @@
                 openWindow(id: ViewerModel.programWindowID)
                 openWindow(id: ViewerModel.codeWindowID)
 
+                let play = Self.value(of: "-TBPlay", in: arguments)
                 await settle(
                     drawingTo: Self.value(of: "-TBDraw", in: arguments).flatMap(Double.init),
-                    playing: arguments.contains("-TBPlay"))
+                    playing: arguments.contains("-TBPlay") ? play.flatMap(Double.init) ?? 0 : nil)
             }
         }
 
@@ -235,7 +242,7 @@
         /// all, and from the outside that is indistinguishable from one that is
         /// merely slow. Told which it is, the script can relaunch instead of
         /// filing a picture of an empty room.
-        private func settle(drawingTo fraction: Double?, playing: Bool) async {
+        private func settle(drawingTo fraction: Double?, playing delay: Double?) async {
             let clock = ContinuousClock()
             let deadline = clock.now + .seconds(20)
             while model.runner.player.currentTortoiseState == nil, clock.now < deadline {
@@ -251,8 +258,12 @@
                 let clamped = min(max(fraction, 0), 1)
                 model.runner.seek(to: Int((Double(commands - 1) * clamped).rounded()))
             }
-            if playing { model.runner.player.isPaused = false }
             Self.shoot.notice("TBReady")
+            if let delay {
+                try? await Task.sleep(for: .seconds(delay))
+                model.runner.player.isPaused = false
+                Self.shoot.notice("TBPlaying")
+            }
         }
 
         /// Only ever written to under `-TBPlace`, and read only by the

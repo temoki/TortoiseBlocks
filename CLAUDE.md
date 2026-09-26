@@ -31,16 +31,21 @@ pkill -x TortoiseBlocks; open ~/Library/Developer/Xcode/DerivedData/TortoiseBloc
 # `-TBSheet side,reach,drop` frames it (metres). The sheet is aimed at the
 # camera, so no recentring — but a run occasionally comes up without it, so
 # look at the capture. The walk is motion, so it is checked on a recording:
-# `-TBPlay YES` keeps the drawing playing and `-TBSpeed 1` slows it to ×0.2.
+# `-TBPlay YES` keeps the drawing playing and `-TBSpeed 1` slows it to ×0.2;
+# start recordVideo only once the app is up — running it through the launch
+# stops the immersive space opening (`-TBPlay <seconds>` delays the drawing).
 xcrun simctl install <device> ~/Library/Developer/Xcode/DerivedData/TortoiseBlocks-*/Build/Products/Debug-xrsimulator/TortoiseBlocks.app
 xcrun simctl launch <device> space.hiraku.tortoiseblocks \
   -TBPlace YES -TBSample star -TBDraw 1 -TBSheet 0.5,0.95,0.42
 xcrun simctl io <device> screenshot shot.png     # 3840x2160, with an alpha channel
 xcrun simctl io <device> recordVideo walk.mov    # Ctrl-C to stop
 
-# The website's teaser video: records TeaserTests on the iPad simulator, then
-# cuts it to a silent 1080p film (Tools/teaser/README.md). ~15 minutes.
-ruby Tools/teaser/teaser.rb                # --compose re-cuts the last recording
+# The films (Tools/film/README.md): the website's teaser, and the App Store
+# previews for iphone / ipad / mac / vision. Silent, for music added by hand;
+# `--compose` re-cuts the last recording. The Mac one drives this Mac's real
+# pointer and asks for the password first.
+ruby Tools/film/teaser.rb                  # ~15 minutes
+ruby Tools/film/previews.rb [ipad …]       # ~5 minutes each
 
 # The App Store listing (appstore/). The check needs no key and no bundle;
 # the other two need ASC_ISSUER_ID / ASC_KEY_ID / ASC_PRIVATE_KEY_PATH.
@@ -455,6 +460,7 @@ the four files it describes.
 
 **Releasing, the store listing and the website are in the `release` skill.** Tags, Xcode Cloud, TestFlight, `appstore/`, fastlane, and `site/`.
 **Making the pictures is the `screenshots` skill** — the capture rigs for iPad, Mac and Vision Pro, the pass every reshoot ends with (`ruby Tools/screenshots.rb`), and the traps that hand back a perfectly well-made capture of the wrong thing.
+**Making the videos is the `film` skill** — the website's teaser and the App Store previews, from UI tests, cut to Apple's rules.
 
 **Localization**: `en` is the source language; Japanese (kid-friendly
 hiragana) lives in `App/Localizable.xcstrings`. Palette titles are

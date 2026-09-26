@@ -90,7 +90,11 @@ tortoise also turns, and a turn changes the silhouette of every leg from frame
 to frame; a sheet of consecutive frames looked like legs moving when they
 barely were, and it was the maintainer who saw that they were not. Holding
 two opposite moments of the cycle and comparing them is the honest still; the
-honest check is `-TBPlay YES -TBSpeed 1` (×0.2) and `simctl io recordVideo`.
+honest check is `-TBPlay YES -TBSpeed 1` (×0.2) and `simctl io recordVideo` —
+started once the app is up, never before the launch: a recording running
+through it keeps the immersive space from opening at all (`TBNotReady`, every
+time). To catch a drawing from its first line, `-TBPlay <seconds>` holds it
+until the recorder has started, and `TBPlaying` says when it went.
 **The visionOS simulator shows all of this** — paper, drawing and tortoise —
 and this note said the opposite for a while, which is worth keeping as a
 correction rather than an edit. The symptom was real: a blank sheet, a nil
