@@ -7,8 +7,9 @@ description: >-
   (Tools/ipad-shots.rb, Tools/macos-shots.rb, Tools/visionos-shots.rb), the
   flatten-and-optimise pass
   (Tools/screenshots.rb), what a sendable capture has to be, and the traps that
-  make a screenshot tool fail silently. Load this before reshooting, before
-  adding a shot or a platform, and whenever a capture looks wrong.
+  make a screenshot tool fail silently. Also the website's teaser video
+  (Tools/teaser/). Load this before reshooting, before adding a shot or a
+  platform, and whenever a capture looks wrong.
 ---
 
 # Screenshots
@@ -257,6 +258,20 @@ Seven ways the Mac differs from the iPad, all handled but all worth knowing:
   window's frame in preference to the app's `defaultSize`, and that default is
   what makes 1280×800pt — 2560×1600px — reproducible. Keep that `defaultSize`:
   a capture at any other size would need cropping or resampling.
+
+## The teaser video
+
+The website's two-minute video is made the same way: `ruby Tools/teaser/teaser.rb`
+records `TortoiseBlocksUITests/TeaserTests.swift` on the 11-inch iPad simulator
+and cuts it into a silent 1080p film; music goes on by hand afterwards. The
+test is the script, and it logs every press, caption and camera move for the
+editor to work from. `Tools/teaser/README.md` has why each piece is as it is.
+It shares DerivedData with the rigs above, so it counts as one of them: one at
+a time.
+
+Judge it the way the stills are judged, but on the film: a contact sheet
+shows what is in it (`ffmpeg -i teaser.mp4 -vf fps=1/3,scale=320:-1,tile=6x9`),
+and only playing it shows whether it moves well.
 
 ## Judging the result
 
