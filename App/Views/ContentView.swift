@@ -451,18 +451,57 @@ struct CanvasToolbar: ToolbarContent {
     }
 }
 
-/// The canvas/code segmented toggle, in `CanvasPane`'s toolbar (#23).
+/// The canvas/code segmented toggle, in `CanvasPane`'s toolbar (#23): the
+/// words when they fit, the icons when they do not.
+///
+/// **The toolbar's trailing items have a ceiling on how wide they may be, and
+/// the words do not always fit under it.** Measured on the 11-inch iPad
+/// simulator: in the portrait canvas column a segmented control that was
+/// allowed to shrink came out 「Ca… Co…」 and 「キ… コ…」, and in the landscape
+/// one "Canv…" once a drawing had run — the truncation #119 fixed on one width
+/// was still there on others. Pinning it at its own width (`fixedSize`) kept the words and sent
+/// the ⟳ and export buttons into a "•••" overflow instead, and in Japanese the
+/// toggle itself went with them. Neither the flexible spacer before it nor the
+/// fixed one after it was what ran out: taking each away changed nothing.
+///
+/// So the words are offered first and the icons second, and `ViewThatFits`
+/// takes whichever the toolbar has room for. The toolbar is a little stingier
+/// than `fixedSize` would suggest: the 11-inch's landscape column fits the
+/// English words but not 「キャンバス」, so Japanese gets the icons there. The
+/// 13-inch landscape keeps the words in both languages. VoiceOver reads
+/// "Canvas" and "Code" either way.
 struct CanvasViewToggle: View {
     @Binding var showsCode: Bool
 
     var body: some View {
+        ViewThatFits(in: .horizontal) {
+            CanvasViewPicker(showsCode: $showsCode, iconOnly: false)
+            CanvasViewPicker(showsCode: $showsCode, iconOnly: true)
+        }
+    }
+}
+
+/// One form of `CanvasViewToggle`, at its own width and never narrower: a
+/// segmented control made to shrink truncates its words.
+private struct CanvasViewPicker: View {
+    @Binding var showsCode: Bool
+    let iconOnly: Bool
+
+    var body: some View {
         Picker("View", selection: $showsCode) {
-            Text("Canvas").tag(false)
-            Text("Code").tag(true)
+            if iconOnly {
+                Label("Canvas", systemImage: "scribble.variable").labelStyle(.iconOnly).tag(false)
+                Label("Code", systemImage: "chevron.left.forwardslash.chevron.right")
+                    .labelStyle(.iconOnly).tag(true)
+            }
+            else {
+                Text("Canvas").tag(false)
+                Text("Code").tag(true)
+            }
         }
         .pickerStyle(.segmented)
         .labelsHidden()
-        .frame(maxWidth: 220)
+        .fixedSize()
     }
 }
 

@@ -115,11 +115,13 @@
 
         /// A palette entry by its title, scrolled on screen first if it is not.
         ///
-        /// The title is not unique: the transport's step button is "Forward"
-        /// too. Of every button with that label this is the one furthest left,
-        /// since the palette is the first column — read from one snapshot,
-        /// because walking a query's matches one by one raced the UI and lost an
-        /// element between counting and fetching it.
+        /// The title need not be unique: the first run met a second, disabled
+        /// button labelled "Forward" as the document opened, and which one it
+        /// was was never pinned down (the transport's is "Step Forward"). Of
+        /// every button with the label this is the one furthest left, since the
+        /// palette is the first column — read from one snapshot, because walking
+        /// a query's matches one by one raced the UI and lost an element between
+        /// counting and fetching it.
         ///
         /// **Taps here are coordinates, so nothing scrolls for them.** An
         /// element's own `tap()` scrolls it into view; a coordinate below the

@@ -104,7 +104,7 @@
         // MARK: - The hands
 
         /// The leftmost button with this label: the palette is the first
-        /// column, and "Forward" is the transport's step button too.
+        /// column, and a label need not be unique (see `FilmTestCase.palette`).
         @MainActor
         private func palette(_ title: String) throws -> CGRect {
             try find(title) { $0.minX < $1.minX }
