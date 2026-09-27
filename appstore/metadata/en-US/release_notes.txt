@@ -1,8 +1,5 @@
-NOW ON IPHONE
+A CLEARER SWITCH ON IPAD
 
-Tortoise Blocks runs on iPhone, and on iPad the way back to your drawings is where you look for it.
+On iPad, the switch between the drawing and its code now always reads clearly.
 
-• On iPhone, the program fills the screen, and the blocks and the drawing open from the buttons along the bottom.
-• On iPhone, tapping a drawing in the Files app opens it straight away.
-• On iPad, a Drawings button now sits at the top left while a drawing is open, so there is always a way back to the list.
-• Other small fixes and internal improvements.
+• On iPad, the Canvas / Code switch no longer gets cut short to "Ca… Co…" when space is tight, such as in portrait. When the words don't fit, it shows icons instead.
