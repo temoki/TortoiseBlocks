@@ -144,10 +144,15 @@ worse. Taking either `ToolbarSpacer` away changed nothing. `CanvasViewToggle`
 therefore offers the words and then the icons, through `ViewThatFits`, each
 form `fixedSize` so it can never be squeezed into an ellipsis. What that gives,
 measured: the words on the 13-inch landscape (both languages), on the Mac (in
-Japanese) and the phone's sheet (in English), and English on the 11-inch
-landscape; the icons in portrait on
-both iPads and for Japanese on the 11-inch landscape. Judge a change here on
-the 11-inch, in portrait and in Japanese: that is the narrowest case.
+Japanese) and in the phone's sheet (in English). The icons in portrait on both
+iPads, and for Japanese on the 11-inch landscape. English on the 11-inch
+landscape sits on the boundary. A freshly opened document with blocks in it
+showed the words throughout. An empty one showed them until its first block,
+then switched to the icons and stayed there — presumably the toolbar offers a
+hair less once its buttons change state, though that was not pinned down.
+That one-time flip was looked at and accepted
+rather than engineered away. Judge a change here on the 11-inch, in portrait
+and in Japanese (the narrowest cases), and from an empty document.
 
 **26's glass is not used on any surface of ours, and that was tested rather
 than assumed** (#79). All three candidates were built and looked at, and all

@@ -37,6 +37,21 @@ term`, which says nothing about the cause. Check with `pgrep -f shots.rb`
 before starting one; a backgrounded rig reported as finished is not proof, and
 two of them overlapping is what filed a set of empty Vision Pro rooms.
 
+**A second Xcode can swap the simulators out from under the one you build
+with.** `xcode-select` picks the `xcodebuild` and `simctl`, but the machinery
+that runs every simulator — `com.apple.pkg.XcodeSystemResources`, with
+CoreSimulatorService in it — is system-wide, and it is whichever Xcode last
+installed its components. With the 27.1 beta installed beside 27.0, it was
+27.1. The iOS 27.0 simulators' `backboardd` then aborted in Metal
+(`MTLSimDevice newTextureWithDescriptor`) after a few launches and
+rotations. The run died as `Test crashed with signal kill`, twice in a row,
+in a different shot each time, with the app's own code blameless. The old
+code crashed the same way. Check `pkgutil --pkg-info
+com.apple.pkg.XcodeSystemResources` before a shoot. If it is not the release
+you build with, reinstall that release's package
+(`sudo installer -pkg <Xcode>/Contents/Resources/Packages/XcodeSystemResources.pkg -target /`),
+then `simctl shutdown all` and restart CoreSimulatorService.
+
 **A stuck app survives `kill -9`.** A run killed mid-flight can leave the app
 being traced by an orphaned `debugserver`, `ps` showing `SX`; every later Mac
 run then fails with `Failed to terminate space.hiraku.tortoiseblocks:<pid>`,

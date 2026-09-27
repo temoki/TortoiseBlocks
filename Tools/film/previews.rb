@@ -151,7 +151,10 @@ def record_vision(profile, raw)
 
   FileUtils.rm_rf(raw)
   FileUtils.mkdir_p(raw)
-  3.times do |attempt|
+  # Five tries, where the screenshot rig makes three: the sheet failing to
+  # come up is the same flake there, but here it once failed three launches
+  # running, and the run after that needed three.
+  5.times do |attempt|
     # Reinstalled every time: visionOS restores an app's windows, and a launch
     # that inherits the last one's opens a second set on top.
     Film.simctl("terminate", udid, Film::BUNDLE_ID)
@@ -187,7 +190,7 @@ def record_vision(profile, raw)
 
     warn("  an empty room on attempt #{attempt + 1} (ink #{measured.round(4)}), relaunching")
   end
-  abort("vision never came up with a sheet after three attempts")
+  abort("vision never came up with a sheet after five attempts")
 end
 
 def compose_vision(profile, raw)
