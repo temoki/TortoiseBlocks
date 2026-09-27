@@ -33,10 +33,10 @@ Launch tags はローンチに、Product category はプロダクトページに
 Block coding for kids that grows up into Swift
 ```
 
-### Description（260字以内 / 256字）
+### Description（260字以内 / 258字）
 
 ```
-Snap blocks into a program, press play, and a tortoise draws your picture line by line — while the pane beside it shows the same program as real, syntax-colored Swift. Blocks you name can call themselves, so nine of them draw a tree. iPad, Mac, Vision Pro.
+Snap blocks together, press play, and a tortoise draws your picture line by line — while the pane beside it shows the same program as real, syntax-colored Swift. Blocks you name can call themselves, so nine of them draw a tree. iPhone, iPad, Mac, Vision Pro.
 ```
 
 ## First comment
