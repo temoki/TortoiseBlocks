@@ -147,7 +147,7 @@ evenings otherwise.
 | 5 | [5-nothing-collected.png](5-nothing-collected.png) | （文字だけのカード） |
 
 Thumbnail は [thumbnail-240.png](thumbnail-240.png)。動画は
-`https://youtu.be/b2wOul8UPWA` をギャラリー先頭に。
+`https://youtu.be/3lmWw37Da-U` をギャラリー先頭に。
 
 iPad のキャプチャのステータスバーは、撮影ロケールの言語で撮影日の日付が入る
 （`Tools/ipad-shots.rb` がシミュレータの言語を切り替えて撮る）。

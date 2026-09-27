@@ -62,9 +62,11 @@
   .wide .eyebrow { margin-bottom: 12px; }
 
   /* macOS のキャプチャ(2880x1800)から、ブロックの列とコードの列だけを
-     切り出す。切り抜き枠は原寸で x=620 y=152 w=2078 h=950。倍率は
-     1150/2078 = 0.5534 なので、画像は 2880*0.5534 = 1594px 幅で置き、
-     左に 620*0.5534 = 343px、上に 152*0.5534 = 84px ずらす。
+     切り出す。切り抜き枠は原寸で x=603 y=152 w=2095 h=958。倍率は
+     1150/2095 = 0.5489 なので、画像は 2880*0.5489 = 1581px 幅で置き、
+     左に 603*0.5489 = 331px、上に 152*0.5489 = 83px ずらす。
+     1.2.0 の後の撮り直しでブロックの列が原寸 17px 左に寄ったので、右端は
+     そのままに左端だけ広げてある。
      パレット列とウインドウ枠を落とす代わりに、コードが読める大きさになる。
      右上を数px内側に寄せてあるのは、ウインドウの角丸の外の紫の地が
      三日月形に写り込むため。枠を動かすときはそこを見ること。 */
@@ -74,7 +76,7 @@
   }
   .crop img {
     display: block; position: relative; max-width: none;
-    width: 1594px; left: -343px; top: -84px;
+    width: 1581px; left: -331px; top: -83px;
   }
 
   /* ---- 5枚目: 文字だけのカード ------------------------------------ */
@@ -145,7 +147,7 @@
   <div class="copy">
     <p class="eyebrow">Apple Vision Pro</p>
     <h1>Off the screen,<br>onto the table</h1>
-    <p class="sub">Built on iPad and Mac. Open one on Vision Pro and it lies on
+    <p class="sub">Built on iPhone, iPad and Mac. Open one on Vision Pro and it lies on
       the table in front of you, at whatever size you like, with the tortoise
       walking the line as it appears.</p>
   </div>
