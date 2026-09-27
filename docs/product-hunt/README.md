@@ -33,10 +33,10 @@ Launch tags はローンチに、Product category はプロダクトページに
 Block coding for kids that grows up into Swift
 ```
 
-### Description（260字以内 / 258字）
+### Description（500字以内 / 460字）
 
 ```
-Snap blocks together, press play, and a tortoise draws your picture line by line — while the pane beside it shows the same program as real, syntax-colored Swift. Blocks you name can call themselves, so nine of them draw a tree. iPhone, iPad, Mac, Vision Pro.
+Snap blocks into a program, press play, and a tortoise draws your picture line by line — while the pane beside it shows the same program as real, syntax-colored Swift, ready to copy out. Repeat, if, boxes, and dice that draw a different picture every run. Blocks you name can call themselves, so nine of them draw a tree. Build on iPhone, iPad and Mac, then put the drawing on your table with Vision Pro. No accounts, no ads, no tracking. Free and open source.
 ```
 
 ## First comment
