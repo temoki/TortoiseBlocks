@@ -465,11 +465,14 @@ struct CanvasToolbar: ToolbarContent {
 /// fixed one after it was what ran out: taking each away changed nothing.
 ///
 /// So the words are offered first and the icons second, and `ViewThatFits`
-/// takes whichever the toolbar has room for. The toolbar is a little stingier
-/// than `fixedSize` would suggest: the 11-inch's landscape column fits the
-/// English words but not 「キャンバス」, so Japanese gets the icons there. The
-/// 13-inch landscape keeps the words in both languages. VoiceOver reads
-/// "Canvas" and "Code" either way.
+/// takes whichever the toolbar has room for. The 13-inch landscape keeps the
+/// words in both languages. The 11-inch landscape column is the boundary: it
+/// never fits 「キャンバス」, and it fits the English words only until the
+/// toolbar's own state changes. An empty document shows "Canvas | Code", and
+/// the first block — which is when ⟳ comes on — turns them into the icons for
+/// good. That flip was seen and accepted: it happens once, and nothing is cut
+/// or hidden either side of it. VoiceOver reads "Canvas" and "Code" either
+/// way.
 struct CanvasViewToggle: View {
     @Binding var showsCode: Bool
 
