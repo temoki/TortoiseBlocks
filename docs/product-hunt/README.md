@@ -33,10 +33,10 @@ Launch tags はローンチに、Product category はプロダクトページに
 Block coding for kids that grows up into Swift
 ```
 
-### Description（260字以内 / 256字）
+### Description（500字以内 / 460字）
 
 ```
-Snap blocks into a program, press play, and a tortoise draws your picture line by line — while the pane beside it shows the same program as real, syntax-colored Swift. Blocks you name can call themselves, so nine of them draw a tree. iPad, Mac, Vision Pro.
+Snap blocks into a program, press play, and a tortoise draws your picture line by line — while the pane beside it shows the same program as real, syntax-colored Swift, ready to copy out. Repeat, if, boxes, and dice that draw a different picture every run. Blocks you name can call themselves, so nine of them draw a tree. Build on iPhone, iPad and Mac, then put the drawing on your table with Vision Pro. No accounts, no ads, no tracking. Free and open source.
 ```
 
 ## First comment
@@ -147,7 +147,7 @@ evenings otherwise.
 | 5 | [5-nothing-collected.png](5-nothing-collected.png) | （文字だけのカード） |
 
 Thumbnail は [thumbnail-240.png](thumbnail-240.png)。動画は
-`https://youtu.be/b2wOul8UPWA` をギャラリー先頭に。
+`https://youtu.be/3lmWw37Da-U` をギャラリー先頭に。
 
 iPad のキャプチャのステータスバーは、撮影ロケールの言語で撮影日の日付が入る
 （`Tools/ipad-shots.rb` がシミュレータの言語を切り替えて撮る）。
