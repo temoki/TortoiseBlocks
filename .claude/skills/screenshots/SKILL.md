@@ -22,7 +22,7 @@ only evidence that counts.
 ```bash
 ruby Tools/ipad-shots.rb                 # iPad: 4 shots × 2 languages, ~8 min
 ruby Tools/iphone-shots.rb               # iPhone 18 Pro Max: 4 shots × 2 languages
-ruby Tools/iphone-shots.rb --duo         # iPhone Duo, folded: the same 4 × 2
+ruby Tools/iphone-shots.rb --duo         # iPhone Duo, unfolded (open it first): iPad's 4 × 2
 ruby Tools/macos-shots.rb                # Mac: 4 shots × 2 languages
 ruby Tools/visionos-shots.rb             # Vision Pro: 3 shots × 2 languages
 ruby Tools/screenshots.rb                # always: strip alpha, optimise, rebuild site/shots and docs/
@@ -68,7 +68,7 @@ the files alone — so the answer to "is this sendable" is to run it, not to
 look.
 
 - **Sizes**: iPad 13-inch 2752×2064 (or portrait), iPhone 6.9-inch 1320×2868,
-  iPhone Duo folded 1398×2034 (in `ios_duo/`, see below), Mac 2880×1800,
+  iPhone Duo unfolded 2853×2007 (in `ios_duo/`, see below), Mac 2880×1800,
   Vision Pro 3840×2160. A size Apple does not accept is a mistake worth stopping on, not
   a shape to guess at, so an unexpected one fails rather than being resized.
 - **No alpha channel.** App Store Connect refuses one and says so only when the
@@ -173,43 +173,51 @@ when the run ends, however it ends.
 Testing is non-parallel on purpose: a parallel run clones the simulator, and
 the clone is not the device the documents were seeded on.
 
-## iPhone Duo — folded only, and uploaded by hand
+## iPhone Duo — unfolded only, and uploaded by hand
 
-`ruby Tools/iphone-shots.rb --duo` shoots the iPhone set on an iPhone Duo,
-which needs Xcode 27.1 or later (the device type and its runtime are not in
-27.0). Two limits, both outside this repository, decide what it can do.
+`ruby Tools/iphone-shots.rb --duo` shoots an iPhone Duo **unfolded**, which
+needs Xcode 27.1 or later (the device type and its runtime are not in 27.0)
+and one thing from a person: **boot the Duo and open it in the Simulator
+before running it.** Nothing in `simctl` or `XCUIDevice` changes the pose —
+`simctl io screenConfig --display=internal power on` lights the inner display
+black, and `XCUIDevice` has `orientation` and nothing for folding — so the rig
+takes the booted Duo as it finds it, and stops, saying so, if the inner
+display is dark. Held landscape the captures are 2853×2007 (portrait
+2007×2853); the folded outer display is not shot.
 
-- **Only the outer display.** A Duo boots folded, and its outer display is
-  1398×2034 — a size Apple accepts. Nothing in `simctl` or `XCUIDevice`
-  changes the pose: `simctl io screenConfig --display=internal power on` turns
-  the inner display on and leaves it black, and `XCUIDevice` has `orientation`
-  but nothing for folding. The Simulator's own menu is the only switch, and
-  nothing here can press it. The inner display (2007×2853, either way round)
-  is therefore not shot, and `metadata_check` refuses that size, so a capture
-  of it cannot slip in by accident.
-- **fastlane does not know the size.** deliver files a screenshot by its pixel
-  size, and neither the installed 2.234 nor 2.240.1 (the newest at the time)
-  has the Duo's; master did not either. A screenshot it cannot file does not
-  get skipped — it cancels **every** screenshot upload in the run. So the Duo
-  set lives in `appstore/screenshots/ios_duo/`, a directory no lane names, and
-  goes up by hand in App Store Connect, the way the app previews do. **After**
-  the push, every time: `overwrite_screenshots: true` clears the locale's
-  screenshots — a hand-uploaded Duo set included — before deliver uploads its
-  own, and `reconcile_screenshots` compares what is live with `ios/`, so a
-  Duo set uploaded first is deleted, and one uploaded mid-push fails the
-  check. `ios_duo` breaks the rule that a directory name is App Store
-  Connect's vocabulary, on purpose — it must not be one deliver recognises.
-  `metadata_check` still reads it, and `Tools/screenshots.rb` flattens it with
-  the rest. Once fastlane knows the size, move the set into `ios/` and drop
-  the directory.
+Unfolded, the Duo is **a phone by idiom and an iPad by layout**. The inner
+display is regular width, so the app shows the iPad's split view, and the
+shots are the iPad's four; but a phone cannot be handed a document by URL, so
+`openFromBrowser` walks to it as on any phone. Its browser has **no tab bar**
+in either pose — Recents / Shared / Browse stand in a column at the side as
+plain buttons — so Browse is found by its `folder.fill` image. The system puts
+the status bar and the navigation buttons in that column too; that is the
+platform's layout, and the captures show it.
 
-Folded, the Duo is one more compact portrait phone, so the shots are the
-iPhone's. Two things differ, and the test handles one. **Its document browser
-has no tab bar**: Recents / Shared / Browse stand in a column at the side as
-plain buttons, so `openFromBrowser` falls back to the `folder.fill` image when
-there is no tab bar to index into. And the system puts the status bar and the
-navigation bar's buttons in that same side column — that is the platform's
-layout, not the app's, and the captures show it as it is.
+**The test cannot take the picture.** `XCUIScreen.main` is the outer display
+whatever the pose — black, unfolded. So the test hands over (`handoff` in
+`ScreenshotTests`): it writes `<locale>|<name>.ready` to a directory the rig
+watches, the rig shoots `simctl io --display=internal` and checks the size and
+that it is not dark, then answers `.taken`. **The simulator is never
+restarted**, because it comes back folded; that works only because the inner
+display's status bar carries no date, so there is no system language to
+switch, and the app's language rides the launch arguments as always.
+
+**fastlane does not know the Duo's sizes.** deliver files a screenshot by its
+pixel size, and neither the installed 2.234 nor 2.240.1 (the newest at the
+time) had the Duo's; master did not either. A screenshot it cannot file does
+not get skipped — it cancels **every** screenshot upload in the run. So the
+set lives in `appstore/screenshots/ios_duo/`, a directory no lane names, and
+goes up by hand in App Store Connect, the way the app previews do. **After**
+the push, every time: deliver deletes every screenshot set of a locale it
+uploads, whatever the display type (`delete_screenshots` in its
+`upload_screenshots.rb`), and `reconcile_screenshots` compares what is live
+with `ios/`, so a Duo set uploaded first is deleted, and one uploaded mid-push
+fails the check. `ios_duo` breaks the rule that a directory name is App Store
+Connect's vocabulary, on purpose — it must not be one deliver recognises.
+`metadata_check` still reads it, and `Tools/screenshots.rb` flattens it with
+the rest. Once fastlane knows the sizes, move the set into `ios/` and drop the
+directory.
 
 ## Vision Pro — launch arguments
 
