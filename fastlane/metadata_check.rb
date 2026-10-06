@@ -61,7 +61,7 @@ module MetadataCheck
   # assets, told apart by their dimensions, and deliver takes one directory per
   # platform (#114). The iPhone is portrait only (#113), so a landscape one
   # there would be a bug rather than a shape to accept. Apple also accepts
-  # 1290x2796 for the 6.9-inch display; this rig shoots an iPhone 17 Pro Max,
+  # 1290x2796 for the 6.9-inch display; this rig shoots an iPhone 18 Pro Max,
   # which is the other one.
   SIZES = {
     "ios" => [[2064, 2752], [2752, 2064],                        # iPad 13-inch

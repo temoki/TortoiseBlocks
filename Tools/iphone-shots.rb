@@ -14,7 +14,7 @@
 # the leading number in a filename orders each set within its own display type.
 # The `iphone` in these names is for the person reading the directory.
 #
-# **The device is an iPhone 17 Pro Max**, because 1320x2868 is one of the two
+# **The device is an iPhone 18 Pro Max**, because 1320x2868 is one of the two
 # sizes Apple accepts for the 6.9-inch display. The iPhone 17 is 1206x2622,
 # which is a perfectly good picture that App Store Connect refuses.
 #
@@ -60,7 +60,7 @@ DESTINATION = ROOT / "appstore" / "screenshots" / "ios"
 SOURCES = ROOT / "appstore" / "screenshot-sources"
 BUNDLE_ID = "space.hiraku.tortoiseblocks"
 DUO = ARGV.include?("--duo")
-DEVICE_NAME = DUO ? "iPhone Duo" : "iPhone 17 Pro Max"
+DEVICE_NAME = DUO ? "iPhone Duo" : "iPhone 18 Pro Max"
 PREFIX = DUO ? "duo" : "iphone"
 
 # App Store locale directory → the language the app is launched in.
