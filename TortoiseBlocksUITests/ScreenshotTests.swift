@@ -316,10 +316,23 @@ final class ScreenshotTests: XCTestCase {
     private func openFromBrowser(
         _ app: XCUIApplication, sample: String, locale: String, name: String
     ) {
+        // **On an iPhone Duo, folded, there is no tab bar.** Its browser stands
+        // Recents / Shared / Browse in a column at the side, and they are
+        // plain buttons. Browse is still the folder, though, and an SF Symbol
+        // name is the same in every language.
         let tabs = app.tabBars.firstMatch
-        XCTAssertTrue(
-            tabs.waitForExistence(timeout: 30), "\(locale)/\(name): no document browser")
-        tabs.buttons.element(boundBy: 2).tap()
+        let browse = app.images["folder.fill"].firstMatch
+        let browser = XCTNSPredicateExpectation(
+            predicate: NSPredicate { _, _ in tabs.exists || browse.exists }, object: nil)
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [browser], timeout: 30), .completed,
+            "\(locale)/\(name): no document browser")
+        if tabs.exists {
+            tabs.buttons.element(boundBy: 2).tap()
+        }
+        else {
+            browse.tap()
+        }
 
         // **A ladder, not a walk, because the browser remembers where it was.**
         // A second run in the same session opened Browse *inside* the app's

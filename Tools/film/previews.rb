@@ -65,7 +65,7 @@ PREVIEWS = {
   },
   # 886×1920 is a hair taller than the 6.9-inch screen, so a few rows go.
   "iphone" => {
-    device: "iPhone 17 Pro Max", test: "AppPreviewTests/testIPhone",
+    device: "iPhone 18 Pro Max", test: "AppPreviewTests/testIPhone",
     landscape: false, size: [886, 1920], phone: true,
     documents: {
       "My Drawing" => [

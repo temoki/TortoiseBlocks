@@ -61,11 +61,15 @@ module MetadataCheck
   # assets, told apart by their dimensions, and deliver takes one directory per
   # platform (#114). The iPhone is portrait only (#113), so a landscape one
   # there would be a bug rather than a shape to accept. Apple also accepts
-  # 1290x2796 for the 6.9-inch display; this rig shoots an iPhone 17 Pro Max,
+  # 1290x2796 for the 6.9-inch display; this rig shoots an iPhone 18 Pro Max,
   # which is the other one.
   SIZES = {
     "ios" => [[2064, 2752], [2752, 2064],                        # iPad 13-inch
               [1320, 2868]],                                     # iPhone 6.9-inch
+    # Not a platform: the iPhone Duo's captures, kept out of `ios` because
+    # deliver does not know their size and would cancel every screenshot upload
+    # in the run. They go up by hand, so this is the only check they get.
+    "ios_duo" => [[1398, 2034]],                                 # iPhone Duo, folded
     "macos" => [[1280, 800], [1440, 900], [2560, 1600], [2880, 1800]],
     "visionos" => [[3840, 2160]]                                 # Apple Vision Pro
   }.freeze

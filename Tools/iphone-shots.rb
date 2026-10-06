@@ -5,6 +5,7 @@
 #
 #   ruby Tools/iphone-shots.rb          # every shot, both locales
 #   ruby Tools/iphone-shots.rb palette  # only the shots whose name matches
+#   ruby Tools/iphone-shots.rb --duo    # the same set on an iPhone Duo, folded
 #
 # **They go in the same directory as the iPad's** (#114). App Store Connect has
 # one iOS version carrying both display types, `deliver` takes one screenshots
@@ -13,7 +14,7 @@
 # the leading number in a filename orders each set within its own display type.
 # The `iphone` in these names is for the person reading the directory.
 #
-# **The device is an iPhone 17 Pro Max**, because 1320x2868 is one of the two
+# **The device is an iPhone 18 Pro Max**, because 1320x2868 is one of the two
 # sizes Apple accepts for the 6.9-inch display. The iPhone 17 is 1206x2622,
 # which is a perfectly good picture that App Store Connect refuses.
 #
@@ -32,6 +33,19 @@
 # name-deduplication the iPad rig groups its shots around (`spiral-1` in a
 # title bar) cannot happen, and every shot for a locale goes in one run.
 #
+# **`--duo` shoots the same set on an iPhone Duo, folded** — its outer display,
+# 1398x2034, which is the size Apple accepts for it. Same screens, same
+# documents, same test: folded, the Duo is one more compact portrait phone. The
+# files are named `duo` instead of `iphone`, and they go to
+# `appstore/screenshots/ios_duo/`, **not** beside the others: fastlane does not
+# know the Duo's size, and one screenshot it cannot file cancels every
+# screenshot upload in the run, so this set is kept where deliver never looks
+# and goes up by hand (see the `screenshots` skill). Unfolded is not
+# shot: nothing in `simctl` or `XCUIDevice` changes the pose, and the
+# simulator's own menu is the only switch. A fresh Duo boots folded, which is
+# what this relies on — and the capture's size says so, since the inner display
+# is 2007x2853 and `metadata_check` refuses that.
+#
 # Everything else is the iPad rig's, for the same reasons it is there:
 # `ScreenshotTests.swift` does the pressing, the status bar is pinned to 9:41,
 # the simulator's system language is switched per locale (the status bar's date
@@ -45,10 +59,12 @@ require "pathname"
 require "tmpdir"
 
 ROOT = Pathname.new(__dir__).parent
-DESTINATION = ROOT / "appstore" / "screenshots" / "ios"
+DESTINATION = ROOT / "appstore" / "screenshots" / (ARGV.include?("--duo") ? "ios_duo" : "ios")
 SOURCES = ROOT / "appstore" / "screenshot-sources"
 BUNDLE_ID = "space.hiraku.tortoiseblocks"
-DEVICE_NAME = "iPhone 17 Pro Max"
+DUO = ARGV.include?("--duo")
+DEVICE_NAME = DUO ? "iPhone Duo" : "iPhone 18 Pro Max"
+PREFIX = DUO ? "duo" : "iphone"
 
 # App Store locale directory → the language the app is launched in.
 LOCALES = { "en-US" => "en", "ja" => "ja" }.freeze
@@ -63,10 +79,10 @@ SYSTEM_LANGUAGES = {
 # The shot list: which drawing, and which screen to end up on. One picture per
 # screen the phone has, in the order a child meets them.
 SHOTS = [
-  { name: "1_iphone_star_blocks", sample: "star", pane: "blocks" },
-  { name: "2_iphone_star_canvas", sample: "star", pane: "canvas" },
-  { name: "3_iphone_spiral_code", sample: "spiral", pane: "code" },
-  { name: "4_iphone_tree_palette", sample: "tree", pane: "palette" }
+  { name: "1_#{PREFIX}_star_blocks", sample: "star", pane: "blocks" },
+  { name: "2_#{PREFIX}_star_canvas", sample: "star", pane: "canvas" },
+  { name: "3_#{PREFIX}_spiral_code", sample: "spiral", pane: "code" },
+  { name: "4_#{PREFIX}_tree_palette", sample: "tree", pane: "palette" }
 ].freeze
 
 def simctl(*arguments)
