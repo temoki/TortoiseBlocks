@@ -65,7 +65,8 @@ module MetadataCheck
   # which is the other one.
   SIZES = {
     "ios" => [[2064, 2752], [2752, 2064],                        # iPad 13-inch
-              [1320, 2868]],                                     # iPhone 6.9-inch
+              [1320, 2868],                                      # iPhone 6.9-inch
+              [1398, 2034]],                                     # iPhone Duo, folded
     "macos" => [[1280, 800], [1440, 900], [2560, 1600], [2880, 1800]],
     "visionos" => [[3840, 2160]]                                 # Apple Vision Pro
   }.freeze

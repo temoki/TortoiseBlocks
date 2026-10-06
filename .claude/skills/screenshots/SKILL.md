@@ -2,9 +2,10 @@
 name: screenshots
 description: >-
   Producing every picture of the app that ships: the App Store captures in
-  appstore/screenshots/ for iPad, Mac and Vision Pro, and the downscaled copies
-  the website uses in site/shots/. Covers the capture rigs
-  (Tools/ipad-shots.rb, Tools/macos-shots.rb, Tools/visionos-shots.rb), the
+  appstore/screenshots/ for iPad, iPhone (iPhone Duo included), Mac and Vision
+  Pro, and the downscaled copies the website uses in site/shots/. Covers the
+  capture rigs (Tools/ipad-shots.rb, Tools/iphone-shots.rb, Tools/macos-shots.rb,
+  Tools/visionos-shots.rb), the
   flatten-and-optimise pass
   (Tools/screenshots.rb), what a sendable capture has to be, and the traps that
   make a screenshot tool fail silently. Load this before reshooting, before
@@ -20,6 +21,8 @@ only evidence that counts.
 
 ```bash
 ruby Tools/ipad-shots.rb                 # iPad: 4 shots × 2 languages, ~8 min
+ruby Tools/iphone-shots.rb               # iPhone 18 Pro Max: 4 shots × 2 languages
+ruby Tools/iphone-shots.rb --duo         # iPhone Duo, folded: the same 4 × 2
 ruby Tools/macos-shots.rb                # Mac: 4 shots × 2 languages
 ruby Tools/visionos-shots.rb             # Vision Pro: 3 shots × 2 languages
 ruby Tools/screenshots.rb                # always: strip alpha, optimise, rebuild site/shots and docs/
@@ -64,8 +67,8 @@ and the app goes with it.
 the files alone — so the answer to "is this sendable" is to run it, not to
 look.
 
-- **Sizes**: iPad 13-inch 2752×2064 (or portrait), Mac 2880×1800, Vision Pro
-  3840×2160. A size Apple does not accept is a mistake worth stopping on, not
+- **Sizes**: iPad 13-inch 2752×2064 (or portrait), iPhone 6.9-inch 1320×2868,
+  iPhone Duo folded 1398×2034, Mac 2880×1800, Vision Pro 3840×2160. A size Apple does not accept is a mistake worth stopping on, not
   a shape to guess at, so an unexpected one fails rather than being resized.
 - **No alpha channel.** App Store Connect refuses one and says so only when the
   submission is refused.
@@ -168,6 +171,38 @@ when the run ends, however it ends.
 
 Testing is non-parallel on purpose: a parallel run clones the simulator, and
 the clone is not the device the documents were seeded on.
+
+## iPhone Duo — folded only, and uploaded by hand
+
+`ruby Tools/iphone-shots.rb --duo` shoots the iPhone set on an iPhone Duo,
+which needs Xcode 27.1 or later (the device type and its runtime are not in
+27.0). Two limits, both outside this repository, decide what it can do.
+
+- **Only the outer display.** A Duo boots folded, and its outer display is
+  1398×2034 — a size Apple accepts. Nothing in `simctl` or `XCUIDevice`
+  changes the pose: `simctl io screenConfig --display=internal power on` turns
+  the inner display on and leaves it black, and `XCUIDevice` has `orientation`
+  but nothing for folding. The Simulator's own menu is the only switch, and
+  nothing here can press it. The inner display (2007×2853, either way round)
+  is therefore not shot, and `metadata_check` refuses that size, so a capture
+  of it cannot slip in by accident.
+- **fastlane does not know the size.** deliver files a screenshot by its pixel
+  size, and neither the installed 2.234 nor 2.240.1 (the newest at the time)
+  has the Duo's; master did not either. A screenshot it cannot file does not
+  get skipped — it cancels **every** screenshot upload in the run. So with the
+  `duo` captures in `appstore/screenshots/ios/`, `ios metadata_push` stops
+  before uploading anything, and `overwrite_screenshots: true` would delete a
+  hand-uploaded Duo set on the next push in any case. Until fastlane learns
+  the size, the Duo set goes up by hand in App Store Connect, the way the app
+  previews do, after every push.
+
+Folded, the Duo is one more compact portrait phone, so the shots are the
+iPhone's. Two things differ, and the test handles one. **Its document browser
+has no tab bar**: Recents / Shared / Browse stand in a column at the side as
+plain buttons, so `openFromBrowser` falls back to the `folder.fill` image when
+there is no tab bar to index into. And the system puts the status bar and the
+navigation bar's buttons in that same side column — that is the platform's
+layout, not the app's, and the captures show it as it is.
 
 ## Vision Pro — launch arguments
 
