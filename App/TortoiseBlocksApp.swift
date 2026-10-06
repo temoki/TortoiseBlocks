@@ -29,8 +29,30 @@ import SwiftUI
     }
 #endif
 
+#if !os(macOS)
+    /// Launch work that belongs to no window.
+    ///
+    /// Only the iCloud container (#140) for now. It is here rather than in a
+    /// view's `task` because no single view is there on every launch: a
+    /// document opened from the Files app skips the launch scene, and the
+    /// visionOS viewer has none.
+    final class AppDelegate: NSObject, UIApplicationDelegate {
+        func application(
+            _ application: UIApplication,
+            didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+        ) -> Bool {
+            Task { await UbiquityContainer.prepare() }
+            return true
+        }
+    }
+#endif
+
 @main
 struct TortoiseBlocksApp: App {
+    #if !os(macOS)
+        @UIApplicationDelegateAdaptor private var appDelegate: AppDelegate
+    #endif
+
     // The viewer's whole state, shared by its two scenes (#53). One `Scene`
     // cannot see another's, and the window and the table are exactly that
     // split: controls here, drawing there.
