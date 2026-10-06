@@ -1,3 +1,5 @@
-■ iCloud Drive のフォルダにアイコンがつきました
+■ iPhone Duo に対応しました
 
-iPhone と iPad で、iCloud Drive の「Tortoise Blocks」フォルダに、アプリのアイコンが表示されるようになりました。
+新しい iPhone Duo でも、ブロックを組んで、カメに絵を描いてもらえます。
+
+・iPhone と iPad で、iCloud Drive の「Tortoise Blocks」フォルダに、アプリのアイコンが表示されるようになりました。
