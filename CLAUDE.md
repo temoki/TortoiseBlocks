@@ -432,7 +432,17 @@ team; splitting by configuration instead would only have moved the hole into
 Debug. The Mac loses little: iCloud Drive syncs the container's folder to the
 Finder like any iOS-only app's, and the open/save panels already reach it
 through `user-selected.read-write` — what it lacks is only the folder as the
-*default* save location. `NSUbiquitousContainers` still ships in the Mac's
+*default* save location. **Nothing creates the container for the app**:
+`DocumentGroup` makes a new document in whatever folder its browser has
+open, never in the container, so `UbiquityContainer.prepare()` asks for it
+at launch (from an app delegate — no single view is there on every launch).
+**And an empty `Documents` does not show**: measured on an iPhone, the
+folder stayed out of iCloud Drive, in the Files app and the app's own
+browser, until something was inside it; a hidden empty `.keep` was enough,
+and brought the icon with it. Hidden, so a child has nothing to find or
+delete, and nothing to track — a marker already there (or its `.icloud`
+placeholder from another device) is left alone.
+`NSUbiquitousContainers` still ships in the Mac's
 Info.plist (one `INFOPLIST_FILE`, as above) and does nothing there without the
 entitlement. iCloud Drive reads that metadata once per new build, which Xcode
 Cloud's `CI_BUILD_NUMBER` provides; locally, reinstall. The container lives
