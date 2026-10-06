@@ -68,7 +68,8 @@ the files alone — so the answer to "is this sendable" is to run it, not to
 look.
 
 - **Sizes**: iPad 13-inch 2752×2064 (or portrait), iPhone 6.9-inch 1320×2868,
-  iPhone Duo folded 1398×2034, Mac 2880×1800, Vision Pro 3840×2160. A size Apple does not accept is a mistake worth stopping on, not
+  iPhone Duo folded 1398×2034 (in `ios_duo/`, see below), Mac 2880×1800,
+  Vision Pro 3840×2160. A size Apple does not accept is a mistake worth stopping on, not
   a shape to guess at, so an unexpected one fails rather than being resized.
 - **No alpha channel.** App Store Connect refuses one and says so only when the
   submission is refused.
@@ -189,12 +190,18 @@ which needs Xcode 27.1 or later (the device type and its runtime are not in
 - **fastlane does not know the size.** deliver files a screenshot by its pixel
   size, and neither the installed 2.234 nor 2.240.1 (the newest at the time)
   has the Duo's; master did not either. A screenshot it cannot file does not
-  get skipped — it cancels **every** screenshot upload in the run. So with the
-  `duo` captures in `appstore/screenshots/ios/`, `ios metadata_push` stops
-  before uploading anything, and `overwrite_screenshots: true` would delete a
-  hand-uploaded Duo set on the next push in any case. Until fastlane learns
-  the size, the Duo set goes up by hand in App Store Connect, the way the app
-  previews do, after every push.
+  get skipped — it cancels **every** screenshot upload in the run. So the Duo
+  set lives in `appstore/screenshots/ios_duo/`, a directory no lane names, and
+  goes up by hand in App Store Connect, the way the app previews do. **After**
+  the push, every time: `overwrite_screenshots: true` clears the locale's
+  screenshots — a hand-uploaded Duo set included — before deliver uploads its
+  own, and `reconcile_screenshots` compares what is live with `ios/`, so a
+  Duo set uploaded first is deleted, and one uploaded mid-push fails the
+  check. `ios_duo` breaks the rule that a directory name is App Store
+  Connect's vocabulary, on purpose — it must not be one deliver recognises.
+  `metadata_check` still reads it, and `Tools/screenshots.rb` flattens it with
+  the rest. Once fastlane knows the size, move the set into `ios/` and drop
+  the directory.
 
 Folded, the Duo is one more compact portrait phone, so the shots are the
 iPhone's. Two things differ, and the test handles one. **Its document browser

@@ -65,8 +65,11 @@ module MetadataCheck
   # which is the other one.
   SIZES = {
     "ios" => [[2064, 2752], [2752, 2064],                        # iPad 13-inch
-              [1320, 2868],                                      # iPhone 6.9-inch
-              [1398, 2034]],                                     # iPhone Duo, folded
+              [1320, 2868]],                                     # iPhone 6.9-inch
+    # Not a platform: the iPhone Duo's captures, kept out of `ios` because
+    # deliver does not know their size and would cancel every screenshot upload
+    # in the run. They go up by hand, so this is the only check they get.
+    "ios_duo" => [[1398, 2034]],                                 # iPhone Duo, folded
     "macos" => [[1280, 800], [1440, 900], [2560, 1600], [2880, 1800]],
     "visionos" => [[3840, 2160]]                                 # Apple Vision Pro
   }.freeze

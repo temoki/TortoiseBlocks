@@ -36,8 +36,11 @@
 # **`--duo` shoots the same set on an iPhone Duo, folded** — its outer display,
 # 1398x2034, which is the size Apple accepts for it. Same screens, same
 # documents, same test: folded, the Duo is one more compact portrait phone. The
-# files are named `duo` instead of `iphone` and land beside the others, told
-# apart by their size like the iPhone's are from the iPad's. Unfolded is not
+# files are named `duo` instead of `iphone`, and they go to
+# `appstore/screenshots/ios_duo/`, **not** beside the others: fastlane does not
+# know the Duo's size, and one screenshot it cannot file cancels every
+# screenshot upload in the run, so this set is kept where deliver never looks
+# and goes up by hand (see the `screenshots` skill). Unfolded is not
 # shot: nothing in `simctl` or `XCUIDevice` changes the pose, and the
 # simulator's own menu is the only switch. A fresh Duo boots folded, which is
 # what this relies on — and the capture's size says so, since the inner display
@@ -56,7 +59,7 @@ require "pathname"
 require "tmpdir"
 
 ROOT = Pathname.new(__dir__).parent
-DESTINATION = ROOT / "appstore" / "screenshots" / "ios"
+DESTINATION = ROOT / "appstore" / "screenshots" / (ARGV.include?("--duo") ? "ios_duo" : "ios")
 SOURCES = ROOT / "appstore" / "screenshot-sources"
 BUNDLE_ID = "space.hiraku.tortoiseblocks"
 DUO = ARGV.include?("--duo")
