@@ -1,5 +1,3 @@
-A CLEARER SWITCH ON IPAD
+AN ICON FOR YOUR ICLOUD DRIVE FOLDER
 
-On iPad, the switch between the drawing and its code now always reads clearly.
-
-• On iPad, the Canvas / Code switch no longer gets cut short to "Ca… Co…" when space is tight, such as in portrait. When the words don't fit, it shows icons instead.
+On iPhone and iPad, the Tortoise Blocks folder in iCloud Drive now shows the app's icon.
