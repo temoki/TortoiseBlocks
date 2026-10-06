@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 /// The app's own iCloud container — the folder iCloud Drive shows with the
 /// app's icon (#140).
@@ -12,6 +13,8 @@ import Foundation
 /// Not on macOS, which has no iCloud entitlement (see CLAUDE.md): the URL
 /// would only ever come back nil there.
 enum UbiquityContainer {
+    private static let log = Logger(subsystem: "space.hiraku.tortoiseblocks", category: "icloud")
+
     /// Creates the container and its `Documents` folder if they are not there
     /// yet. Does nothing without iCloud — signed out, iCloud Drive off, or the
     /// app switched off under it — which leaves documents where they always
@@ -23,9 +26,20 @@ enum UbiquityContainer {
     @concurrent
     static func prepare() async {
         let files = FileManager.default
-        guard let container = files.url(forUbiquityContainerIdentifier: nil) else { return }
+        guard let container = files.url(forUbiquityContainerIdentifier: nil) else {
+            log.info("No iCloud container: iCloud is unavailable to this app")
+            return
+        }
 
         let documents = container.appending(path: "Documents", directoryHint: .isDirectory)
-        try? files.createDirectory(at: documents, withIntermediateDirectories: true)
+        do {
+            try files.createDirectory(at: documents, withIntermediateDirectories: true)
+            log.info(
+                "iCloud container ready: \(documents.path(percentEncoded: false), privacy: .public)"
+            )
+        }
+        catch {
+            log.error("Could not create the iCloud Documents folder: \(error, privacy: .public)")
+        }
     }
 }
