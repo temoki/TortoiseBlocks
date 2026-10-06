@@ -315,7 +315,8 @@ SDK-conditional: `INFOPLIST_FILE` takes one path, splitting it would
 duplicate the UTType declarations, and macOS simply ignores an iOS key. It
 is what puts a "Tortoise Blocks" folder under On My iPad in the Files app —
 the app's own directory *is* the gallery, which is why no in-app gallery is
-planned (#15).
+planned (#15). With iCloud signed in, the iCloud Drive folder below plays the
+same part.
 The QuickLook extension is a second target in the same hand-written project
 (#15): its own buildable folder `ThumbnailExtension/`, `NSExtension` keys in
 `Support/ThumbnailExtension-Info.plist`, and a `dstSubfolderSpec = 13` copy
@@ -414,6 +415,33 @@ rules apply. The app takes `files.user-selected.read-write` for the
 `DocumentGroup`'s open/save panels and the exporter; the extension keeps
 `read-only` and is sandboxed for a different reason (a macOS QuickLook
 extension is not loaded otherwise).
+
+**iCloud Drive gets a folder with the app's icon — on iOS and visionOS, not
+macOS** (#140). An icon only appears on a folder that is the app's own
+ubiquity container, published by `NSUbiquitousContainers`
+(`IsDocumentScopePublic`); the "Tortoise Blocks" folder that existed before was
+a plain one the document browser made, and a plain folder cannot carry an
+icon. So the app claims `iCloud.space.hiraku.tortoiseblocks` with
+`CloudDocuments`, from `Support/TortoiseBlocks-iCloud.entitlements` — the bare
+`CODE_SIGN_ENTITLEMENTS` — while `[sdk=macosx*]` keeps
+`Support/TortoiseBlocks.entitlements` without it. Name the platform that is
+left out, as with `CODE_SIGN_IDENTITY`: a platform added later inherits iCloud
+instead of silently losing it. macOS is left out because iCloud entitlements
+need a provisioning profile and the Mac's Debug loop is ad-hoc signed with no
+team; splitting by configuration instead would only have moved the hole into
+Debug. The Mac loses little: iCloud Drive syncs the container's folder to the
+Finder like any iOS-only app's, and the open/save panels already reach it
+through `user-selected.read-write` — what it lacks is only the folder as the
+*default* save location. `NSUbiquitousContainers` still ships in the Mac's
+Info.plist (one `INFOPLIST_FILE`, as above) and does nothing there without the
+entitlement. iCloud Drive reads that metadata once per new build, which Xcode
+Cloud's `CI_BUILD_NUMBER` provides; locally, reinstall. The container lives
+in the Developer portal and Xcode Cloud cannot register one, same as a bundle
+identifier. Verifying the result has a trap: a simulator build carries its
+entitlements in a `__TEXT,__entitlements` section of the executable, not the
+signature, so `codesign -d --entitlements -` prints an empty dict for a build
+that is perfectly right — read the section (`otool -l` for its offset) or
+`strings` the binary.
 
 **visionOS runs the iPad app, not a port** (#11). `SUPPORTED_PLATFORMS` gains
 `xros xrsimulator`, `XROS_DEPLOYMENT_TARGET` is 26.0, and the same three-pane
