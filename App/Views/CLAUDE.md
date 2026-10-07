@@ -134,25 +134,30 @@ It reads as cosmetic and is not: the outer capsule's padding was taking the
 width the segments needed, so in portrait the labels truncated to 「キ… コ…」.
 Look at the labels, not just the outline, when judging a change here.
 
-**And the words do not always fit even then, so the toggle falls back to
-icons.** The toolbar's trailing items have a ceiling on their width. On the
-11-inch iPad the portrait canvas column still truncated to 「Ca… Co…」 and
-「キ… コ…」 after #119, and the landscape one to "Canv…" once a drawing had
-run. Pinning the control at its own width kept the words and sent ⟳ and export
-into a "•••" overflow instead; in Japanese the toggle went with them, which is
-worse. Taking either `ToolbarSpacer` away changed nothing. `CanvasViewToggle`
-therefore offers the words and then the icons, through `ViewThatFits`, each
-form `fixedSize` so it can never be squeezed into an ellipsis. What that gives,
-measured: the words on the 13-inch landscape (both languages), on the Mac (in
-Japanese) and in the phone's sheet (in English). The icons in portrait on both
-iPads, and for Japanese on the 11-inch landscape. English on the 11-inch
-landscape sits on the boundary. A freshly opened document with blocks in it
-showed the words throughout. An empty one showed them until its first block,
-then switched to the icons and stayed there — presumably the toolbar offers a
-hair less once its buttons change state, though that was not pinned down.
-That one-time flip was looked at and accepted
-rather than engineered away. Judge a change here on the 11-inch, in portrait
-and in Japanese (the narrowest cases), and from an empty document.
+**And the words do not always fit even then, so the toggle has an icon form —
+chosen by the column's width, not by what fits** (#146). The toolbar's
+trailing items have a ceiling on their width; on the 11-inch iPad the words
+truncated after #119 too, and pinning the control at its own width
+(`fixedSize`) sent ⟳ and export into a "•••" overflow instead, in Japanese the
+toggle with them. So there are two forms, each `fixedSize` so neither can be
+squeezed into an ellipsis. Choosing between them with `ViewThatFits` is what
+#146 removed: **the column passes through a narrower width on its way to its
+own** (measured: 289pt before 426pt on an unfolded iPhone Duo, 420pt before
+619pt on the Mac), the toolbar could pick the icons during that pass and not
+pick again, and so one device and one language showed the words on one
+document and the icons on the next — English, the *shorter* words, was the one
+that flickered. `CanvasPane` now decides from its settled width:
+**words from 560pt** (`roomForWords`, `@ScaledMetric`), icons below. The line
+is measured, not chosen — the column is 715pt on the 13-inch iPad in landscape
+and 619pt in the Mac's default window (words), 479pt on the 11-inch in
+landscape, 440pt in the phone's sheet, 426pt on the unfolded Duo and 393pt on
+the 11-inch in portrait (icons) — and it sits clear of both sides, so nothing
+lands on the boundary. The words are 128pt in English and 158pt in Japanese.
+**The picker also carries `.id(showsWords)`**, and it has to: a toolbar does
+not redraw a segmented control whose segments change under it — on the Mac
+`showsWords` turned true at 619pt and the toggle went on showing its icons.
+Judge a change here on the 11-inch iPad and the Mac in both languages, and on
+an unfolded Duo, where the old flicker showed.
 
 **26's glass is not used on any surface of ours, and that was tested rather
 than assumed** (#79). All three candidates were built and looked at, and all

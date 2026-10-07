@@ -283,6 +283,15 @@ struct CanvasPane: View {
     @Bindable var runner: RunnerModel
 
     @State private var showsCode = false
+    /// Whether the canvas/code toggle shows its words rather than its icons —
+    /// decided by this column's width against `roomForWords` (#146).
+    @State private var showsWords = false
+    /// The column width from which the toggle's words show. Measured, not
+    /// chosen: the words fit at 619pt (the Mac's default window) and stopped
+    /// fitting reliably at 479pt (the 11-inch iPad, landscape), so the line
+    /// sits clear of both. Scaled with Dynamic Type, so larger text moves to
+    /// the icons before the words would be cut.
+    @ScaledMetric private var roomForWords: CGFloat = 560
     // One presentation state for both formats: attaching two fileExporter
     // modifiers to the same view lets the later one swallow the earlier.
     @State private var exportFile: ExportFile?
@@ -369,9 +378,15 @@ struct CanvasPane: View {
         // sits next to is not ours to remove — neither dropping this column's
         // toolbar nor `navigationBarBackButtonHidden` touches it.
         .toolbar(removing: .title)
+        .onGeometryChange(for: Bool.self) { [roomForWords] geometry in
+            geometry.size.width >= roomForWords
+        } action: {
+            showsWords = $0
+        }
         .toolbar {
             CanvasToolbar(
-                workspace: workspace, runner: runner, showsCode: $showsCode, onExport: export)
+                workspace: workspace, runner: runner, showsCode: $showsCode,
+                showsWords: showsWords, onExport: export)
         }
         // One alert, switching on why the run failed (`expansionAlert`):
         // attaching a second one for the recursion case would silently drop
@@ -418,6 +433,7 @@ struct CanvasToolbar: ToolbarContent {
     let workspace: WorkspaceEditor
     let runner: RunnerModel
     @Binding var showsCode: Bool
+    let showsWords: Bool
     let onExport: (Data?, UTType) -> Void
 
     var body: some ToolbarContent {
@@ -436,7 +452,7 @@ struct CanvasToolbar: ToolbarContent {
         // segments needed, and in portrait the labels were being truncated to
         // 「キ… コ…」. They fit once it is gone.
         ToolbarItemGroup(placement: .primaryAction) {
-            CanvasViewToggle(showsCode: $showsCode)
+            CanvasViewToggle(showsCode: $showsCode, showsWords: showsWords)
         }
         .withoutSharedBackground()
 
@@ -452,35 +468,32 @@ struct CanvasToolbar: ToolbarContent {
 }
 
 /// The canvas/code segmented toggle, in `CanvasPane`'s toolbar (#23): the
-/// words when they fit, the icons when they do not.
+/// words where the column has room to spare, the icons everywhere else.
 ///
-/// **The toolbar's trailing items have a ceiling on how wide they may be, and
-/// the words do not always fit under it.** Measured on the 11-inch iPad
-/// simulator: in the portrait canvas column a segmented control that was
-/// allowed to shrink came out 「Ca… Co…」 and 「キ… コ…」, and in the landscape
-/// one "Canv…" once a drawing had run — the truncation #119 fixed on one width
-/// was still there on others. Pinning it at its own width (`fixedSize`) kept the words and sent
-/// the ⟳ and export buttons into a "•••" overflow instead, and in Japanese the
-/// toggle itself went with them. Neither the flexible spacer before it nor the
-/// fixed one after it was what ran out: taking each away changed nothing.
+/// **Decided by the column's width, not by what fits** (#146). It used to be a
+/// `ViewThatFits` offering the words and then the icons, and that flickered:
+/// the column passes through a narrower width on its way to its own (289pt
+/// before 426pt, on an unfolded iPhone Duo), the toolbar picked the icons
+/// then, and it did not always pick again — so one device and one language
+/// showed the words on one document and the icons on the next. The choice is
+/// now `CanvasPane`'s, made from its width with a margin either side
+/// (`roomForWords`), and the same width always gives the same toggle: the
+/// words on the 13-inch iPad in landscape and on the Mac, the icons on the
+/// 11-inch iPad, the phone's sheet and the Duo.
 ///
-/// So the words are offered first and the icons second, and `ViewThatFits`
-/// takes whichever the toolbar has room for. The 13-inch landscape keeps the
-/// words in both languages. The 11-inch landscape column is the boundary: it
-/// never fits 「キャンバス」, and it fits the English words only until the
-/// toolbar's own state changes. An empty document shows "Canvas | Code", and
-/// the first block — which is when ⟳ comes on — turns them into the icons for
-/// good. That flip was seen and accepted: it happens once, and nothing is cut
-/// or hidden either side of it. VoiceOver reads "Canvas" and "Code" either
-/// way.
+/// **And the picker is rebuilt when it switches** (`id`). A toolbar does not
+/// redraw a segmented control whose segments change under it: on the Mac the
+/// column reached 619pt, `showsWords` turned true, and the toggle went on
+/// showing its icons. A new identity makes it draw the other form.
+///
+/// VoiceOver reads "Canvas" and "Code" either way.
 struct CanvasViewToggle: View {
     @Binding var showsCode: Bool
+    let showsWords: Bool
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            CanvasViewPicker(showsCode: $showsCode, iconOnly: false)
-            CanvasViewPicker(showsCode: $showsCode, iconOnly: true)
-        }
+        CanvasViewPicker(showsCode: $showsCode, iconOnly: !showsWords)
+            .id(showsWords)
     }
 }
 
