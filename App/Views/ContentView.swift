@@ -283,6 +283,10 @@ struct CanvasPane: View {
     @Bindable var runner: RunnerModel
 
     @State private var showsCode = false
+    /// Whether the canvas/code toggle shows its words (#146).
+    @State private var showsWords = false
+    /// The column width at which it does.
+    @ScaledMetric private var roomForWords: CGFloat = 560
     // One presentation state for both formats: attaching two fileExporter
     // modifiers to the same view lets the later one swallow the earlier.
     @State private var exportFile: ExportFile?
@@ -369,9 +373,15 @@ struct CanvasPane: View {
         // sits next to is not ours to remove — neither dropping this column's
         // toolbar nor `navigationBarBackButtonHidden` touches it.
         .toolbar(removing: .title)
+        .onGeometryChange(for: Bool.self) {
+            $0.size.width >= roomForWords
+        } action: {
+            showsWords = $0
+        }
         .toolbar {
             CanvasToolbar(
-                workspace: workspace, runner: runner, showsCode: $showsCode, onExport: export)
+                workspace: workspace, runner: runner, showsCode: $showsCode,
+                showsWords: showsWords, onExport: export)
         }
         // One alert, switching on why the run failed (`expansionAlert`):
         // attaching a second one for the recursion case would silently drop
@@ -418,6 +428,7 @@ struct CanvasToolbar: ToolbarContent {
     let workspace: WorkspaceEditor
     let runner: RunnerModel
     @Binding var showsCode: Bool
+    let showsWords: Bool
     let onExport: (Data?, UTType) -> Void
 
     var body: some ToolbarContent {
@@ -436,7 +447,7 @@ struct CanvasToolbar: ToolbarContent {
         // segments needed, and in portrait the labels were being truncated to
         // 「キ… コ…」. They fit once it is gone.
         ToolbarItemGroup(placement: .primaryAction) {
-            CanvasViewToggle(showsCode: $showsCode)
+            CanvasViewToggle(showsCode: $showsCode, showsWords: showsWords)
         }
         .withoutSharedBackground()
 
@@ -475,12 +486,10 @@ struct CanvasToolbar: ToolbarContent {
 /// way.
 struct CanvasViewToggle: View {
     @Binding var showsCode: Bool
+    let showsWords: Bool
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            CanvasViewPicker(showsCode: $showsCode, iconOnly: false)
-            CanvasViewPicker(showsCode: $showsCode, iconOnly: true)
-        }
+        CanvasViewPicker(showsCode: $showsCode, iconOnly: !showsWords)
     }
 }
 
