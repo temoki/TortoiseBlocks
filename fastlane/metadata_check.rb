@@ -69,7 +69,9 @@ module MetadataCheck
     # Not a platform: the iPhone Duo's captures, kept out of `ios` because
     # deliver does not know their size and would cancel every screenshot upload
     # in the run. They go up by hand, so this is the only check they get.
-    "ios_duo" => [[1398, 2034]],                                 # iPhone Duo, folded
+    # Unfolded only — the inner display, held either way; the folded outer
+    # display (1398x2034) is not shot.
+    "ios_duo" => [[2853, 2007], [2007, 2853]],                   # iPhone Duo, unfolded
     "macos" => [[1280, 800], [1440, 900], [2560, 1600], [2880, 1800]],
     "visionos" => [[3840, 2160]]                                 # Apple Vision Pro
   }.freeze

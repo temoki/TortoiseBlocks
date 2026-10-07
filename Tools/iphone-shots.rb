@@ -33,18 +33,29 @@
 # name-deduplication the iPad rig groups its shots around (`spiral-1` in a
 # title bar) cannot happen, and every shot for a locale goes in one run.
 #
-# **`--duo` shoots the same set on an iPhone Duo, folded** — its outer display,
-# 1398x2034, which is the size Apple accepts for it. Same screens, same
-# documents, same test: folded, the Duo is one more compact portrait phone. The
-# files are named `duo` instead of `iphone`, and they go to
-# `appstore/screenshots/ios_duo/`, **not** beside the others: fastlane does not
-# know the Duo's size, and one screenshot it cannot file cancels every
-# screenshot upload in the run, so this set is kept where deliver never looks
-# and goes up by hand (see the `screenshots` skill). Unfolded is not
-# shot: nothing in `simctl` or `XCUIDevice` changes the pose, and the
-# simulator's own menu is the only switch. A fresh Duo boots folded, which is
-# what this relies on — and the capture's size says so, since the inner display
-# is 2007x2853 and `metadata_check` refuses that.
+# **`--duo` shoots an iPhone Duo, unfolded**, and needs a person for exactly
+# one step: boot the Duo and open it in the Simulator (Device ▸ pose) before
+# running this. Nothing in `simctl` or `XCUIDevice` changes the pose, so the
+# rig takes the booted Duo as it finds it and stops, saying so, if its inner
+# display is dark. Held landscape the captures are 2853x2007, portrait
+# 2007x2853; Apple takes either.
+#
+# Unfolded, the Duo is a phone by idiom and an iPad by layout, so the shots
+# are the **iPad's** four — the split view, with the transport on screen —
+# while the documents are still walked to in the browser, as on any phone.
+# And the test cannot take the picture: `XCUIScreen.main` is the outer display
+# whatever the pose. So it hands over instead (`handoff` in
+# `ScreenshotTests`): it writes `<locale>|<name>.ready` to a directory this
+# script watches, this shoots `simctl io --display=internal`, and answers
+# `.taken`. Two more things differ because of the pose. **The simulator is
+# never restarted**, since a restart comes back folded — which is affordable
+# because the inner display's status bar carries no date, so there is no
+# system language to switch; the app's language rides the launch arguments
+# as always. And the files go to `appstore/screenshots/ios_duo/`, **not**
+# beside the others: fastlane does not know the Duo's sizes, and one
+# screenshot it cannot file cancels every screenshot upload in the run, so
+# this set lives where deliver never looks and goes up by hand (see the
+# `screenshots` skill).
 #
 # Everything else is the iPad rig's, for the same reasons it is there:
 # `ScreenshotTests.swift` does the pressing, the status bar is pinned to 9:41,
@@ -53,6 +64,7 @@
 # xcodebuild's own environment rather than passed as arguments. Rotation is the
 # one thing this does not do: the phone is portrait only (#113).
 
+require "English"
 require "fileutils"
 require "json"
 require "pathname"
@@ -64,7 +76,10 @@ SOURCES = ROOT / "appstore" / "screenshot-sources"
 BUNDLE_ID = "space.hiraku.tortoiseblocks"
 DUO = ARGV.include?("--duo")
 DEVICE_NAME = DUO ? "iPhone Duo" : "iPhone 18 Pro Max"
-PREFIX = DUO ? "duo" : "iphone"
+
+# The Duo's inner display, landscape and portrait — the only sizes a capture
+# from it may come back as.
+INNER_SIZES = [[2853, 2007], [2007, 2853]].freeze
 
 # App Store locale directory → the language the app is launched in.
 LOCALES = { "en-US" => "en", "ja" => "ja" }.freeze
@@ -78,12 +93,22 @@ SYSTEM_LANGUAGES = {
 
 # The shot list: which drawing, and which screen to end up on. One picture per
 # screen the phone has, in the order a child meets them.
-SHOTS = [
-  { name: "1_#{PREFIX}_star_blocks", sample: "star", pane: "blocks" },
-  { name: "2_#{PREFIX}_star_canvas", sample: "star", pane: "canvas" },
-  { name: "3_#{PREFIX}_spiral_code", sample: "spiral", pane: "code" },
-  { name: "4_#{PREFIX}_tree_palette", sample: "tree", pane: "palette" }
-].freeze
+SHOTS = if DUO
+  # The iPad's set: unfolded, the Duo's layout is the iPad's.
+  [
+    { name: "1_duo_star_canvas", sample: "star", pane: "canvas" },
+    { name: "2_duo_spiral_canvas", sample: "spiral", pane: "canvas" },
+    { name: "3_duo_spiral_code", sample: "spiral", pane: "code" },
+    { name: "4_duo_tree_canvas", sample: "tree", pane: "canvas" }
+  ].freeze
+else
+  [
+    { name: "1_iphone_star_blocks", sample: "star", pane: "blocks" },
+    { name: "2_iphone_star_canvas", sample: "star", pane: "canvas" },
+    { name: "3_iphone_spiral_code", sample: "spiral", pane: "code" },
+    { name: "4_iphone_tree_palette", sample: "tree", pane: "palette" }
+  ].freeze
+end
 
 def simctl(*arguments)
   IO.popen(["xcrun", "simctl", *arguments], err: %i[child out], &:read)
@@ -105,6 +130,12 @@ def device
     runtime.include?("iOS") ? list.select { |d| d["name"] == DEVICE_NAME }.map { |d| [runtime, d] } : []
   end
   abort("No #{DEVICE_NAME} simulator.") if candidates.empty?
+  if DUO
+    # The one already booted, and open: booting one here would bring it up
+    # folded, and nothing here can unfold it.
+    candidates = candidates.select { |_, d| d["state"] == "Booted" }
+    abort("Boot an iPhone Duo and open it in the Simulator first.") if candidates.empty?
+  end
 
   runtime, chosen = candidates.max_by { |r, _| r }
   version = runtime[/iOS-(\d+)-(\d+)/, 0].to_s.sub("iOS-", "").tr("-", ".")
@@ -149,12 +180,36 @@ def restart(udid)
   simctl("bootstatus", udid)
 end
 
+# The Duo's inner display, shot to `path`, or the reason it is not a capture:
+# the wrong size, or dark — which is what a folded Duo's inner display is.
+def shoot_inner_display(udid, path)
+  simctl("io", udid, "screenshot", "--display=internal", path.to_s)
+  return "no capture" unless path.exist?
+
+  size = `magick identify -format "%w %h" "#{path}"`.split.map(&:to_i)
+  return "#{size.join('x')}, not the inner display" unless INNER_SIZES.include?(size)
+
+  brightness = `magick "#{path}" -colorspace Gray -format "%[fx:mean]" info:`.to_f
+  return "dark — is the Duo open?" if brightness < 0.02
+
+  nil
+end
+
 wanted = ARGV.reject { |argument| argument.start_with?("-") }
 shots = wanted.empty? ? SHOTS : SHOTS.select { |shot| wanted.any? { |w| shot[:name].include?(w) } }
 abort("Nothing matches #{wanted.join(', ')}") if shots.empty?
 
 udid = device
 puts "device #{udid}"
+
+# Asked before anything is installed or seeded: a Duo left folded fails here,
+# saying what to do, rather than four shots later as a timeout.
+if DUO
+  probe = Pathname.new(Dir.mktmpdir) / "inner.png"
+  problem = shoot_inner_display(udid, probe)
+  abort("The Duo's inner display: #{problem}. Open it in the Simulator (Device ▸ pose).") if problem
+  FileUtils.rm_rf(probe.dirname)
+end
 
 # Whatever the simulator was set to goes back, however the run ends — a device
 # left in English is a surprise the next time somebody opens it.
@@ -181,7 +236,9 @@ LOCALES.to_a.product([shots]).each do |(locale, language), group|
 
   unless current_language == locale
     wanted_language = SYSTEM_LANGUAGES.fetch(locale)
-    unless system_language(udid) == wanted_language
+    # Never on a Duo: a restart comes back folded, and its inner display's
+    # status bar has no date to be written in the wrong language.
+    unless DUO || system_language(udid) == wanted_language
       puts "  switching the simulator to #{wanted_language[:locale]} and restarting it"
       write_system_language(udid, wanted_language)
       restart(udid)
@@ -218,32 +275,66 @@ LOCALES.to_a.product([shots]).each do |(locale, language), group|
     "-resultBundlePath", result.to_s,
     "-quiet"
   ]
-  abort("#{locale}: the test run failed") unless system(environment, *command)
+  if DUO
+    # The test gets each screen ready and waits; this shoots it. See `handoff`
+    # in ScreenshotTests.
+    handoff = workspace / "handoff"
+    FileUtils.mkdir_p(handoff)
+    environment["TEST_RUNNER_TB_HANDOFF"] = handoff.to_s
+    test = Process.spawn(environment, *command)
+    filed = []
+    loop do
+      finished = Process.wait(test, Process::WNOHANG)
+      Pathname.glob(handoff / "*.ready").each do |ready|
+        taken = ready.sub_ext(".taken")
+        next if taken.exist?
 
-  exported = Pathname.new(Dir.mktmpdir)
-  unless system("xcrun", "xcresulttool", "export", "attachments",
-                "--path", result.to_s, "--output-path", exported.to_s,
-                out: File::NULL, err: File::NULL)
-    abort("#{locale}: could not export the captures")
+        where, name = ready.basename(".ready").to_s.split("|", 2)
+        target = DESTINATION / where / "#{name}.png"
+        FileUtils.mkdir_p(target.dirname)
+        if (problem = shoot_inner_display(udid, target))
+          Process.kill("TERM", test)
+          abort("#{where}/#{name}: #{problem}")
+        end
+        puts "  → #{target.relative_path_from(ROOT)}"
+        filed << target
+        FileUtils.touch(taken)
+      end
+      break if finished
+
+      sleep(0.5)
+    end
+    abort("#{locale}: the test run failed") unless $CHILD_STATUS.success?
+    abort("#{locale}: #{filed.count} of #{group.count} captures came back") unless filed.count == group.count
+  else
+    abort("#{locale}: the test run failed") unless system(environment, *command)
+
+    exported = Pathname.new(Dir.mktmpdir)
+    unless system("xcrun", "xcresulttool", "export", "attachments",
+                  "--path", result.to_s, "--output-path", exported.to_s,
+                  out: File::NULL, err: File::NULL)
+      abort("#{locale}: could not export the captures")
+    end
+
+    manifest = JSON.parse((exported / "manifest.json").read)
+    filed = manifest.flat_map { |test| test["attachments"] }.filter_map do |attachment|
+      # "ja|1_iphone_star_blocks_0_<uuid>.png" — the part before the pipe is
+      # where it goes, the part after is what it is called.
+      where, rest = attachment["suggestedHumanReadableName"].split("|", 2)
+      next if rest.nil?
+
+      name = rest.sub(/_\d+_[0-9A-F-]+\.png\z/, "")
+      target = DESTINATION / where / "#{name}.png"
+      FileUtils.mkdir_p(target.dirname)
+      FileUtils.cp(exported / attachment["exportedFileName"], target)
+      puts "  → #{target.relative_path_from(ROOT)}"
+      target
+    end
+    abort("#{locale}: no captures came back") if filed.empty?
+
+    FileUtils.rm_rf(exported)
   end
 
-  manifest = JSON.parse((exported / "manifest.json").read)
-  filed = manifest.flat_map { |test| test["attachments"] }.filter_map do |attachment|
-    # "ja|1_iphone_star_blocks_0_<uuid>.png" — the part before the pipe is
-    # where it goes, the part after is what it is called.
-    where, rest = attachment["suggestedHumanReadableName"].split("|", 2)
-    next if rest.nil?
-
-    name = rest.sub(/_\d+_[0-9A-F-]+\.png\z/, "")
-    target = DESTINATION / where / "#{name}.png"
-    FileUtils.mkdir_p(target.dirname)
-    FileUtils.cp(exported / attachment["exportedFileName"], target)
-    puts "  → #{target.relative_path_from(ROOT)}"
-    target
-  end
-  abort("#{locale}: no captures came back") if filed.empty?
-
-  FileUtils.rm_rf(exported)
   FileUtils.rm_rf(workspace)
 end
 

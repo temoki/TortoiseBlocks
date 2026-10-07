@@ -54,6 +54,25 @@ final class ScreenshotTests: XCTestCase {
         #endif
     }
 
+    /// Where the driver takes the picture instead of this test, or nil when
+    /// the test takes it itself — set for an iPhone Duo, **unfolded**.
+    ///
+    /// Unfolded, the Duo is a phone by idiom and an iPad by layout: the inner
+    /// display is regular width, so the app shows the iPad's split view with
+    /// the transport already on screen, while the document still has to be
+    /// walked to in the browser, a phone being unable to take one by URL. And
+    /// `XCUIScreen.main` photographs the *outer* display whatever the pose —
+    /// black, when it is open. So the test gets the screen ready, writes
+    /// `<locale>|<name>.ready` here, and waits for the driver to shoot the
+    /// inner display with `simctl io --display=internal` and answer
+    /// `<locale>|<name>.taken`.
+    private var handoff: URL?
+
+    /// The phone's own screens — the program, and the sheets raised over it —
+    /// rather than the iPad's split view. Every phone but an unfolded Duo.
+    @MainActor
+    private var isCompactPhone: Bool { Self.isPhone && handoff == nil }
+
     override func setUp() {
         continueAfterFailure = false
     }
@@ -74,6 +93,7 @@ final class ScreenshotTests: XCTestCase {
         // that history; two languages in one run would spend it.
         let locale = try environment("TB_LOCALE")
         let language = try environment("TB_LANGUAGE")
+        handoff = (try? environment("TB_HANDOFF")).map { URL(fileURLWithPath: $0) }
 
         for shot in shots {
             capture(shot, documents: documents, locale: locale, language: language)
@@ -169,7 +189,7 @@ final class ScreenshotTests: XCTestCase {
         // yet** (#113). On iPad and Mac the scrubber is the sign that the
         // document opened; on a phone that sign is the run button in the
         // bottom bar, which is also what raises the canvas over the program.
-        if Self.isPhone {
+        if isCompactPhone {
             // Addressed by SF Symbol for the same reason as everything else
             // here: the label is 「うごかす」 in one language and "Run" in the
             // other, and SwiftUI passes the symbol through as the identifier.
@@ -259,6 +279,12 @@ final class ScreenshotTests: XCTestCase {
         // the same runloop turn catches the drawing half-made.
         Thread.sleep(forTimeInterval: 2)
 
+        if let handoff {
+            handOver(shot, to: handoff, locale: locale)
+            app.terminate()
+            return
+        }
+
         // **The Mac captures the window, not the screen.** What is around it —
         // the desktop and the menu bar — is a plate prepared once per language
         // and composited under this by the driver, so the capture does not
@@ -293,6 +319,25 @@ final class ScreenshotTests: XCTestCase {
         app.terminate()
     }
 
+    /// Tells the driver the screen is ready and waits until it has been shot
+    /// (see `handoff`). Running out of time is a failure, like everywhere else
+    /// here, rather than moving on to a screen nobody photographed.
+    @MainActor
+    private func handOver(_ shot: Shot, to handoff: URL, locale: String) {
+        let name = "\(locale)|\(shot.name)"
+        FileManager.default.createFile(
+            atPath: handoff.appendingPathComponent("\(name).ready").path, contents: nil)
+
+        let taken = handoff.appendingPathComponent("\(name).taken").path
+        let deadline = Date().addingTimeInterval(60)
+        while !FileManager.default.fileExists(atPath: taken), Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.5)
+        }
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: taken),
+            "\(name): the driver never took the picture")
+    }
+
     /// Opens the sample's document from the app's own document browser (#114).
     ///
     /// **A phone cannot be handed a document by URL at all.** Measured every
@@ -316,7 +361,7 @@ final class ScreenshotTests: XCTestCase {
     private func openFromBrowser(
         _ app: XCUIApplication, sample: String, locale: String, name: String
     ) {
-        // **On an iPhone Duo, folded, there is no tab bar.** Its browser stands
+        // **On an iPhone Duo there is no tab bar.** Its browser stands
         // Recents / Shared / Browse in a column at the side, and they are
         // plain buttons. Browse is still the folder, though, and an SF Symbol
         // name is the same in every language.
