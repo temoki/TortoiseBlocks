@@ -12,7 +12,7 @@
 | Funding | `Bootstrapped` のみ |
 | Launch tags | `Kids` · `Education` · `Open Source` |
 | Product category | `Engineering & Development` > `Code editors`（1つだけ） |
-| Website | `https://temoki.github.io/TortoiseBlocks/?lang=en` |
+| Website | `https://tortoiseblocks.hiraku.space/?lang=en` |
 | App Store | `https://apps.apple.com/app/id6798677334` |
 | GitHub（アプリ） | `https://github.com/temoki/TortoiseBlocks` |
 | GitHub（エンジン） | `https://github.com/temoki/TortoiseGraphics2` |

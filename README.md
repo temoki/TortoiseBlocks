@@ -11,9 +11,9 @@ watch the tortoise draw. Powered by
 [TortoiseGraphics2](https://github.com/temoki/TortoiseGraphics2), a turtle
 graphics engine written in Swift.
 
-[**Website**](https://temoki.github.io/TortoiseBlocks/) ·
+[**Website**](https://tortoiseblocks.hiraku.space/) ·
 [**App Store**](https://apps.apple.com/app/id6798677334) ·
-[Privacy](https://temoki.github.io/TortoiseBlocks/privacy.html)
+[Privacy](https://tortoiseblocks.hiraku.space/privacy.html)
 
 <img src="docs/Screenshot.png" width="640" alt="Tortoise Blocks on macOS: a block named 🌳 that calls itself twice, and the fractal tree it draws." />
 
