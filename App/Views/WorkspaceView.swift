@@ -69,7 +69,14 @@ struct WorkspaceView: View {
                         }
                     }
                 }
-                .frame(maxHeight: .infinity)
+                // **The whole pane takes the drop, not only its text.** Nothing
+                // here paints a background, so without a content shape a drop
+                // only landed on the title, the description or a sample button
+                // — the empty space around them, which is most of the pane and
+                // where a child aims, refused the block on iPhone and iPad
+                // alike, while tapping a palette block worked.
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(.rect)
                 .dropDestination(for: Block.self) { items, _ in
                     guard let block = items.first else { return false }
                     return workspace.handleDrop(block, at: 0, inBodyAt: .topLevel)

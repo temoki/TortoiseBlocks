@@ -296,6 +296,12 @@ divider, is the accessibility alternative and must stay. A permanent trash
 circle rides a `safeAreaInset` at the bottom of the workspace
 (`WorkspaceTrashZone`, #30) — the way out of a drag you regret, since deleting
 a *placed* block was never the hidden part.
+**An empty program is one target, the whole pane.** With no rows there are no
+gaps, so the `ContentUnavailableView` carries the drop itself — and it needs
+`.contentShape(.rect)` over a full-size frame to do it: it paints no
+background, and a drop is hit-tested like a tap, so without the shape only its
+text and sample buttons took the block and the blank space around them, where
+a child aims, refused it (iPhone and iPad).
 
 **The gaps tile, and that is what makes the parting bearable.** A closed gap
 reports the row-to-row margin to its `VStack` and is hit-tested over a whole
