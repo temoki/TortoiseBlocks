@@ -11,66 +11,65 @@
   deployed by hand at release time, so a date in here would be one more
   thing to remember and would go stale the first time it was forgotten.
 
-  This file is submitted in Search Console rather than announced from a
-  robots.txt, because a robots.txt is only read at the host root —
-  temoki.github.io/robots.txt — which belongs to no repository here. A
-  sitemap has no such rule: it may sit at any level at or above the URLs
-  it lists.
+  It is announced from robots.txt and submitted in Search Console as well.
+  The robots.txt only counts because the site now owns its host: a crawler
+  reads robots.txt at the host root and nowhere else, and on
+  temoki.github.io/TortoiseBlocks/ that root belonged to no repository here.
 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://temoki.github.io/TortoiseBlocks/?lang=en</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://temoki.github.io/TortoiseBlocks/?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="ja" href="https://temoki.github.io/TortoiseBlocks/?lang=ja"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://temoki.github.io/TortoiseBlocks/"/>
+    <loc>https://tortoiseblocks.hiraku.space/?lang=en</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tortoiseblocks.hiraku.space/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://tortoiseblocks.hiraku.space/?lang=ja"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://tortoiseblocks.hiraku.space/"/>
   </url>
   <url>
-    <loc>https://temoki.github.io/TortoiseBlocks/?lang=ja</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://temoki.github.io/TortoiseBlocks/?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="ja" href="https://temoki.github.io/TortoiseBlocks/?lang=ja"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://temoki.github.io/TortoiseBlocks/"/>
+    <loc>https://tortoiseblocks.hiraku.space/?lang=ja</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tortoiseblocks.hiraku.space/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://tortoiseblocks.hiraku.space/?lang=ja"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://tortoiseblocks.hiraku.space/"/>
   </url>
   <url>
-    <loc>https://temoki.github.io/TortoiseBlocks/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://temoki.github.io/TortoiseBlocks/?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="ja" href="https://temoki.github.io/TortoiseBlocks/?lang=ja"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://temoki.github.io/TortoiseBlocks/"/>
+    <loc>https://tortoiseblocks.hiraku.space/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tortoiseblocks.hiraku.space/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://tortoiseblocks.hiraku.space/?lang=ja"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://tortoiseblocks.hiraku.space/"/>
   </url>
   <url>
-    <loc>https://temoki.github.io/TortoiseBlocks/privacy.html?lang=en</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://temoki.github.io/TortoiseBlocks/privacy.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="ja" href="https://temoki.github.io/TortoiseBlocks/privacy.html?lang=ja"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://temoki.github.io/TortoiseBlocks/privacy.html"/>
+    <loc>https://tortoiseblocks.hiraku.space/privacy.html?lang=en</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tortoiseblocks.hiraku.space/privacy.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://tortoiseblocks.hiraku.space/privacy.html?lang=ja"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://tortoiseblocks.hiraku.space/privacy.html"/>
   </url>
   <url>
-    <loc>https://temoki.github.io/TortoiseBlocks/privacy.html?lang=ja</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://temoki.github.io/TortoiseBlocks/privacy.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="ja" href="https://temoki.github.io/TortoiseBlocks/privacy.html?lang=ja"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://temoki.github.io/TortoiseBlocks/privacy.html"/>
+    <loc>https://tortoiseblocks.hiraku.space/privacy.html?lang=ja</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tortoiseblocks.hiraku.space/privacy.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://tortoiseblocks.hiraku.space/privacy.html?lang=ja"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://tortoiseblocks.hiraku.space/privacy.html"/>
   </url>
   <url>
-    <loc>https://temoki.github.io/TortoiseBlocks/privacy.html</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://temoki.github.io/TortoiseBlocks/privacy.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="ja" href="https://temoki.github.io/TortoiseBlocks/privacy.html?lang=ja"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://temoki.github.io/TortoiseBlocks/privacy.html"/>
+    <loc>https://tortoiseblocks.hiraku.space/privacy.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tortoiseblocks.hiraku.space/privacy.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://tortoiseblocks.hiraku.space/privacy.html?lang=ja"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://tortoiseblocks.hiraku.space/privacy.html"/>
   </url>
   <url>
-    <loc>https://temoki.github.io/TortoiseBlocks/why.html?lang=en</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://temoki.github.io/TortoiseBlocks/why.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="ja" href="https://temoki.github.io/TortoiseBlocks/why.html?lang=ja"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://temoki.github.io/TortoiseBlocks/why.html"/>
+    <loc>https://tortoiseblocks.hiraku.space/why.html?lang=en</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tortoiseblocks.hiraku.space/why.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://tortoiseblocks.hiraku.space/why.html?lang=ja"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://tortoiseblocks.hiraku.space/why.html"/>
   </url>
   <url>
-    <loc>https://temoki.github.io/TortoiseBlocks/why.html?lang=ja</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://temoki.github.io/TortoiseBlocks/why.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="ja" href="https://temoki.github.io/TortoiseBlocks/why.html?lang=ja"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://temoki.github.io/TortoiseBlocks/why.html"/>
+    <loc>https://tortoiseblocks.hiraku.space/why.html?lang=ja</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tortoiseblocks.hiraku.space/why.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://tortoiseblocks.hiraku.space/why.html?lang=ja"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://tortoiseblocks.hiraku.space/why.html"/>
   </url>
   <url>
-    <loc>https://temoki.github.io/TortoiseBlocks/why.html</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://temoki.github.io/TortoiseBlocks/why.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="ja" href="https://temoki.github.io/TortoiseBlocks/why.html?lang=ja"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://temoki.github.io/TortoiseBlocks/why.html"/>
+    <loc>https://tortoiseblocks.hiraku.space/why.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tortoiseblocks.hiraku.space/why.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://tortoiseblocks.hiraku.space/why.html?lang=ja"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://tortoiseblocks.hiraku.space/why.html"/>
   </url>
 </urlset>

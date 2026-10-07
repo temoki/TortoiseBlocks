@@ -17,7 +17,7 @@ These are the decisions and the traps, in the order they bite. Each one was
 paid for once already.
 
 **`site/` is the public website, `docs/` is the repository's own
-documentation.** Anything served at `temoki.github.io/TortoiseBlocks/` lives
+documentation.** Anything served at `tortoiseblocks.hiraku.space` lives
 in `site/`: `index.html`, the landing page, and `privacy.html`, the policy App
 Review requires of every app, including one that collects nothing. `docs/`
 holds README assets and architecture notes and is *not* published;
@@ -43,9 +43,27 @@ protection rules`, naming the ref and nothing else. Tags are never in that list
 by default — and a tag's `site/` is the site as of the tag, not as of the
 release, which for `v1.0.0` meant a "Coming soon" page whose badge pointed at
 GitHub.
+**The site is GitHub Pages under a custom domain** (#151):
+`tortoiseblocks.hiraku.space`, a CNAME to `temoki.github.io` in the
+`hiraku.space` zone (Google Cloud DNS), set as the repository's Pages custom
+domain — in the settings, not a `CNAME` file, which an Actions deploy ignores.
+It used to be `temoki.github.io/TortoiseBlocks/`, and every link to that still
+works because GitHub answers the old address with a 301 to the new one — but
+*only* while the custom domain is set on Pages. That is why this site stays on
+GitHub Pages although `hiraku.space` itself and its other subdomains are on
+Firebase Hosting: moving it there would leave the old address to a
+meta-refresh page at best, and every App Store listing and README link to it
+with no redirect a crawler treats as a move. The site sits at the host root
+now, so its own links stay relative and the only absolute URLs are the ones
+that must be — hreflang, `og:url`, `og:image`, JSON-LD, the sitemap, and the
+listings' `marketing_url.txt` / `privacy_url.txt`. A domain change touches
+exactly those. `hiraku.space` is a verified domain on the GitHub account, so
+no other account can claim one of its subdomains while the CNAME points at
+GitHub.
 **One file in `site/` is not part of the site.**
 `googlec3508f6a7924162b.html` is Google Search Console's proof of ownership for
-the URL-prefix property `https://temoki.github.io/TortoiseBlocks/`, and its
+the URL-prefix property `https://temoki.github.io/TortoiseBlocks/` — the
+address the site had before the custom domain — and its
 entire content is the one line Google generated. Do not tidy it, rename it, or
 wrap it in HTML: the check reads the file's contents and the name has to match
 what is inside. It is a file rather than the `<meta name="google-site-verification">`
@@ -110,15 +128,16 @@ that is what it is for. The `?lang=` spelling is not free to change either —
 it is what `appstore/metadata*/*/marketing_url.txt` and `privacy_url.txt`
 already point at, so a move to `/ja/` paths would mean re-pushing both
 listings.
-`site/sitemap.xml` lists six URLs rather than two, because an hreflang set has
-to name every variant from every variant. It carries no `lastmod`: the site is
+`site/sitemap.xml` lists nine URLs rather than three, because an hreflang set
+has to name every variant from every variant. It carries no `lastmod`: the site is
 deployed by hand at release time, so the date would go stale the first time
 someone forgot it, and Google ignores a lastmod it cannot trust. **It is
-submitted in Search Console, not announced from a `robots.txt`** — a
-`robots.txt` is only read at the *host* root, `temoki.github.io/robots.txt`,
-which belongs to no repository here; one placed in `site/` would be served,
-ignored, and mistaken for working. A sitemap has no such rule and may sit at
-any level at or above the URLs it lists.
+submitted in Search Console and announced from `site/robots.txt`** — and the
+second only became possible with the custom domain. A `robots.txt` is read at
+the *host* root and nowhere else; under `temoki.github.io/TortoiseBlocks/` that
+root belonged to no repository here, and a file in `site/` would have been
+served, ignored, and mistaken for working. On its own host the site's root is
+the host's root, so now it counts.
 The JSON-LD `SoftwareApplication` block is the weakest of these and is kept
 honest on purpose: every value in it is checkable against the App Store
 listing, `LICENSE`, or the specs table on the page itself, and there is no
