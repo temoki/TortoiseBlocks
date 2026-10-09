@@ -1,10 +1,4 @@
-# Pushes appstore/ to App Store Connect (#42). Manual only, and never on a
-# push: the listing is not something a merge should rewrite, and the person
-# running it should have just read the diff.
-#
-# The default is the diff — it pulls what is live and compares. Uploading takes
-# ticking "apply", which is the one place this workflow writes to Apple.
-
+# TEMPORARY probe for #154 — reads the live listing through asc, writes nothing.
 name: App Store Metadata
 
 on:
@@ -20,41 +14,42 @@ on:
         type: boolean
         default: false
 
-concurrency:
-  group: appstore-metadata
-  cancel-in-progress: false
-
 jobs:
-  metadata:
-    name: ${{ inputs.apply && 'Push' || 'Diff' }} (${{ inputs.platform }})
-    runs-on: macos-26
+  probe:
+    runs-on: ubuntu-latest
+    env:
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_PRIVATE_KEY_B64: ${{ secrets.ASC_PRIVATE_KEY }}
+      ASC_VERSION: "5.14.0"
+      APP: "6798677334"
     steps:
       - uses: actions/checkout@v7
-
-      # Pinned rather than inherited: no Gemfile.lock is committed (it would
-      # be resolved on a different Ruby than this one), so the Ruby is what
-      # makes a run reproducible.
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.3"
-          bundler-cache: true
-
-      - name: Run
-        env:
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
-          FASTLANE_SKIP_UPDATE_CHECK: "1"
+      - name: Install asc
         run: |
-          lane='${{ inputs.apply && 'metadata_push' || 'metadata_diff' }}'
-          case '${{ inputs.platform }}' in
-            ios)      platforms="ios" ;;
-            macos)    platforms="mac" ;;
-            visionos) platforms="visionos" ;;
-            *)        platforms="ios mac visionos" ;;
-          esac
-          for p in $platforms; do
-            echo "::group::$p $lane"
-            bundle exec fastlane "$p" "$lane"
-            echo "::endgroup::"
+          base="https://github.com/rorkai/App-Store-Connect-CLI/releases/download/$ASC_VERSION"
+          curl -fsSLO "$base/asc_${ASC_VERSION}_linux_amd64"
+          curl -fsSLO "$base/asc_${ASC_VERSION}_checksums.txt"
+          grep " asc_${ASC_VERSION}_linux_amd64\$" "asc_${ASC_VERSION}_checksums.txt" | sha256sum -c -
+          install -m 755 "asc_${ASC_VERSION}_linux_amd64" /usr/local/bin/asc
+          asc --version
+      - name: Probe
+        run: |
+          printf '%s' "$ASC_PRIVATE_KEY_B64" | base64 -d > "$RUNNER_TEMP/key.p8"
+          export ASC_PRIVATE_KEY_PATH="$RUNNER_TEMP/key.p8" ASC_BYPASS_KEYCHAIN=1
+          mkdir -p probe
+          set -x
+          asc versions list --app "$APP" --paginate --output json > probe/versions.json || true
+          jq -c '.data[] | {id, p: .attributes.platform, v: .attributes.versionString, s: (.attributes.appStoreState // .attributes.appVersionState)}' probe/versions.json || head -c 2000 probe/versions.json
+          for p in IOS MAC_OS VISION_OS; do
+            vid=$(jq -r --arg p "$p" '[.data[] | select(.attributes.platform==$p)] | sort_by(.attributes.createdDate) | last | .id' probe/versions.json)
+            echo "== $p $vid"
+            asc screenshots list --app "$APP" --version-id "$vid" --platform "$p" --output json > "probe/shots-$p.json" || true
+            asc migrate export --app "$APP" --version-id "$vid" --output-dir "probe/export-$p" --output json > "probe/export-$p.json" || true
+            asc localizations list --version "$vid" --output json > "probe/locs-$p.json" || true
           done
+          find probe -type f | sort
+      - uses: actions/upload-artifact@v4
+        with:
+          name: probe
+          path: probe
