@@ -26,7 +26,7 @@ set -euo pipefail
 tag="${1:?usage: release-notes <tag> [previous-ref]}"
 
 # Everything that ends up in the built app. Anything else — site/, appstore/,
-# fastlane/, docs, workflows — is real work, but not a change to the product.
+# Tools/, docs, workflows — is real work, but not a change to the product.
 app_paths=(App ThumbnailExtension TortoiseBlocksKit Support TortoiseBlocks.xcodeproj)
 
 previous="${2:-}"

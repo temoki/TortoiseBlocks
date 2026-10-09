@@ -322,8 +322,9 @@ if __FILE__ == $PROGRAM_NAME
     if command == "push"
       abort "appstore/ has problems — see above." unless MetadataCheck.report
     end
-    clean = platforms.map { |platform| AppStore.public_send(command, platform) }
-    exit(clean.all? ? 0 : 1)
+    # A diff reports and succeeds whatever it finds — differences are what it
+    # is run to see. A push that leaves any behind has already raised.
+    platforms.each { |platform| AppStore.public_send(command, platform) }
   rescue AppStore::Failure => e
     abort e.message
   end

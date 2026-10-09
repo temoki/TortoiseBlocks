@@ -3,10 +3,11 @@ name: release
 description: >-
   Everything about shipping Tortoise Blocks and everything the public sees:
   cutting a v* tag, Xcode Cloud archives and TestFlight, the App Store Connect
-  listing in appstore/ and the fastlane lanes that push it, accessibility
-  nutrition labels, bundle identifiers and build audience, and the published
-  website in site/ (the landing page and the privacy policy). Load this before
-  tagging a release, editing the store text, running fastlane, or touching
+  listing in appstore/ and Tools/appstore.rb (asc) that pushes it,
+  accessibility nutrition labels, bundle identifiers and build audience, and the
+  published website in site/ (the landing page and the privacy policy). Load
+  this before tagging a release, editing the store text, pushing the listing, or
+  touching
   site/. **Making** the screenshots is the `screenshots` skill; this one covers
   pushing them.
 ---
@@ -161,37 +162,43 @@ away, and shows up as a gap mid-sentence.
 vocabulary** (#42). Full-size captures live at
 `appstore/screenshots/<platform>/<locale>/`, and every path component is
 literally a value the API takes: `ios` / `macos` are the `Platform` enum —
-**there is no ipadOS**, iPad is a *display type* under iOS, resolved from the
-image size — and `en-US` / `ja` are ASC locale codes, not the app's `en` / `ja`
-string-catalog codes. That is the whole point of the naming: an uploader reads
-the directory names and needs no mapping table. Order comes from the leading
-number in the filename, and the sizes are the ones Apple accepts as-is (iPad
-13-inch landscape 2752×2064, Mac 2880×1800), so a reshoot has to keep the
+**there is no ipadOS**, iPad is a *display type* under iOS — and `en-US` /
+`ja` are ASC locale codes, not the app's `en` / `ja` string-catalog codes, so
+the uploader reads platform and locale straight off the path. The one
+exception is `ios_duo/`, the iPhone Duo's captures: iOS too, in a directory of
+its own only because fastlane could not file that size. Order comes from the
+leading number in the filename, and the sizes are the ones Apple accepts as-is
+(iPad 13-inch landscape 2752×2064, Mac 2880×1800), so a reshoot has to keep the
 window sizes that produced them. The two documents the captures were shot from
 sit in `appstore/screenshot-sources/`, deliberately *outside* `screenshots/`.
 
 **A display type is not named after the size it holds**, so do not infer one.
-Read back off the 1.3.0 push, the four this app files into are
-`APP_IPHONE_67`, `APP_IPAD_PRO_3GEN_129`, `APP_DESKTOP` and
-`APP_APPLE_VISION_PRO` — and the first of those is where the 6.9-inch captures
-this rig shoots (1320×2868) landed, under a name that reads 6.7. Whether a
-6.9-spelled type exists at all was not measured; what was measured is where
-these files went. Nothing here depends on the spelling today, deliberately —
-the push's reconciliation compares per *locale* rather than per display type,
-because which size goes where is Apple's decision and a deterministic one — so
-these are for whoever has to branch on one. The way to confirm a capture was
-filed where it belongs is to read the listing back: a Vision Pro capture is the
-size of an Apple TV one, and that collision is a real trap further down.
+Read back off the live listing (2026-10-09, #154), the five this app files into
+are `APP_IPAD_PRO_3GEN_129`, `APP_IPHONE_67`, `APP_IPHONE_DUO`, `APP_DESKTOP`
+and `APP_APPLE_VISION_PRO` — and `APP_IPHONE_67` is where the 6.9-inch
+captures this rig shoots (1320×2868) landed, under a name that reads 6.7.
+That reading is now a table: `DISPLAY_TYPES` in `Tools/appstore.rb` maps
+directory and pixel size to display type, every set is uploaded with its type
+*named*, and a size the table does not know stops the push. That is the
+opposite of what deliver did — it inferred the type from the size, which is
+how a Vision Pro capture (3840×2160, the size of an Apple TV one) could be
+filed as `APP_APPLE_TV`. A new size is a new row, checked by reading the
+listing back after its first push.
 
 **Making the captures is the `screenshots` skill** — the rigs
 (`Tools/ipad-shots.rb`, `Tools/visionos-shots.rb`), the flatten-and-optimise
 pass every reshoot has to end with, and the traps that produce a picture of the
 wrong thing. Nothing reaches App Store Connect without going through it: every
 source this project shoots from writes an alpha channel, which Apple refuses.
-**App previews are the one piece of the listing that fastlane does not
-carry.** deliver uploads screenshots but not previews, so they are made by the
-`film` skill and put up by hand in App Store Connect, and nothing in
-`appstore/` holds them. The text is `appstore/metadata/<locale>/`, one file per field — **except
+**App previews go up with the rest, but are not in git.** The `film` skill
+makes them and `Tools/film/previews.rb` copies each finished film to
+`appstore/previews/<name>.mp4` (`iphone`, `ipad`, `mac`, `vision`), which is
+gitignored — megabytes each — so the videos exist only on the machine that
+made them. A push sends what is there, the same video to both locales, and
+reports a missing one rather than reshooting it: previews are remade only when
+the maintainer asks. That also means **CI never sends previews** — a runner has
+none, and its diff says so instead of comparing. They are silent on the store;
+music only ever goes on copies made for elsewhere (YouTube). The text is `appstore/metadata/<locale>/`, one file per field — **except
 visionOS**, which is pushed from `appstore/metadata-visionos/` instead (#53).
 That split is not tidiness: the App Store shows a Vision Pro shopper the
 visionOS description and nothing else, and the app is a different product
@@ -199,7 +206,7 @@ there — a viewer for drawings made on iPad and Mac, with no editing in it at
 all — so the shared description would open by telling that shopper to drag
 blocks into a program, the one thing they cannot do. Three fields in those
 directories are **app**-level in App Store Connect rather than version-level
-(`name.txt`, `subtitle.txt`, `privacy_url.txt`), so every lane writes the same
+(`name.txt`, `subtitle.txt`, `privacy_url.txt`), so every push writes the same
 ones and whichever runs last decides them for all three listings; they are kept
 byte-identical between the two directories and `metadata_check` fails if they
 drift. A platform's text is also the first thing to go stale when the app
@@ -207,59 +214,69 @@ changes shape: the visionOS copy described "the same three panes in a window"
 for as long as visionOS was the iPad app in a window (#11), and stayed that way
 through the rewrite that made it a viewer.
 
-**fastlane pushes it, and a self-written tool did not.** The uploader was
-designed as a zero-dependency Swift executable (#42) and abandoned about 900
-lines in, before it compiled: what remained was the authentication, the resource
-graph, and the screenshot reserve/chunk/commit dance — all of it unverifiable
-without a live API key, and all of it already in `deliver`. The cost of
-switching turned out to be one directory move, because the field names here
-were fastlane's from the start. So the repository now has exactly one Ruby
-dependency (`Gemfile`, `fastlane/Fastfile`), and it builds nothing, signs
-nothing and submits nothing — two lanes per platform, `metadata_diff` and
-`metadata_push`, with the helpers as `private_lane`s so `fastlane lanes` lists
-only what is meant to be run. Note **deliver has no dry run for metadata**: it uploads, or
-it renders an HTML page for a human. `metadata_diff` therefore runs the other
-way, downloading the live text into a temporary directory and diffing it. The
-one thing kept from the abandoned tool is the part that never needed the
-network: `fastlane/metadata_check.rb` measures character limits and the three
-things a screenshot must be, because deliver finds those only mid-upload during
-a run nobody does often. It sits in `fastlane/` and `metadata_push` calls it
-through a private lane, so a hand-run upload cannot skip it — but it is plain
-Ruby that requires nothing from fastlane, and CI runs it as
-`ruby fastlane/metadata_check.rb` on a bare checkout. That is the constraint
-that shaped it: making a pull request wait for `bundle install` to read nine
-text files would cost more than the check saves.
+**asc pushes it** (#154), the third uploader this listing has had. The first
+was designed as a zero-dependency Swift executable (#42) and abandoned about 900
+lines in, before it compiled: authentication, the resource graph and the
+screenshot reserve/chunk/commit dance, all unverifiable without a live key. The
+second was fastlane's deliver, which cost one directory move because the field
+names here were deliver's from the start — and it is why they still are. deliver
+was dropped for what it could not do: it filed screenshots by inferring the
+display type from the pixel size and did not know the iPhone Duo's, so that set
+went up by hand; its `overwrite_screenshots` deleted *every* set of a locale, so
+the hand-uploaded Duo set had to go up again after each push; it took no app
+previews at all; and it had no dry run for metadata. asc
+([asccli.sh](https://asccli.sh), a single Go binary, MIT) does each of those,
+and `Tools/appstore.rb` is a thin plain-Ruby wrapper around it with two
+commands, `diff` and `push`, per platform. The repository has no Gemfile any
+more. Three choices in that wrapper are measured rather than taste:
 
-**Trust the listing, not deliver's log.** Pushing 1.0.0 for real produced two
+- **Text goes through `asc migrate import`, screenshots never do.** It reads the
+  deliver layout as-is, but it skips a screenshot whose *file name* is already
+  live, and a reshoot keeps its names — so the new picture would never reach
+  the store. Screenshots go a set at a time through `asc screenshots upload
+  --replace --device-type …`, which empties only the set it is given; a set
+  that already matches by checksum and order is not touched.
+- **Previews go through `asc video-previews upload --replace`**, not `migrate
+  import`, which adds a new video *beside* the old one rather than replacing it.
+- **The diff is an export, compared.** `migrate import --dry-run` lists what it
+  would send without reading the live text, so `diff` runs `asc migrate export`
+  of the version into a temporary directory and compares it file by file —
+  against the version being prepared if there is one, the one on sale if not.
+
+`Tools/metadata_check.rb` is the part of #42 that never needed the network: it
+measures character limits and the three things a screenshot must be, because
+App Store Connect reports those only mid-upload during a run nobody does often.
+`push` runs it first, so a hand-run upload cannot skip it, and CI runs it as
+`ruby Tools/metadata_check.rb` on every pull request — plain Ruby, no gems.
+asc wants the key file to be its owner's alone (`chmod 600`); a looser one is
+refused with "private key file is too permissive". asc also sends anonymous
+usage telemetry by default (command, duration, exit code) to its developer;
+that is left on deliberately — the no-tracking promise is about the app people
+use, not the tools that ship it.
+
+**Trust the listing, not the log.** Pushing 1.0.0 through deliver produced two
 successes that were not: one run reported "Successfully uploaded screenshots"
-having written *nothing* (a relative `metadata_path` resolves against the
-repository root, not the Fastfile, so it read a directory above the checkout
-and found no locales), and the next wrote *everything twice* (deliver matches
-local against live by MD5, Apple has not computed that checksum seconds after
-the PUT, so every image looks missing and the set is retried). Both were found
-by reading the listing back through spaceship. Hence two permanent guards in
-`push_metadata`: it refuses to start unless both directories hold locale
-subdirectories, and it ends by reconciling the screenshots — wait for the
-checksums, delete duplicates, sort by filename, fail if live still differs from
-disk. Two more traps sit outside our code: **App Review Information must exist
-before deliver will run at all** (it reads it without a rescue and an app that
-has never had it gets `No data`), and **What's New does not exist until the
-second release on a platform**, because the field belongs to an update: deliver
-says so and moves on (`Skipping 'release_notes'... this is the first version of
-the app`), so text written there cannot reach the store however many times it
-is pushed, and `metadata_diff` reports it every run instead. Two permanent
-phantom lines is how a diff people read becomes a diff people skip, so
-`appstore/metadata-visionos/*/release_notes.txt` is deliberately **empty** and
+having written *nothing* (a relative path resolved against the wrong
+directory), and the next wrote *everything twice* (it matched local against
+live by MD5 seconds after the upload, before Apple had computed the checksum).
+Both were found by reading the listing back. So **a push ends with the diff and
+fails unless it is clean**, giving App Store Connect up to five minutes to
+compute the checksums of what was just sent before it compares. **What's New
+does not exist until the second release on a platform**, because the field
+belongs to an update, so text written there cannot reach the store however many
+times it is pushed and the diff reports it every run. Two permanent phantom
+lines is how a diff people read becomes a diff people skip, so for a platform's
+first version its `release_notes.txt` is left **empty** and
 `MetadataCheck::MAY_BE_EMPTY` allows that one field in that one directory.
-**Write the notes and delete the exemption together**, when visionOS takes its
-second version — an update with no What's New is refused, and by then it is the
-exemption that would be hiding the empty file.
+**Write the notes and delete the exemption together** when the platform takes
+its second version — an update with no What's New is refused, and by then it is
+the exemption that would be hiding the empty file. (visionOS was the last to
+need it; the table is empty now.)
 **And a visionOS app cannot be submitted until App Motion is answered.** It is
 a required *app*-level property for every visionOS app — App Store Connect →
 App Information → App Motion, alongside the other fields the app keeps rather
-than the version — and it is nowhere in `appstore/`: deliver has no such
-metadata field, so `metadata_push` cannot set it and `metadata_check` cannot
-miss it. Nothing warns of it until the submission itself refuses, with a
+than the version — and it is nowhere in `appstore/`, so a push cannot set it
+and `metadata_check` cannot miss it. Nothing warns of it until the submission itself refuses, with a
 sentence about violent or frequent motion and no mention of where to go. The
 answer here is **"No, this app doesn't contain high motion"**, and it follows
 from Apple's own rule rather than from modesty: the test is whether *the
@@ -269,28 +286,19 @@ tortoise walking the paper is an object a twelfth of the sheet's width, and
 changing the placement moves the sheet, not the viewer. Once answered it stays
 answered — this is a first-visionOS-submission cost, like the version record
 and What's New.
-One more vocabulary mismatch to remember: deliver says `osx`, the Connect API
-says `MAC_OS`, and passing the former to spaceship reports a missing version
-that plainly exists.
 
 **visionOS is a third listing, spelled three different ways** (#11). It is a
 native app on the xrOS SDK, not "Designed for iPad", so App Store Connect gives
-it its own platform version — which the app record must carry *before* either
-lane will run (`get_edit_app_store_version` returns nil otherwise, and
-`metadata_diff` stops with "No editable xros version"). The text is shared with
-the other two, as it already was between iOS and macOS; only the screenshots
-are per-platform. Then the vocabulary: **`visionos` names the screenshots
-directory, `xros` goes to deliver, `VISION_OS` goes to spaceship**, and the
-first of those is not a style choice. A Vision Pro capture is 3840×2160, the
-same size as an Apple TV one, so deliver cannot resolve the display type from
-the size and falls back to asking whether the *path* contains `vision`
-(downcased) — name the directory after deliver's own platform value and every
-screenshot is filed as `APP_APPLE_TV` on an app with no tvOS listing.
-The captures come from the simulator at exactly 3840×2160, the simulated room
-and all, which is what visionOS screenshots look like anyway (the `screenshots`
-skill has the rig). And no new identifier is needed — spaceship maps `xros` onto the **iOS** `BundleIdPlatform`, so the App
-IDs the iPhone/iPad build already registered are the ones visionOS signs
-against.
+it its own platform version — which the app record must carry before a push
+can write to it. Its text is its own (`appstore/metadata-visionos`, above); its
+screenshots are `appstore/screenshots/visionos`, filed as
+`APP_APPLE_VISION_PRO` by name. To asc the platform is `VISION_OS` (`IOS`,
+`MAC_OS` for the others), and `--device-type` takes the display type without
+its `APP_` prefix. The captures come from the simulator at exactly 3840×2160,
+the simulated room and all, which is what visionOS screenshots look like anyway
+(the `screenshots` skill has the rig). And no new identifier is needed — a
+visionOS app signs against the **iOS** bundle-ID platform, so the App IDs the
+iPhone/iPad build already registered are the ones visionOS uses.
 
 **A release is a `v*` tag** (#4). Xcode Cloud runs one `Release` workflow off
 it — an Archive action per platform, each with a TestFlight internal

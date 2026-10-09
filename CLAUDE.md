@@ -41,18 +41,21 @@ xcrun simctl io <device> screenshot shot.png     # 3840x2160, with an alpha chan
 xcrun simctl io <device> recordVideo walk.mov    # Ctrl-C to stop
 
 # The films (Tools/film/README.md): the website's teaser, and the App Store
-# previews for iphone / ipad / mac / vision. Silent, for music added by hand;
+# previews for iphone / ipad / mac / vision, which also land in the gitignored
+# appstore/previews/ for Tools/appstore.rb to send. Silent (music only goes on
+# copies made for YouTube); only when the maintainer asks for new ones;
 # `--compose` re-cuts the last recording. The Mac one drives this Mac's real
 # pointer and asks for the password first.
 ruby Tools/film/teaser.rb                  # ~15 minutes
 ruby Tools/film/previews.rb [ipad …]       # ~5 minutes each
 
-# The App Store listing (appstore/). The check needs no key and no bundle;
-# the other two need ASC_ISSUER_ID / ASC_KEY_ID / ASC_PRIVATE_KEY_PATH.
+# The App Store listing (appstore/), pushed through asc (`brew install asc`).
+# The check needs no key; the other two need ASC_ISSUER_ID / ASC_KEY_ID /
+# ASC_PRIVATE_KEY_PATH.
 ruby Tools/screenshots.rb                  # after ANY reshoot: strip alpha, optimise, rebuild site/shots and docs/
-ruby fastlane/metadata_check.rb            # what CI runs on every pull request
-bundle exec fastlane ios metadata_diff     # live listing vs what is written
-bundle exec fastlane ios metadata_push     # upload (mac for the other listing)
+ruby Tools/metadata_check.rb               # what CI runs on every pull request
+ruby Tools/appstore.rb diff [ios …]        # live listing vs what is written
+ruby Tools/appstore.rb push [ios …]        # upload (ios, macos, visionos; all by default)
 ```
 
 ## Issue Workflow
@@ -496,7 +499,7 @@ table, the 3D tortoise and its contract, the three windows, the remote's
 controls, and what the simulator can and cannot tell you — all of it scoped to
 the four files it describes.
 
-**Releasing, the store listing and the website are in the `release` skill.** Tags, Xcode Cloud, TestFlight, `appstore/`, fastlane, and `site/`.
+**Releasing, the store listing and the website are in the `release` skill.** Tags, Xcode Cloud, TestFlight, `appstore/`, asc, and `site/`.
 **Making the pictures is the `screenshots` skill** — the capture rigs for iPad, Mac and Vision Pro, the pass every reshoot ends with (`ruby Tools/screenshots.rb`), and the traps that hand back a perfectly well-made capture of the wrong thing.
 **Making the videos is the `film` skill** — the website's teaser and the App Store previews, from UI tests, cut to Apple's rules.
 

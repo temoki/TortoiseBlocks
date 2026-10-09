@@ -63,7 +63,7 @@ and the app goes with it.
 
 ## What a capture has to be
 
-`fastlane/metadata_check.rb` enforces all of this, on every pull request, from
+`Tools/metadata_check.rb` enforces all of this, on every pull request, from
 the files alone — so the answer to "is this sendable" is to run it, not to
 look.
 
@@ -173,7 +173,7 @@ when the run ends, however it ends.
 Testing is non-parallel on purpose: a parallel run clones the simulator, and
 the clone is not the device the documents were seeded on.
 
-## iPhone Duo — unfolded only, and uploaded by hand
+## iPhone Duo — unfolded only
 
 `ruby Tools/iphone-shots.rb --duo` shoots an iPhone Duo **unfolded**, which
 needs Xcode 27.1 or later (the device type and its runtime are not in 27.0)
@@ -203,21 +203,13 @@ restarted**, because it comes back folded; that works only because the inner
 display's status bar carries no date, so there is no system language to
 switch, and the app's language rides the launch arguments as always.
 
-**fastlane does not know the Duo's sizes.** deliver files a screenshot by its
-pixel size, and neither the installed 2.234 nor 2.240.1 (the newest at the
-time) had the Duo's; master did not either. A screenshot it cannot file does
-not get skipped — it cancels **every** screenshot upload in the run. So the
-set lives in `appstore/screenshots/ios_duo/`, a directory no lane names, and
-goes up by hand in App Store Connect, the way the app previews do. **After**
-the push, every time: deliver deletes every screenshot set of a locale it
-uploads, whatever the display type (`delete_screenshots` in its
-`upload_screenshots.rb`), and `reconcile_screenshots` compares what is live
-with `ios/`, so a Duo set uploaded first is deleted, and one uploaded mid-push
-fails the check. `ios_duo` breaks the rule that a directory name is App Store
-Connect's vocabulary, on purpose — it must not be one deliver recognises.
-`metadata_check` still reads it, and `Tools/screenshots.rb` flattens it with
-the rest. Once fastlane knows the sizes, move the set into `ios/` and drop the
-directory.
+**The set lives in `appstore/screenshots/ios_duo/`** and goes up with every
+other iOS set: `Tools/appstore.rb` files it as `APP_IPHONE_DUO` by name. The
+directory is a leftover of fastlane, which did not know the Duo's sizes — a
+screenshot deliver could not file cancelled every screenshot upload in the run,
+so the set had to live where deliver never looked and go up by hand (#154 ended
+that). It could move into `ios/` now that display types come from a table
+rather than a directory, but nothing gains from the move.
 
 ## Vision Pro — launch arguments
 

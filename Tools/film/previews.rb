@@ -2,15 +2,19 @@
 # frozen_string_literal: true
 
 # Makes the App Store app previews: fifteen-odd seconds per device, English,
-# no captions, silent — the music goes on by hand, as it does for the teaser.
+# no captions, silent. They go up silent too — music is only ever added to the
+# copies made for elsewhere, such as YouTube.
 #
 #   ruby Tools/film/previews.rb              # every device, record and compose
 #   ruby Tools/film/previews.rb ipad         # only the ones named
 #   ruby Tools/film/previews.rb --compose    # compose the last recordings again
 #
-# The films land in the work directory printed at the end. They are not
-# committed — each is megabytes, and the listing takes them by hand: fastlane's
-# deliver uploads screenshots but not previews.
+# Each finished film is copied to appstore/previews/<name>.mp4, which is where
+# `ruby Tools/appstore.rb push` takes them from (#154). That directory is
+# gitignored — each film is megabytes — so the films exist only on the machine
+# that made them; the recordings stay behind in the work directory. Run this
+# only when the previews are meant to change: a push sends what is there and
+# never reshoots.
 #
 # **Apple's rules are what shape these**, and they are stricter than the
 # teaser's (developer.apple.com/app-store/app-previews/ and the preview
@@ -34,6 +38,7 @@ require "tmpdir"
 require_relative "film"
 
 WORK = Pathname.new(Dir.tmpdir) / "tortoise-previews"
+DELIVERED = Pathname.new(__dir__).parent.parent / "appstore" / "previews"
 FPS = Film::FPS
 SHORTEST = 15.5
 LONGEST = 30.0
@@ -415,4 +420,7 @@ chosen.each do |name, profile|
     record_vision(profile, raw) unless ARGV.include?("--compose")
     compose_vision(profile, raw)
   end
+  FileUtils.mkdir_p(DELIVERED)
+  FileUtils.cp(WORK / "#{name}.mp4", DELIVERED / "#{name}.mp4")
+  puts "→ #{DELIVERED / "#{name}.mp4"}"
 end
