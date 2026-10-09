@@ -16,8 +16,9 @@ Everything comes out silent and English. The films land in a work directory
 the scripts print (`$TMPDIR/tortoise-teaser/`, `$TMPDIR/tortoise-previews/`),
 next to the raw recordings, and each preview is also copied to
 `appstore/previews/<name>.mp4`, where `ruby Tools/appstore.rb push` sends it
-from. None of it is committed: each film is megabytes. The previews go to the
-store silent; music is added by hand only to copies made for elsewhere, such as
+from. Those copies are committed; nothing else is — the teaser and the
+recordings are megabytes that no one else needs. The previews go to the store
+silent; music is added by hand only to copies made for elsewhere, such as
 YouTube.
 
 The pieces:

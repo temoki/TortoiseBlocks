@@ -24,10 +24,11 @@ ruby Tools/film/previews.rb ipad mac    # only the ones named
 ruby Tools/film/previews.rb --compose   # re-cut the last recordings, no shooting
 ```
 
-Every film comes out English, silent and uncommitted, in `$TMPDIR/tortoise-teaser/`
-or `$TMPDIR/tortoise-previews/`. The previews are also copied to
-`appstore/previews/<name>.mp4` (gitignored), which is where
-`ruby Tools/appstore.rb push` sends them from — silent, as they are. Music is
+Every film comes out English and silent in `$TMPDIR/tortoise-teaser/` or
+`$TMPDIR/tortoise-previews/`. The previews are also copied to
+`appstore/previews/<name>.mp4`, **committed**, which is where
+`ruby Tools/appstore.rb push` sends them from — silent, as they are. Commit
+them after a reshoot, or the listing keeps the old ones. Music is
 added by hand only to copies made for elsewhere, such as YouTube. **Make the
 previews only when the maintainer asks**: a push sends whatever is in
 `appstore/previews/` and never reshoots, and a missing video is reported, not

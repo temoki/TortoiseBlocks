@@ -41,7 +41,7 @@ xcrun simctl io <device> screenshot shot.png     # 3840x2160, with an alpha chan
 xcrun simctl io <device> recordVideo walk.mov    # Ctrl-C to stop
 
 # The films (Tools/film/README.md): the website's teaser, and the App Store
-# previews for iphone / ipad / mac / vision, which also land in the gitignored
+# previews for iphone / ipad / mac / vision, which also land in the committed
 # appstore/previews/ for Tools/appstore.rb to send. Silent (music only goes on
 # copies made for YouTube); only when the maintainer asks for new ones;
 # `--compose` re-cuts the last recording. The Mac one drives this Mac's real

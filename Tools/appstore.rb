@@ -31,11 +31,11 @@
 #   the iPhone Duo's, and its overwrite deleted every set of a locale — so the
 #   Duo set went up by hand after each push. A set already matching appstore/
 #   by checksum and order is left alone.
-# - **App previews**, which deliver did not take at all, from appstore/previews/
-#   — kept out of git, because each is megabytes. A video that is not there is
-#   reported, never reshot: films are made when the maintainer asks for them
-#   (Tools/film/previews.rb). Same video for both locales; the films are shot
-#   in English and carry no words.
+# - **App previews**, which deliver did not take at all, from the committed
+#   appstore/previews/. A video that is not there is reported, never reshot:
+#   films are made when the maintainer asks for them (Tools/film/previews.rb).
+#   Same video for both locales; the films are shot in English and carry no
+#   words.
 #
 # A push ends with the diff, and fails unless it comes back clean: the rule is
 # to trust the listing, not the log. fastlane taught that twice — a push that

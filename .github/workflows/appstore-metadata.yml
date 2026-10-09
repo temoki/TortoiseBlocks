@@ -3,9 +3,7 @@
 # the person running it should have just read the diff.
 #
 # The default is the diff — it reads what is live and compares. Uploading takes
-# ticking "apply", which is the one place this workflow writes to Apple. App
-# previews are not sent from here: the videos are kept out of git, so a runner
-# never has them, and the diff says so rather than comparing.
+# ticking "apply", which is the one place this workflow writes to Apple.
 
 name: App Store Metadata
 

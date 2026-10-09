@@ -190,14 +190,16 @@ listing back after its first push.
 pass every reshoot has to end with, and the traps that produce a picture of the
 wrong thing. Nothing reaches App Store Connect without going through it: every
 source this project shoots from writes an alpha channel, which Apple refuses.
-**App previews go up with the rest, but are not in git.** The `film` skill
+**App previews go up with the rest, and are committed.** The `film` skill
 makes them and `Tools/film/previews.rb` copies each finished film to
-`appstore/previews/<name>.mp4` (`iphone`, `ipad`, `mac`, `vision`), which is
-gitignored — megabytes each — so the videos exist only on the machine that
-made them. A push sends what is there, the same video to both locales, and
-reports a missing one rather than reshooting it: previews are remade only when
-the maintainer asks. That also means **CI never sends previews** — a runner has
-none, and its diff says so instead of comparing. They are silent on the store;
+`appstore/previews/<name>.mp4` (`iphone`, `ipad`, `mac`, `vision`). They are
+in git so that CI can send them like everything else — keeping them out would
+have meant an API key on whichever Mac made them. The cost is history: about
+22MB a full set, again on every reshoot, which is why previews are remade only
+when the maintainer asks, and why Vision Pro's 4K film is encoded at about
+4Mbps — half what the first upload carried, at no difference a 1:1 crop could
+show. A push sends what is committed, the same video to both locales, and
+reports a missing one rather than reshooting it. They are silent on the store;
 music only ever goes on copies made for elsewhere (YouTube). The text is `appstore/metadata/<locale>/`, one file per field — **except
 visionOS**, which is pushed from `appstore/metadata-visionos/` instead (#53).
 That split is not tidiness: the App Store shows a Vision Pro shopper the

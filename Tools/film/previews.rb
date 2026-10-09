@@ -9,12 +9,11 @@
 #   ruby Tools/film/previews.rb ipad         # only the ones named
 #   ruby Tools/film/previews.rb --compose    # compose the last recordings again
 #
-# Each finished film is copied to appstore/previews/<name>.mp4, which is where
-# `ruby Tools/appstore.rb push` takes them from (#154). That directory is
-# gitignored — each film is megabytes — so the films exist only on the machine
-# that made them; the recordings stay behind in the work directory. Run this
-# only when the previews are meant to change: a push sends what is there and
-# never reshoots.
+# Each finished film is copied to appstore/previews/<name>.mp4, which is
+# committed and is where `ruby Tools/appstore.rb push` takes them from (#154);
+# the recordings stay behind in the work directory. Run this only when the
+# previews are meant to change — a push sends what is committed and never
+# reshoots — and every reshoot adds its megabytes to the repository's history.
 #
 # **Apple's rules are what shape these**, and they are stricter than the
 # teaser's (developer.apple.com/app-store/app-previews/ and the preview
@@ -204,14 +203,17 @@ def compose_vision(profile, raw)
   film = WORK / "vision.mp4"
   # Level 5.1, not the 4.0 the specification names for H.264: 4.0 stops at
   # 8,192 macroblocks, and 3840×2160 is 32,400. Vision Pro's is the one size
-  # 4.0 cannot carry.
+  # 4.0 cannot carry. About 4Mbps, because the film is committed (#154): the
+  # frame is mostly a still room, and at half the 8.6Mbps the first upload
+  # carried, a 1:1 crop of text, the paintings and the drawing could not be
+  # told apart (SSIM 0.9999) — at half the bytes in the repository.
   run("ffmpeg", "-v", "error", "-y", "-fflags", "+igndts", "-i", (raw / "raw.mov").to_s,
       "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000",
       "-ss", (times["playing"] - times["started"]).round(3).to_s, "-t", profile[:length].to_s,
       "-map", "0:v", "-map", "1:a",
       "-vf", "fps=#{FPS},scale=#{width}:#{height}:flags=lanczos,format=yuv420p",
       "-c:v", "libx264", "-profile:v", "high", "-level:v", "5.1", "-pix_fmt", "yuv420p",
-      "-b:v", "30M", "-maxrate", "40M", "-bufsize", "80M", "-preset", "slow",
+      "-b:v", "4300k", "-maxrate", "6M", "-bufsize", "12M", "-preset", "slow",
       "-c:a", "aac", "-b:a", "256k", "-ar", "48000", "-ac", "2",
       "-movflags", "+faststart", film.to_s)
   seconds = `ffprobe -v error -show_entries format=duration -of csv=p=0 '#{film}'`.to_f

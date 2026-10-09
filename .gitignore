@@ -11,7 +11,3 @@ Support/Local.xcconfig
 # The App Store Connect API key. Like Support/Local.xcconfig, it stays local —
 # CI reads it from a secret instead (see .github/workflows/appstore-metadata.yml).
 *.p8
-
-# The App Store previews, megabytes each: Tools/film/previews.rb writes them,
-# Tools/appstore.rb sends them, and git never sees them.
-appstore/previews/

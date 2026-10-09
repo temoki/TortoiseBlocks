@@ -9,7 +9,7 @@ metadata/<locale>/*.txt            the text, one file per field (iOS and macOS)
 metadata-visionos/<locale>/*.txt   the visionOS listing's own text
 screenshots/<platform>/<locale>/   ios/, ios_duo/, macos/ and visionos/
 screenshot-sources/                the documents the captures were shot from
-previews/                          the App Store previews — gitignored, see below
+previews/                          the App Store previews, one per device
 ```
 
 `<locale>` is an App Store Connect locale code (`en-US`, `ja`), not the app's
@@ -45,8 +45,7 @@ In CI it is the **App Store Metadata** workflow, run by hand from the Actions
 tab: pick a platform, and tick *apply* to upload rather than diff. It reads the
 same three values from secrets, with the .p8 base64-encoded into
 `ASC_PRIVATE_KEY` because a GitHub secret is one line and a PEM is not, and it
-installs a pinned, checksum-verified asc release. A runner has no previews, so
-CI never sends them.
+installs a pinned, checksum-verified asc release.
 
 A diff compares against the version being prepared if there is one, and the
 version on sale otherwise. A push needs an **editable version** for that
@@ -76,11 +75,11 @@ uploaded before it compares.
   keeps its names, so the new picture would never replace the old one
 - **Previews** from `previews/<name>.mp4` — `iphone`, `ipad`, `mac`, `vision` —
   through `asc video-previews upload --replace`, the same video to every
-  locale. They are written by `Tools/film/previews.rb` and are not in git
-  (megabytes each), so they exist only on the machine that made them. A missing
-  video is reported and skipped, never reshot: the films are remade only when
-  the maintainer asks for it. They go up silent; music is only for copies made
-  elsewhere
+  locale. They are written by `Tools/film/previews.rb` and committed, so CI
+  sends them like the rest; every reshoot adds its megabytes to history, which
+  is one reason the films are remade only when the maintainer asks. A missing
+  video is reported and skipped, never reshot. They go up silent; music is only
+  for copies made elsewhere
 
 ## Files and limits
 
