@@ -94,9 +94,8 @@ TortoiseBlocks/
 │   └── Views/Viewer/      #   visionOS only: the drawing on the table, and its three windows
 ├── ThumbnailExtension/    # QuickLook thumbnails — reads one field, links nothing
 ├── TortoiseBlocksUITests/ # Not a test suite so much as a camera: it shoots the captures
-├── Tools/                 # The capture rigs, and the Blender script the 3D tortoise comes from
+├── Tools/                 # The capture rigs, the listing's uploader, and the Blender script the 3D tortoise comes from
 ├── appstore/              # The store listing: text per locale, screenshots per platform
-├── fastlane/              # Pushes appstore/ to App Store Connect
 └── site/                  # The published website (GitHub Pages); docs/ is not published
 ```
 
@@ -194,9 +193,9 @@ The store listing is not part of that. It lives in [appstore/](appstore/) and
 goes up on demand, by hand:
 
 ```bash
-bundle exec fastlane metadata_check     # the files alone, no network, no key
-bundle exec fastlane ios metadata_diff  # live listing against what is written
-bundle exec fastlane ios metadata_push  # upload (mac, visionos for the others)
+ruby Tools/metadata_check.rb   # the files alone, no network, no key
+ruby Tools/appstore.rb diff    # live listing against what is written (needs asc)
+ruby Tools/appstore.rb push    # upload (ios, macos, visionos; all by default)
 ```
 
 There are three listings and two sets of text: iOS and macOS share
@@ -204,7 +203,7 @@ There are three listings and two sets of text: iOS and macOS share
 the app there is a viewer and the description that sells the editor would be
 describing a product that does not exist. The app-level fields the App Store
 keeps once per app rather than per platform — name, subtitle, privacy URL —
-are checked byte-identical across both, since whichever lane runs last would
+are checked byte-identical across both, since whichever push runs last would
 otherwise quietly overwrite the others.
 
 The captures are made by the rigs in [Tools/](Tools/): one command each for

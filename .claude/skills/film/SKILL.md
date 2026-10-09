@@ -4,8 +4,8 @@ description: >-
   Making the videos: the website's teaser (Tools/film/teaser.rb) and the App
   Store app previews for iPhone, iPad, Mac and Vision Pro
   (Tools/film/previews.rb) — recording UI tests on the simulators and on this
-  Mac, cutting them to Apple's rules, checking the result, and handing the
-  films over for music and upload. Load this before reshooting either, before
+  Mac, cutting them to Apple's rules, checking the result, and leaving the
+  previews in appstore/previews/ for upload. Load this before reshooting either, before
   changing what a film shows, and whenever a film run fails or a film looks
   wrong. Still pictures are the `screenshots` skill.
 ---
@@ -24,9 +24,15 @@ ruby Tools/film/previews.rb ipad mac    # only the ones named
 ruby Tools/film/previews.rb --compose   # re-cut the last recordings, no shooting
 ```
 
-Every film comes out English, silent and uncommitted, in `$TMPDIR/tortoise-teaser/`
-or `$TMPDIR/tortoise-previews/`. The maintainer adds the music by hand. The
-previews are uploaded by hand as well: fastlane's deliver does not take them.
+Every film comes out English and silent in `$TMPDIR/tortoise-teaser/` or
+`$TMPDIR/tortoise-previews/`. The previews are also copied to
+`appstore/previews/<name>.mp4`, **committed**, which is where
+`ruby Tools/appstore.rb push` sends them from — silent, as they are. Commit
+them after a reshoot, or the listing keeps the old ones. Music is
+added by hand only to copies made for elsewhere, such as YouTube. **Make the
+previews only when the maintainer asks**: a push sends whatever is in
+`appstore/previews/` and never reshoots, and a missing video is reported, not
+made.
 
 ## Before a run
 

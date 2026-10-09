@@ -51,10 +51,9 @@
 # never restarted**, since a restart comes back folded — which is affordable
 # because the inner display's status bar carries no date, so there is no
 # system language to switch; the app's language rides the launch arguments
-# as always. And the files go to `appstore/screenshots/ios_duo/`, **not**
-# beside the others: fastlane does not know the Duo's sizes, and one
-# screenshot it cannot file cancels every screenshot upload in the run, so
-# this set lives where deliver never looks and goes up by hand (see the
+# as always. And the files go to `appstore/screenshots/ios_duo/`, a directory
+# of their own from when fastlane pushed the listing and could not file the
+# Duo's sizes; Tools/appstore.rb sends them with the rest of iOS (see the
 # `screenshots` skill).
 #
 # Everything else is the iPad rig's, for the same reasons it is there:

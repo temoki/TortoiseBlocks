@@ -12,12 +12,14 @@ ruby Tools/film/previews.rb ipad mac     # only the ones named
 ruby Tools/film/previews.rb --compose    # compose the last recordings again
 ```
 
-Everything comes out silent, English and ready for music, which is added by
-hand. The films land in a work directory the scripts print
-(`$TMPDIR/tortoise-teaser/`, `$TMPDIR/tortoise-previews/`), next to the raw
-recordings. None of it is committed: each film is megabytes, and fastlane's
-deliver uploads screenshots but not previews, so App Store Connect takes the
-previews by hand.
+Everything comes out silent and English. The films land in a work directory
+the scripts print (`$TMPDIR/tortoise-teaser/`, `$TMPDIR/tortoise-previews/`),
+next to the raw recordings, and each preview is also copied to
+`appstore/previews/<name>.mp4`, where `ruby Tools/appstore.rb push` sends it
+from. Those copies are committed; nothing else is — the teaser and the
+recordings are megabytes that no one else needs. The previews go to the store
+silent; music is added by hand only to copies made for elsewhere, such as
+YouTube.
 
 The pieces:
 

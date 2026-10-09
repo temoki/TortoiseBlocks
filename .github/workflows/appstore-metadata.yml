@@ -1,8 +1,8 @@
-# Pushes appstore/ to App Store Connect (#42). Manual only, and never on a
-# push: the listing is not something a merge should rewrite, and the person
-# running it should have just read the diff.
+# Pushes appstore/ to App Store Connect (#42), through asc (#154). Manual only,
+# and never on a push: the listing is not something a merge should rewrite, and
+# the person running it should have just read the diff.
 #
-# The default is the diff — it pulls what is live and compares. Uploading takes
+# The default is the diff — it reads what is live and compares. Uploading takes
 # ticking "apply", which is the one place this workflow writes to Apple.
 
 name: App Store Metadata
@@ -27,34 +27,35 @@ concurrency:
 jobs:
   metadata:
     name: ${{ inputs.apply && 'Push' || 'Diff' }} (${{ inputs.platform }})
-    runs-on: macos-26
+    runs-on: ubuntu-latest
+    env:
+      # Pinned and checksum-verified: asc releases often, and a listing push
+      # is not where a new release should be met for the first time.
+      ASC_RELEASE: "5.14.0"
     steps:
       - uses: actions/checkout@v7
 
-      # Pinned rather than inherited: no Gemfile.lock is committed (it would
-      # be resolved on a different Ruby than this one), so the Ruby is what
-      # makes a run reproducible.
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.3"
-          bundler-cache: true
+      - name: Install asc
+        run: |
+          base="https://github.com/rorkai/App-Store-Connect-CLI/releases/download/$ASC_RELEASE"
+          cd "$RUNNER_TEMP"
+          curl -fsSLO "$base/asc_${ASC_RELEASE}_linux_amd64"
+          curl -fsSLO "$base/asc_${ASC_RELEASE}_checksums.txt"
+          grep " asc_${ASC_RELEASE}_linux_amd64\$" "asc_${ASC_RELEASE}_checksums.txt" | sha256sum -c -
+          install -m 755 "asc_${ASC_RELEASE}_linux_amd64" /usr/local/bin/asc
+          asc --version
 
+      # The secret is the .p8 in base64, because a GitHub secret is one line
+      # and a PEM is not. asc refuses a key file anyone else can read.
       - name: Run
         env:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
-          FASTLANE_SKIP_UPDATE_CHECK: "1"
+          ASC_PRIVATE_KEY_B64: ${{ secrets.ASC_PRIVATE_KEY }}
+          ASC_BYPASS_KEYCHAIN: "1"
         run: |
-          lane='${{ inputs.apply && 'metadata_push' || 'metadata_diff' }}'
-          case '${{ inputs.platform }}' in
-            ios)      platforms="ios" ;;
-            macos)    platforms="mac" ;;
-            visionos) platforms="visionos" ;;
-            *)        platforms="ios mac visionos" ;;
-          esac
-          for p in $platforms; do
-            echo "::group::$p $lane"
-            bundle exec fastlane "$p" "$lane"
-            echo "::endgroup::"
-          done
+          printf '%s' "$ASC_PRIVATE_KEY_B64" | (umask 077; base64 -d > "$RUNNER_TEMP/key.p8")
+          export ASC_PRIVATE_KEY_PATH="$RUNNER_TEMP/key.p8"
+          platforms='${{ inputs.platform }}'
+          [ "$platforms" = all ] && platforms=""
+          ruby Tools/appstore.rb ${{ inputs.apply && 'push' || 'diff' }} $platforms
