@@ -13,13 +13,15 @@ cd TortoiseBlocksKit && swift test        # Kit unit tests (fast, UI-independent
 swift format --in-place --recursive App ThumbnailExtension TortoiseBlocksUITests TortoiseBlocksKit/Sources TortoiseBlocksKit/Tests
 swift format lint --strict --recursive App ThumbnailExtension TortoiseBlocksUITests TortoiseBlocksKit/Sources TortoiseBlocksKit/Tests   # CI gate
 
-# App builds (both must stay green):
+# App builds (all must stay green — CI builds iOS, macOS and visionOS):
 xcodebuild -project TortoiseBlocks.xcodeproj -scheme TortoiseBlocks \
   -destination 'platform=macOS' -quiet build
 xcodebuild -project TortoiseBlocks.xcodeproj -scheme TortoiseBlocks \
   -destination 'platform=iOS Simulator,name=iPad Pro 11-inch (M5)' -quiet build
 xcodebuild -project TortoiseBlocks.xcodeproj -scheme TortoiseBlocks \
   -destination 'platform=iOS Simulator,name=iPhone 17' -quiet build
+xcodebuild -project TortoiseBlocks.xcodeproj -scheme TortoiseBlocks \
+  -destination 'generic/platform=visionOS Simulator' -quiet build
 
 # Manual verification loop (macOS):
 pkill -x TortoiseBlocks; open ~/Library/Developer/Xcode/DerivedData/TortoiseBlocks-*/Build/Products/Debug/TortoiseBlocks.app
@@ -74,7 +76,7 @@ Japanese; commits are English with `Fixes #N`.
   like the app, or a prototype build — ASCII art is not enough), keep
   the design comment at policy level, then implement in two stages: a
   layout-only prototype commit → visual check in the running app (the
-  pkill/open loop above) → polish (tests, a11y, both builds), then commit.
+  pkill/open loop above) → polish (tests, a11y, the app builds), then commit.
   Real widths, Dynamic Type, and touch targets are judged in the app, not
   in the document.
 

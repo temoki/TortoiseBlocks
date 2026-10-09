@@ -28,7 +28,7 @@ ruby Tools/visionos-shots.rb             # Vision Pro: 3 shots × 2 languages
 ruby Tools/screenshots.rb                # always: strip alpha, optimise, rebuild site/shots and docs/
 ```
 
-All three take a name filter (`ruby Tools/ipad-shots.rb star`) and end by
+All four rigs take a name filter (`ruby Tools/ipad-shots.rb star`) and end by
 calling `Tools/screenshots.rb` themselves. Build the scheme first; they install
 whatever is in DerivedData.
 
@@ -73,9 +73,10 @@ look.
   a shape to guess at, so an unexpected one fails rather than being resized.
 - **No alpha channel.** App Store Connect refuses one and says so only when the
   submission is refused.
-- At most ten per locale; order comes from the leading number in the filename.
-- Directories are App Store Connect's own vocabulary — see the `release` skill,
-  which owns the listing side.
+- At most ten per display type (a locale's iPad, iPhone and Duo sets count
+  separately); order comes from the leading number in the filename.
+- Directories are App Store Connect's own vocabulary, except `ios_duo/` (see
+  below) — see the `release` skill, which owns the listing side.
 
 ## The flatten-and-optimise pass
 
