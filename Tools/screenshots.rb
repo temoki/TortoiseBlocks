@@ -35,7 +35,7 @@ require "fileutils"
 require "pathname"
 require "tmpdir"
 
-require_relative "../fastlane/metadata_check"
+require_relative "metadata_check"
 
 ROOT = Pathname.new(__dir__).parent
 SCREENSHOTS = ROOT / "appstore" / "screenshots"

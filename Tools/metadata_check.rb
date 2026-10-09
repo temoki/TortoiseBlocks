@@ -2,16 +2,14 @@
 
 # Checks appstore/ before App Store Connect ever sees it.
 #
-# deliver reports a too-long subtitle when it is halfway through uploading, and
-# a screenshot with an alpha channel only when the submission is refused. Both
-# are knowable from the files alone, so they are checked here — on every pull
-# request, with no API key in sight.
+# App Store Connect reports a too-long subtitle when an upload is halfway
+# through, and a screenshot with an alpha channel only when the submission is
+# refused. Both are knowable from the files alone, so they are checked here —
+# on every pull request, with no API key in sight.
 #
-# Plain Ruby, no gems and nothing from fastlane, for one reason: CI runs it
-# straight from a checkout, and making a pull request wait for `bundle install`
-# to read nine text files would cost more than the check saves. The Fastfile
-# requires this file and calls it from a private lane, so a push made by hand
-# passes through exactly the same code.
+# Plain Ruby with no gems, so CI runs it straight from a checkout.
+# Tools/appstore.rb requires this file and runs it before every push, so a push
+# made by hand passes through exactly the same code.
 
 require "pathname"
 
@@ -34,16 +32,16 @@ module MetadataCheck
   METADATA_DIRECTORIES = ["metadata", "metadata-visionos"].freeze
 
   # These three are **app**-level fields in App Store Connect: they belong to
-  # the app, not to a platform's version, so whichever lane runs last decides
+  # the app, not to a platform's version, so whichever push runs last decides
   # them for all three listings. Two directories that disagree would make the
-  # app's name depend on lane order, silently. They have to match.
+  # app's name depend on push order, silently. They have to match.
   SHARED = ["name.txt", "subtitle.txt", "privacy_url.txt"].freeze
 
   # Fields allowed to be empty, by metadata directory. None, now.
   #
   # visionOS's "What's New" was exempt while 1.1.0 was that platform's first
   # version: the field belongs to an *update*, so text written there could not
-  # reach the store and showed up in every `metadata_diff` instead. 1.2.0 is
+  # reach the store and showed up in every diff instead. 1.2.0 is
   # its second version, the notes are written, and the exemption is gone —
   # kept as an empty table rather than deleted so a future first-version
   # platform has somewhere to go, with the same warning attached: delete the
@@ -58,17 +56,17 @@ module MetadataCheck
   #
   # "ios" carries two display types, because App Store Connect's iOS version
   # carries both: an iPhone screenshot and an iPad one are the same version's
-  # assets, told apart by their dimensions, and deliver takes one directory per
-  # platform (#114). The iPhone is portrait only (#113), so a landscape one
+  # assets, told apart by their dimensions (#114). Which display type each size
+  # is filed under is Tools/appstore.rb's table. The iPhone is portrait only (#113), so a landscape one
   # there would be a bug rather than a shape to accept. Apple also accepts
   # 1290x2796 for the 6.9-inch display; this rig shoots an iPhone 18 Pro Max,
   # which is the other one.
   SIZES = {
     "ios" => [[2064, 2752], [2752, 2064],                        # iPad 13-inch
               [1320, 2868]],                                     # iPhone 6.9-inch
-    # Not a platform: the iPhone Duo's captures, kept out of `ios` because
-    # deliver does not know their size and would cancel every screenshot upload
-    # in the run. They go up by hand, so this is the only check they get.
+    # Not a platform: the iPhone Duo's captures, part of the iOS listing. They
+    # have a directory of their own because fastlane, which pushed this before
+    # asc, could not file their size and went up without them (#154).
     # Unfolded only — the inner display, held either way; the folded outer
     # display (1398x2034) is not shot.
     "ios_duo" => [[2853, 2007], [2007, 2853]],                   # iPhone Duo, unfolded
@@ -93,6 +91,13 @@ module MetadataCheck
     def alpha?(path)
       info = png_info(Pathname.new(path))
       info && info[2]
+    end
+
+    # Width and height of a PNG, or nil for anything else. Public for
+    # Tools/appstore.rb, which files each screenshot under a display type by
+    # its size.
+    def dimensions(path)
+      png_info(Pathname.new(path))&.first(2)
     end
 
     # Prints and returns true when the tree is clean. `annotate` turns each
@@ -183,7 +188,7 @@ module MetadataCheck
           # display type, and since #114 one directory can hold two of them —
           # counting the files would refuse eleven iPhone-and-iPad captures
           # that App Store Connect is perfectly happy with. Grouped by size,
-          # which is exactly how deliver tells them apart.
+          # which is what tells them apart.
           shots.group_by { |shot| png_info(shot)&.first(2) }.each do |size, group|
             next if size.nil? || group.count <= 10
 
@@ -228,7 +233,7 @@ module MetadataCheck
   end
 end
 
-# Runnable on its own, which is how CI calls it: `ruby fastlane/metadata_check.rb`
+# Runnable on its own, which is how CI calls it: `ruby Tools/metadata_check.rb`
 if __FILE__ == $PROGRAM_NAME
   exit(MetadataCheck.report(annotate: ARGV.include?("--github")) ? 0 : 1)
 end
