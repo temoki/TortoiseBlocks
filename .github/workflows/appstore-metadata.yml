@@ -35,7 +35,7 @@ jobs:
           asc --version
       - name: Probe
         run: |
-          printf '%s' "$ASC_PRIVATE_KEY_B64" | base64 -d > "$RUNNER_TEMP/key.p8"
+          printf '%s' "$ASC_PRIVATE_KEY_B64" | (umask 077; base64 -d > "$RUNNER_TEMP/key.p8")
           export ASC_PRIVATE_KEY_PATH="$RUNNER_TEMP/key.p8" ASC_BYPASS_KEYCHAIN=1
           mkdir -p probe
           set -x
