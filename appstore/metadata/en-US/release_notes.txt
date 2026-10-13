@@ -1,5 +1,5 @@
-READY FOR IPHONE DUO
+CLEARER FOLDERS FOR YOUR DOCUMENTS
 
-Build programs from blocks and watch the tortoise draw them on the new iPhone Duo, too.
+Browsing for documents in the app no longer shows a Tortoise Blocks folder inside another Tortoise Blocks folder.
 
-• On iPhone and iPad, the Tortoise Blocks folder in iCloud Drive now shows the app's icon.
+• Documents made with 1.5.0 still open as they are. If iCloud Drive shows two Tortoise Blocks folders, move your documents into one of them in the Files app.

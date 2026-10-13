@@ -1,5 +1,5 @@
-■ iPhone Duo に対応しました
+■ 書類のフォルダがわかりやすくなりました
 
-新しい iPhone Duo でも、ブロックを組んで、カメに絵を描いてもらえます。
+アプリの中で書類をさがすとき、「Tortoise Blocks」フォルダの中にもう一つ「Tortoise Blocks」フォルダが見える、ということがなくなりました。
 
-・iPhone と iPad で、iCloud Drive の「Tortoise Blocks」フォルダに、アプリのアイコンが表示されるようになりました。
+・1.5.0 で作った書類も、そのまま開けます。iCloud Drive に「Tortoise Blocks」フォルダが二つ並んだときは、ファイルアプリで書類を片方にまとめてください。
