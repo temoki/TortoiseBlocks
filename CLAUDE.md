@@ -320,8 +320,21 @@ SDK-conditional: `INFOPLIST_FILE` takes one path, splitting it would
 duplicate the UTType declarations, and macOS simply ignores an iOS key. It
 is what puts a "Tortoise Blocks" folder under On My iPad in the Files app —
 the app's own directory *is* the gallery, which is why no in-app gallery is
-planned (#15). With iCloud signed in, the iCloud Drive folder below plays the
-same part.
+planned (#15). The Files app draws the app's icon on that folder by itself.
+**There is deliberately no iCloud container**, and it was tried (#140, taken
+out again in #158). Claiming one (`CloudDocuments` plus
+`NSUbiquitousContainers`) is the only way to put the icon on a folder in
+*iCloud Drive* — the plain "Tortoise Blocks" folder the document browser makes
+there cannot carry one — but the app's own document browser then shows the
+container as the app sees it rather than as the Files app publishes it: it
+opens at the container's private root, so the path reads iCloud Drive ›
+Tortoise Blocks › Tortoise Blocks, a `Documents` folder appears and changes its
+name and icon once visited, and a document made where the browser opens lands
+outside `Documents`, where the Files app never shows it. Neither
+`DocumentGroup` nor `UIDocumentBrowserViewController` can choose where the
+browser starts or how it draws, so none of that is fixable from here. Nor can
+the app make On My iPhone the default: the browser picks iCloud Drive whenever
+it is on, and remembers wherever the person last went.
 The QuickLook extension is a second target in the same hand-written project
 (#15): its own buildable folder `ThumbnailExtension/`, `NSExtension` keys in
 `Support/ThumbnailExtension-Info.plist`, and a `dstSubfolderSpec = 13` copy
@@ -420,43 +433,6 @@ rules apply. The app takes `files.user-selected.read-write` for the
 `DocumentGroup`'s open/save panels and the exporter; the extension keeps
 `read-only` and is sandboxed for a different reason (a macOS QuickLook
 extension is not loaded otherwise).
-
-**iCloud Drive gets a folder with the app's icon — on iOS and visionOS, not
-macOS** (#140). An icon only appears on a folder that is the app's own
-ubiquity container, published by `NSUbiquitousContainers`
-(`IsDocumentScopePublic`); the "Tortoise Blocks" folder that existed before was
-a plain one the document browser made, and a plain folder cannot carry an
-icon. So the app claims `iCloud.space.hiraku.tortoiseblocks` with
-`CloudDocuments`, from `Support/TortoiseBlocks-iCloud.entitlements` — the bare
-`CODE_SIGN_ENTITLEMENTS` — while `[sdk=macosx*]` keeps
-`Support/TortoiseBlocks.entitlements` without it. Name the platform that is
-left out, as with `CODE_SIGN_IDENTITY`: a platform added later inherits iCloud
-instead of silently losing it. macOS is left out because iCloud entitlements
-need a provisioning profile and the Mac's Debug loop is ad-hoc signed with no
-team; splitting by configuration instead would only have moved the hole into
-Debug. The Mac loses little: iCloud Drive syncs the container's folder to the
-Finder like any iOS-only app's, and the open/save panels already reach it
-through `user-selected.read-write` — what it lacks is only the folder as the
-*default* save location. **Nothing creates the container for the app**:
-`DocumentGroup` makes a new document in whatever folder its browser has
-open, never in the container, so `UbiquityContainer.prepare()` asks for it
-at launch (from an app delegate — no single view is there on every launch).
-**And an empty `Documents` does not show**: measured on an iPhone, the
-folder stayed out of iCloud Drive, in the Files app and the app's own
-browser, until something was inside it; a hidden empty `.keep` was enough,
-and brought the icon with it. Hidden, so a child has nothing to find or
-delete, and nothing to track — a marker already there (or its `.icloud`
-placeholder from another device) is left alone.
-`NSUbiquitousContainers` still ships in the Mac's
-Info.plist (one `INFOPLIST_FILE`, as above) and does nothing there without the
-entitlement. iCloud Drive reads that metadata once per new build, which Xcode
-Cloud's `CI_BUILD_NUMBER` provides; locally, reinstall. The container lives
-in the Developer portal and Xcode Cloud cannot register one, same as a bundle
-identifier. Verifying the result has a trap: a simulator build carries its
-entitlements in a `__TEXT,__entitlements` section of the executable, not the
-signature, so `codesign -d --entitlements -` prints an empty dict for a build
-that is perfectly right — read the section (`otool -l` for its offset) or
-`strings` the binary.
 
 **visionOS runs the iPad app, not a port** (#11). `SUPPORTED_PLATFORMS` gains
 `xros xrsimulator`, `XROS_DEPLOYMENT_TARGET` is 26.0, and the same three-pane
